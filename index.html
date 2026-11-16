@@ -1,0 +1,18 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Cartes champignons</title>
+<meta name="theme-color" content="#2f5d3a"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
+<style>
+:root{--bg:#f4f5f0;--fg:#1f2620;--muted:#5d6a5f;--card:#fbfbf8;--line:#d9ddd2;--accent:#2f5d3a}
+@media (prefers-color-scheme:dark){:root{--bg:#141814;--fg:#e6ebe3;--muted:#9aa79b;--card:#1b201b;--line:#2f372f;--accent:#8fc59a}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:560px;margin:0 auto;padding:28px 16px}
+h1{font-size:24px;margin:0 0 6px}p{color:var(--muted);margin:0 0 20px}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px;color:inherit;text-decoration:none}
+.card b{display:block;font-size:18px;color:var(--accent)}.card span{font-size:14px;color:var(--muted)}
+small{display:block;color:var(--muted);margin-top:20px;font-size:13px}
+</style></head><body><main>
+<h1>Cartes champignons</h1><p>Forêts favorables aux champignons comestibles, d'après la forêt, le sol et la météo.</p>
+<a class="card" href="ple/"><b>Riviera-Chablais</b><span>Zones de forêt favorables des Pléiades, du haut de Lavaux, de la Veveyse et du début du Chablais</span></a><a class="card" href="lsn/"><b>Région Lausannoise</b><span>Zones de forêt favorables de la région lausannoise : Morges, Saint-Prex, Lausanne, Jorat, Chalet-à-Gobet, Lavaux</span></a><a class="card" href="gdv/"><b>du Gros-de-Vaud</b><span>Zones de forêt favorables du Gros-de-Vaud et du pied du Jura : Bussigny, Cossonay, Orbe, Sainte-Croix, L’Isle, Romainmôtier, Vallorbe</span></a>
+<small>Sur le terrain : touchez ◎ pour suivre votre position. Le bouton « Hors ligne » d'une carte la télécharge pour l'utiliser sans réseau.
+Ne consommez aucun champignon sans le contrôle d'un contrôleur officiel (VAPKO).</small>
+</main><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){})</script></body></html>
