@@ -1160,6 +1160,8 @@ details.more[open]>summary{margin-bottom:4px}
         <div class="geo-sub">
         <label class="chk"><input type="checkbox" id="o-water" checked> <span class="water-sw" aria-hidden="true"></span> Cours d'eau</label>
         <label class="chk"><input type="checkbox" id="o-road" checked> <span class="road-sw" aria-hidden="true"></span> Routes et chemins</label>
+        <label class="chk"><input type="checkbox" id="o-acc" checked> <span>Accès libre seulement</span></label>
+        <p class="small" style="margin:-4px 0 0">Masque les zones de tir militaires (avis de tir, armee.ch). Les propriétés privées ne sont pas couvertes : il n'existe pas de données ouvertes.</p>
         <label class="chk"><input type="checkbox" id="o-tp" checked> <span class="acc-ic acc-tp" aria-hidden="true">211</span> <span>Arrêts de bus, train et funiculaire</span></label>
         <p class="small" style="margin:-4px 0 0">Numéro affiché s'il n'y a qu'une ligne ; en ville, seulement à moins de 1 km d'une forêt propice.</p>
         <label class="chk"><input type="checkbox" id="o-park" checked> <span class="acc-ic acc-park" aria-hidden="true">P</span> Parkings publics</label>
@@ -1370,10 +1372,10 @@ function trap(v,[a,b,c,d]){if(v<=a||v>=d)return 0;if(v<b)return (v-a)/(b-a);if(v
 const CLS_LAB=["Très faible","Faible","Moyen","Élevé","Très élevé"];
 
 let D,G,meta,meteo,fungi,sqNeighbours={};
-const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,tier:1,hide:[]};
+const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tier:1,hide:[]};
 try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if([0,1,2,3].includes(s.tier))state.tier=s.tier;{const c=SPECIES.find(x=>x.id===state.sp);if(c&&state.tier&&c.tier!==state.tier)state.tier=c.tier}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
-const LAY_IDS=["o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko"];
+const LAY_IDS=["o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
 function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
@@ -1429,7 +1431,15 @@ function seasonF(key,dateStr,alt){
 /* ---------- per-cell computations ---------- */
 // G.fx : 0 hors forêt, 1 forêt, 2 forêt à moins de 100 m d'une localité, 3 forêt à moins de 20 m d'une route
 const inForest=i=>G.fx[i]>0;
-const usable=i=>{const f=G.fx[i];return f===1||(f>1&&!state.excl&&!(f===4&&state.resp))};
+// filtre « accès libre » : les zones de tir militaires (SHOOT_Z) sont masquées
+let SHOOT=null,SHOOT_G=null;
+function buildShoot(){SHOOT_G=G;const W=meta.cols,H=meta.rows,F=new Uint8Array(W*H),Z=typeof SHOOT_Z!=="undefined"?SHOOT_Z:[];
+  const inRing=(x,y,r)=>{let o=false;for(let a=0,b=r.length-1;a<r.length;b=a++){const [xa,ya]=r[a],[xb,yb]=r[b];if((ya>y)!==(yb>y)&&x<(xb-xa)*(y-ya)/(yb-ya)+xa)o=!o}return o};
+  Z.forEach(z=>z.p.forEach(ring=>{const R=ring.map(([la,ln])=>{const q=L.CRS.EPSG3857.project(L.latLng(la,ln));return [q.x,q.y]});let x0=1e12,x1=-1e12,y0=1e12,y1=-1e12;R.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)});
+    const c0=Math.max(0,Math.floor((x0-meta.x0)/meta.res)),c1=Math.min(W-1,Math.ceil((x1-meta.x0)/meta.res)),r0=Math.max(0,Math.floor((meta.y1-y1)/meta.res)),r1=Math.min(H-1,Math.ceil((meta.y1-y0)/meta.res));
+    for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const i=r*W+c;if(F[i])continue;if(inRing(meta.x0+(c+.5)*meta.res,meta.y1-(r+.5)*meta.res,R))F[i]=1}}));
+  SHOOT=F}
+const usable=i=>{const f=G.fx[i];if(state.acc){if(SHOOT_G!==G)buildShoot();if(SHOOT[i])return false}return f===1||(f>1&&!state.excl&&!(f===4&&state.resp))};
 /* ---------- cueillette responsable ----------
    Règles légales (vérifiées le 15 nov. 2026) :
    VD : RLPrPNP art. 12, en vigueur depuis le 1er janvier 2025 : 2 kg par personne et par jour, de 7 h à 20 h, tous les jours du mois (l'interdiction du 1er au 7 a été levée) ; espèces de l'annexe 2 limitées à une poignée, espèces prioritaires et menacées interdites.
@@ -1495,7 +1505,7 @@ const MOBILE=typeof matchMedia==="function"&&matchMedia("(pointer:coarse)").matc
 const staticCache=new Map(),STATIC_MAX=MOBILE?10:12;let SCR=null;
 const P_NONE=0,P_SCALE=65534;
 function staticFor(sp){
-  const key=sp.id+(state.excl?"x":"")+(state.resp?"r":"")+state.yr;
+  const key=sp.id+(state.excl?"x":"")+(state.resp?"r":"")+(state.acc?"a":"")+state.yr;
   let e=staticCache.get(key);
   if(e){staticCache.delete(key);staticCache.set(key,e);return e}
   const n=meta.rows*meta.cols;
@@ -1672,7 +1682,7 @@ function renderInner(){
     const tot=stats.reduce((a,b)=>a+b,0)||1;
     $("stats").textContent=`Forêts de la région chargée : ${Math.round(100*stats[4]/tot)} % en très élevé, ${Math.round(100*(stats[3]+stats[4])/tot)} % en élevé ou très élevé, ${Math.round(100*stats[2]/tot)} % en moyen (sur toute la carte : 4 %, 15 % et 25 %).`;
   }else{
-    const key=[state.mode,state.d,state.view,state.excl,state.resp,state.yr,state.seasonOnly,state.tier,state.hide.join(",")].join("|");
+    const key=[state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly,state.tier,state.hide.join(",")].join("|");
     if(!multiCache||multiCache.key!==key){
       const per={},pts=new Uint16Array(n),cnt=new Uint8Array(n).fill(255);let has=new Uint8Array(n);
       activeSpecies().forEach(sp=>{const C=classesFor(sp).C;per[sp.id]=C;
@@ -1711,7 +1721,7 @@ function propiceArrays(){return state.sp==="multi"?Object.values(multiCls||{}):[
 let urbanKey="";
 function updateUrbanBus(){
   if(!busUrban||!currentClass)return;
-  const key=[state.sp,state.mode,state.d,state.view,state.excl,state.resp,state.yr,state.seasonOnly].join("|");if(key===urbanKey)return;urbanKey=key;
+  const key=[state.sp,state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly].join("|");if(key===urbanKey)return;urbanKey=key;
   const cols=meta.cols,rows=meta.rows,bc=Math.ceil(cols/BLK),br=Math.ceil(rows/BLK),has=new Uint8Array(bc*br);
   propiceArrays().forEach(C=>{for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const v=C[r*cols+c];if(v!==255&&v>=2)has[((r/BLK)|0)*bc+((c/BLK)|0)]=1}});
   const lat=(meta.bounds[0][0]+meta.bounds[1][0])/2,R=URB_KM*1000/(meta.res*Math.cos(lat*Math.PI/180)); // rayon en cellules
@@ -1788,7 +1798,7 @@ function popupHtml(latlng){
   if(state.resp&&G.fx[i]===4)return null;
   if(info.A<0){
     const ex=G.fx[i]-1;const isF=inForest(i);
-    const m=isF&&ex>0&&state.excl?`<p>Forêt exclue : ${EX_LAB[ex]}. Cochez « Afficher aussi les forêts exclues » pour l'afficher.</p></div>`:`<p>Pas de forêt ici (ou couverture forestière trop faible). Le score n'est calculé qu'en forêt.</p></div>`;
+    const m=isF&&state.acc&&SHOOT&&SHOOT[i]?`<p>Zone de tir militaire : masquée par le filtre « Accès libre seulement ».</p></div>`:isF&&ex>0&&state.excl?`<p>Forêt exclue : ${EX_LAB[ex]}. Cochez « Afficher aussi les forêts exclues » pour l'afficher.</p></div>`:`<p>Pas de forêt ici (ou couverture forestière trop faible). Le score n'est calculé qu'en forêt.</p></div>`;
     return {short:S0+m,full:h+m}}
   const st=staticFor(sp),z=G.zone[i];
   if(state.view==="zone"&&z&&st.zone.P[z]>=0){
@@ -1839,6 +1849,8 @@ const SORT_P=[{"id":"tolo","nom":"Forêts de Tolochenaz","lat":46.5041,"lon":6.4
 const MAP_THR_EXTRA={comatus:[0.4660,0.7657,0.9805],cylindracea:[0.2297,0.3966,0.5707],glutinosus:[0.2324,0.3606,0.4899],laccata:[0.8570,0.9141,0.9657],bicolor:[0.2748,0.4004,0.5320],sordida:[0.5431,0.6685,0.8672],polioleuca:[0.5931,0.6750,0.8676],decastes:[0.3917,0.5040,0.6222],varius:[0.2339,0.3902,0.5272],praestans:[0.4495,0.6116,0.8317],capnoides:[0.2274,0.3538,0.4878],ostoyae:[0.4393,0.4960,0.6143],mastoidea:[0.5675,0.6699,0.7995],vesca:[0.5883,0.8718,0.9920],aurea:[0.5362,0.6869,0.8912],turci:[0.1812,0.2643,0.6112],vinosa:[0.1049,0.2143,0.3046],decolorans:[0.0301,0.0934,0.1512],paludosa:[0.0606,0.1276,0.1981],mustelina:[0.0506,0.1355,0.2185],integra:[0.1573,0.2674,0.4608],clavatus:[0.2374,0.3918,0.5467],imbricatus:[0.0922,0.1883,0.2790],umbellatus:[0.5138,0.6636,0.8842],bovinus:[0.1815,0.2629,0.6478],grevillei:[0.1385,0.2201,0.3691],viscidus:[0.1427,0.2192,0.4008],luteus:[0.1848,0.2685,0.6710],luridus:[0.5111,0.6800,0.8944]};const MAP_THR_V3={"edulis":[0.7173,0.8726,0.9579],"reticulatus":[0.5664,0.8136,0.9138],"pinophilus":[0.3777,0.4829,0.6604],"cibarius":[0.6637,0.8661,0.9302],"cornucopioides":[0.4216,0.5668,0.766],"tubaeformis":[0.4319,0.5717,0.799],"morelc":[0.6394,0.7754,0.925],"morelb":[0.4087,0.5719,0.689],"gambosa":[0.6209,0.7372,0.9484],"repandum":[0.7899,0.892,0.948],"badia":[0.4409,0.597,0.8443],"nuda":[0.8967,0.9423,0.9801],"procera":[0.5866,0.6979,0.9472],"deliciosus":[0.2707,0.4587,0.7122],"lutescens":[0.4611,0.556,0.6409],"geotropa":[0.42,0.5491,0.6797],"sparassis":[0.3146,0.3804,0.6112],"virescens":[0.5394,0.7645,0.8697],"prunulus":[0.8288,0.8837,0.9486],"comatus":[0.4676,0.7691,0.9835],"cyanoxantha":[0.569,0.8944,0.996],"amethystina":[0.8701,0.9733,1.0378],"ostreatus":[0.4463,0.5896,0.76],"sulphureus":[0.4753,0.6049,0.7375],"erythropus":[0.7384,0.9121,0.9737]};  // 16.11.2026 : seuils 60/85/96,25 % des forêts (relevés « tous »), sol GeoCover, sans bonus iNat
 
 // zones sans chasse (districts francs fédéraux, réserves d'oiseaux d'eau ; geo.admin.ch, lues le 16.11.2026)
+// zones de tir militaires (avis de tir et zones de danger publiés, DDPS / geo.admin.ch, lues le 17.11.2026) ; [lat,lng]
+const SHOOT_Z=[];
 const HUNT_FREE=[];
 // ---------- sorties des sociétés mycologiques (agendas 2026 relevés le 16.11.2026) ----------
 const SORT_TODAY=new Date();
@@ -2730,7 +2742,7 @@ function huntGeo(){
   for(let i=0;i<n;i++)if(fx[i]&&sz[lab[i]]>=minC&&D1[i]>=u1&&D2[i]>=u2)ok[i]=1;
   return huntGeoArr=ok}
 function huntBuild(){
-  const ds=seasonDate(),key=ds+"|"+state.excl+state.resp+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntKey)return;huntKey=key;huntDay=ds;
+  const ds=seasonDate(),key=ds+"|"+state.excl+state.acc+state.resp+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntKey)return;huntKey=key;huntDay=ds;
   const n=meta.cols*meta.rows,C=cellCantons(),on=CANT_CODES.map(c=>!!(c&&huntColl(c,ds).length)),onI=CANT_CODES.map(c=>!!(c&&huntOn(c,ds).length)),FR_=cellFree(),HG=huntGeo(),cants=new Set();let any=false;
   if(!huntMask){huntMask=document.createElement("canvas");huntMaskI=document.createElement("canvas")}
   huntMask.width=huntMaskI.width=meta.cols;huntMask.height=huntMaskI.height=meta.rows;
@@ -3187,6 +3199,7 @@ async function boot(){
   $("v-auto").onclick=()=>applyViewPref("auto");$("v-zone").onclick=()=>applyViewPref("zone");$("v-cell").onclick=()=>applyViewPref("cell");
   map.on("zoomend resize",()=>{if(VP.p==="auto"&&effView()!==state.view)setView(effView())});
   $("o-excl").onchange=e=>{state.excl=!e.target.checked;render()};
+  state.acc=$("o-acc").checked;$("o-acc").onchange=e=>{state.acc=e.target.checked;saveLay();render()};
   const respHelp=()=>{$("resp-help").textContent=""};
   $("o-resp").checked=state.resp;respHelp();$("o-resp").onchange=e=>{state.resp=e.target.checked;saveState();respHelp();render()};
   later.aj.then(aj=>{
