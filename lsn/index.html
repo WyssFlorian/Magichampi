@@ -961,6 +961,54 @@ details.more[open]>summary{margin-bottom:4px}
 .spf-tier .row button{border:0;background:none;color:var(--accent,inherit);text-decoration:underline;cursor:pointer;font-size:12px;padding:0 0 0 8px}
 .spf-tier label{display:flex;gap:6px;align-items:baseline;padding:2px 0}
 .spf-tier label i{color:var(--muted);font-size:11.5px}
+/* refonte : contrôles de la carte, menu en pages, alertes, chasse */
+.view-btns{position:absolute}
+.zl-row{position:absolute;right:0;bottom:100%;margin-bottom:5px;display:flex;gap:4px;align-items:flex-end}
+.zl-row .leaflet-bar{display:flex;float:none;clear:none;margin:0;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.zl-row .leaflet-bar a{width:26px;height:26px;line-height:26px;font-size:17px;border-bottom:0;border-right:1px solid #ccc;display:grid;place-items:center;border-radius:0}
+.zl-row .leaflet-bar a:last-child{border-right:0}
+.zl-row .loc-ctl{float:none;clear:none;margin:0;position:relative}
+.zl-row .loc-ctl a.loc-btn{width:26px;height:26px;line-height:26px;border-radius:4px;border-right:0}
+.zl-row .loc-ctl a.loc-btn svg{width:15px;height:15px}
+.zl-row .loc-info,.zl-row .loc-panel{left:auto;right:0;top:auto;bottom:32px}
+.leaflet-top.leaflet-left .menu-btn{margin-top:0}
+.menu-head{gap:6px}
+.menu-head select{flex:1;min-width:0}
+.mh-btn{border:1px solid var(--line);background:var(--panel);color:inherit;border-radius:8px;width:32px;height:30px;font-size:20px;line-height:1;cursor:pointer;padding:0}
+.mh-btn:disabled{opacity:.35;cursor:default}
+.menu-page{padding:6px 0 4px}
+.menu-page[hidden]{display:none}
+.menu-page h3{margin:6px 0 8px;font-size:15px}
+#menu-pop{max-height:calc(100vh - 70px)}
+.agenda>summary,.panel-det>summary{cursor:pointer;font:600 14px/1.3 var(--font-body);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.agenda>summary::after,.panel-det>summary::after{content:"▾";opacity:.7}
+.agenda[open]>summary::after,.panel-det[open]>summary::after{content:"▴"}
+.agenda>summary::-webkit-details-marker,.panel-det>summary::-webkit-details-marker{display:none}
+.panel-det{margin:10px 0}
+.panel-det>*:not(summary){margin-top:8px}
+.al-form{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.al-nav{display:flex;gap:6px;align-items:center}
+.al-toc{display:flex;gap:4px;overflow-x:auto;flex:1;padding-bottom:2px}
+.al-chip{white-space:nowrap;border:1px solid var(--line);background:none;color:inherit;border-radius:12px;font-size:11.5px;padding:2px 8px;cursor:pointer}
+.al-chip.on{background:var(--accent,#2f7d4f);color:#fff;border-color:transparent}
+.al-title{font-weight:600;margin:8px 0 4px}
+.al-body .chk{margin:3px 0}
+.al-body .sub-h{margin:6px 0 2px}
+.al-sp{max-height:34vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:2px 8px}
+.al-recap{margin:10px 0 0}
+.al-foot{gap:6px;margin-top:10px;flex-wrap:wrap}
+.al-list{margin-top:10px}
+.al-list>summary{cursor:pointer;font-weight:600}
+.al-sum{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hunt-wrap{display:flex;gap:4px;align-items:flex-start}
+.hunt-wrap[hidden]{display:none}
+.hunt-wrap .hunt-badge{max-width:150px;font-size:11px;padding:2px 6px;border-left-width:3px}
+.hunt-wrap .hunt-badge small{font-size:10px}
+.hunt-i{width:20px;height:20px;border-radius:50%;border:1px solid #d60000;background:var(--panel);color:#a30000;font:700 12px/1 var(--font-body);cursor:pointer;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hunt-i{color:#ff8a80}}
+:root[data-theme="dark"] .hunt-i{color:#ff8a80}
+.hunt-modal{position:fixed;top:56px;right:12px;z-index:1300;width:min(380px,calc(100vw - 24px));max-height:calc(100vh - 70px);overflow:auto;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.3);font-size:13px}
+.hunt-modal[hidden]{display:none}
 </style>
 
 <div class="app">
@@ -968,7 +1016,6 @@ details.more[open]>summary{margin-bottom:4px}
     <div id="sec-head">
       <h1>Champignons Région Lausannoise</h1>
       <p class="sub">Zones de forêt favorables de la région lausannoise : Morges, Saint-Prex, Lausanne, Jorat, Chalet-à-Gobet, Lavaux</p>
-      <p class="small" id="upd" style="margin:6px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span id="upd-lab"></span><button class="btn" id="upd-btn" style="padding:2px 10px;font-size:12px">Actualiser</button><button class="btn" id="tour-btn" style="padding:2px 10px;font-size:12px" title="Revoir le guide animé">? Guide</button></p>
     </div>
     <details class="warn" id="sec-warn"><summary>À lire avant de cueillir</summary><p>Ce score indique des conditions favorables, calculées à partir de données publiques. Il ne garantit ni la présence de champignons ni leur identification. Ne consommez rien sans le contrôle d'un contrôleur officiel (VAPKO).</p><p><b>Règles de cueillette</b> (Vaud et Fribourg, vérifiées le 15 novembre 2026) : 2 kg par personne et par jour, de 7 h à 20 h, tous les jours du mois (Vaud a levé l'interdiction du 1er au 7 en janvier 2025). Cueillette interdite dans les réserves naturelles, les marais protégés et la zone centrale du Parc naturel du Jorat, où il est aussi interdit de quitter les chemins. Aucune des 52 espèces de la carte n'est protégée ou limitée, ni sur la liste rouge suisse (2007) : la Russule aurore, « potentiellement menacée », n'est pas proposée. Le Lactaire de l'épicéa et le Lactaire couleur saumon ne sont pas proposés : la VAPKO déconseille de les consommer. Certaines communes ont leurs propres règles : renseignez-vous sur place.</p><p>Avec l'option « Cueillette responsable », ces forêts ne sont pas colorées, et en mode « Conditions du moment » la carte reste vide entre 20 h et 7 h le jour même. Un <span class="rg-bang">!</span> dans la fiche d'une forêt signale un milieu fragile (réserve forestière, zone alluviale, site de batraciens) : la cueillette y est permise, mais le piétinement abîme le sol et le mycélium, donc mieux vaut l'éviter.</p><p><b>Urgence ou doute après un repas de champignons</b> : Tox Info Suisse, <a href="tel:145">145</a> (24 h sur 24) ; en cas de malaise grave, le <a href="tel:144">144</a>. Gardez les restes du repas et les épluchures. N'identifiez jamais un champignon avec une application photo : faites contrôler toute la récolte par un contrôleur officiel (symbole <span class="vapko-pin" style="display:inline-grid;width:15px;height:15px;font-size:10px">✓</span> sur la carte, ou <a href="https://www.vapko.ch/index.php/fr/lieux-et-places-de-controle" target="_blank" rel="noopener">liste de la VAPKO</a>).</p><p><b>Chasse</b> : de septembre à janvier surtout, les forêts colorées peuvent être chassées. Les jours de battue ou de chasse en équipe prévus au calendrier cantonal, ces forêts sont <span class="hunt-sw" aria-hidden="true"></span> hachurées en rouge (Vaud et Fribourg, pas encore le Valais et Neuchâtel ; districts francs et réserves d'oiseaux d'eau exclus). Les dates sont celles du canton : les battues réelles sont annoncées sur place par des panneaux. Les jours de chasse individuelle seulement (affût, bécasse, renard, sanglier hors battue), elles sont <span class="hunt-sw i" aria-hidden="true"></span> hachurées en orange. Horaires : de 1 h avant le lever à 1 h après le coucher du soleil. Portez des habits voyants, restez sur les chemins et respectez les panneaux « chasse en cours ».</p><p><b>Tiques</b> : toute la région est à risque. Habits longs et clairs, répulsif, et contrôle du corps au retour.</p></details>
 
@@ -980,11 +1027,6 @@ details.more[open]>summary{margin-bottom:4px}
       <h2>Légende</h2>
       <div class="legend" id="legend"></div>
       <div class="legend" id="legend-tr" style="margin-top:6px"><span class="trail-sw"></span><span>Chemin de randonnée</span><span class="trail-sw b"></span><span>Chemin de montagne (pointillé)</span></div>
-      <p class="small" id="hunt-day" style="margin:6px 0 0"></p>
-      <details class="info"><summary>Informations sur les conditions du moment</summary>
-        <p class="small">En mode « conditions du moment », une météo moyenne abaisse d'une classe et une météo défavorable de deux. Seules les forêts sont colorées. Cliquez un point pour voir le détail du calcul.</p>
-        <p class="small" id="stats" style="font-variant-numeric:tabular-nums"></p>
-      </details>
     </section>
 
     <section id="sec-what">
@@ -1008,24 +1050,24 @@ details.more[open]>summary{margin-bottom:4px}
         <button id="m-site" aria-pressed="true">Aptitude du lieu</button>
         <button id="m-now" aria-pressed="false">Conditions du moment</button>
       </div>
+      <details class="info"><summary>Informations sur les conditions du moment</summary>
+        <p class="small">En mode « conditions du moment », une météo moyenne abaisse d'une classe et une météo défavorable de deux. Seules les forêts sont colorées. Cliquez un point pour voir le détail du calcul.</p>
+        <p class="small" id="stats" style="font-variant-numeric:tabular-nums"></p>
+      </details>
       <p class="small" id="mode-help"></p>
       <div id="date-box">
         <div class="row" style="justify-content:space-between"><span>Date de référence</span><span class="date" id="date-lab"></span></div>
         <input type="range" id="date" min="0" max="0" step="1" aria-label="Date de référence">
         <p class="small" id="fc-help" style="margin:2px 0 0"></p>
       </div>
-      <button class="btn menu-open" type="button" data-menu style="margin-top:12px">☰ Réglages : affichage, saison, fond de carte, couches, champignons affichés</button>
     </section>
 
-    <section id="sec-sorties">
-      <h2>Sorties des sociétés mycologiques</h2>
-      <label class="chk"><input type="checkbox" id="o-sorties" checked> <span><span class="sortie-sw" aria-hidden="true"></span> Coins des sorties (contour bleu foncé) et rendez-vous 🍄</span></label>
+    <details class="panel-det agenda" id="sec-sorties"><summary>Agenda et liens d'inscription</summary>
       <p class="small" style="margin:4px 0 8px">Agendas 2026 des sociétés relevés le 16 novembre 2026 : toutes les sorties de 2026 sont passées et les programmes 2027 ne sont pas encore publiés. Les dates 2027 sont <b>estimées</b> (même semaine, même jour qu'en 2026) : vérifiez le programme de la société avant d'y aller. Touchez un 🍄 ou une forêt entourée pour la date, le thème et l'inscription.</p>
       <div class="sortie-list" id="sortie-list"></div>
-    </section>
+    </details>
 
-    <section id="sec-coins">
-      <h2>Mes coins</h2>
+    <details class="panel-det" id="sec-coins"><summary>Mes coins</summary>
       <div class="row" style="margin:4px 0 8px;gap:6px"><button class="btn primary" id="add-coin">＋ Nouveau coin</button><select id="coin-filter" class="coin-sel" style="flex:1;min-width:0" aria-label="Filtrer les coins par espèce" hidden></select></div>
       <div id="coin-form" class="coin-form" hidden>
         <div class="cf-title" id="cf-title">Nouveau coin</div>
@@ -1058,73 +1100,17 @@ details.more[open]>summary{margin-bottom:4px}
       </div>
       <p class="small coin-privacy">🔒 <b>Confidentialité</b> : vos coins sont enregistrés dans ce navigateur, sur cet appareil. Si vous êtes connecté à claude.ai, une copie privée (sans les photos) est aussi gardée en ligne dans votre espace personnel de cette carte, pour les recharger automatiquement après un vidage du navigateur ou sur un autre appareil : ni l'auteur de la carte ni les autres personnes qui l'ouvrent ne peuvent la lire. Les coins ne sont partagés que si vous le faites vous-même (« Partager mes coins »), et la personne qui les reçoit peut alors les transmettre. Les photos restent sur l'appareil : gardez une sauvegarde (💾) pour les conserver.</p>
       </details>
-    </section>
-
-    <section id="sec-alerts">
-      <h2>Alertes e-mail</h2>
-      <p class="small" style="margin:2px 0 8px">Un e-mail le jour choisi, vers 13 h 45 (après les nouvelles mesures de MétéoSuisse), si les prévisions des 7 jours suivants annoncent des conditions élevées pour le champignon et le lieu surveillés. La météo de la carte est mise à jour chaque jour de mars à novembre, et chaque lundi en hiver.</p>
-      <div class="row" style="gap:6px;margin-bottom:8px"><button class="btn primary" id="al-add" type="button">🔔 Nouvelle alerte</button></div>
-      <div id="al-form" class="coin-form" hidden>
-        <div class="cf-title">Nouvelle alerte</div>
-        <label class="cf-l">Champignon<select id="al-sp" class="coin-sel"></select></label>
-        <label class="cf-l">Où<select id="al-where" class="coin-sel"></select></label>
-        <label class="cf-l">Seuil<select id="al-thr" class="coin-sel"><option value="3">Élevé ou très élevé</option><option value="4">Très élevé seulement</option></select></label>
-        <label class="cf-l">Jour d'envoi <span class="small">(vers 13 h 45)</span><select id="al-day" class="coin-sel"></select></label>
-        <div class="row" style="gap:6px;margin-top:4px"><button class="btn primary" id="al-save" type="button">Enregistrer</button><button class="btn" id="al-cancel" type="button">Annuler</button></div>
-      </div>
-      <div class="coins" id="alerts"></div>
-      <p class="small" id="al-msg" role="status" style="margin:6px 0 0" hidden></p>
-    </section>
-
-    <details>
-      <summary>Comment le score est calculé</summary>
-      <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue × observations proches. Elle ne dépend pas de la météo.</p>
-      <ul>
-        <li>Type de forêt : Carte des milieux naturels de Suisse (hêtraie acidophile, hêtraie à sapin, pinède, conifères d'altitude…), pondéré selon les milieux typiques de l'espèce. Cette carte est elle-même modélisée : elle peut se tromper localement.</li>
-        <li>Essences : part de résineux du LFI (10 m), comparée aux hôtes de l'espèce. Quand le type de forêt est connu, ce facteur compte deux fois moins, pour ne pas compter deux fois la même information.</li>
-        <li>Altitude : fourchette de chaque espèce calée sur l'altitude des relevés SwissFungi de la région.</li>
-        <li>Peuplement : hauteur de la végétation LFI 2025 (forêt adulte ou lisière ; léger avantage aux lisières pour le cèpe).</li>
-        <li>Humidité : moitié humidité topographique (creux et bas de versant, calculée sur swissALTI3D), moitié bilan hydrique des stations forestières OFEV/WSL (avril-août, moyenne 2009-2018).</li>
-        <li>Sol : roche et dépôts de surface de la carte géologique GeoCover (swisstopo, 1:25 000), classés de très acide à calcaire et comparés aux préférences de l'espèce. Les marais et glissements de terrain comptent aussi comme lieux plus humides. Là où GeoCover manque, l'atlas géochimique des sols (OFEV, 1 km) est utilisé.</li>
-        <li>Présence connue : l'espèce est-elle signalée à SwissFungi dans la maille de 5 km (×1), une maille voisine (×0,93) ou pas du tout (×0,85) ? Le curseur « Relevés SwissFungi » limite ces relevés aux 2 ou 5 dernières années.</li>
-        <li>Observations iNaturalist : affichées pour information et utilisées pour vérifier le modèle, mais elles n'entrent plus dans le score depuis le 16 nov. 2026 (licences souvent non commerciales).</li>
-              </ul>
-      <p><b>Classes</b> : les seuils sont fixes pour chaque espèce. Ils ont été calculés sur toutes les forêts de cette carte : 15 % y sont en classe élevée et 25 % en moyenne. Le meilleur quart de la classe élevée (4 % des forêts) est affiché à part, en « très élevé » (bleu-violet). La classe d'un lieu ne change donc plus quand on déplace ou zoome la carte. Les seuils sont propres à chaque carte, car avec des seuils communs aux trois cartes, la région de Lausanne passait jusqu'à 60 % de ses forêts en classe élevée.</p>
-      <p><b>Conditions du moment</b> = aptitude × saison × eau du sol × température × gel. Une météo défavorable abaisse la classe d'un ou deux crans ; une météo très favorable (indice d'au moins 0,6) la relève d'un cran.</p>
-      <ul>
-        <li>Saison : répartition mensuelle des 1 000 à 5 000 relevés suisses de l'espèce, décalée d'une semaine plus tôt par 250 m au-dessus de 600 m (au plus 4 semaines). Le filtre « champignons de saison » utilise l'altitude médiane des forêts affichées.</li>
-        <li>Eau du sol : réserve d'un sol de 60 mm, remplie par la pluie et vidée par l'évaporation (estimée avec la température et l'ensoleillement), en moyenne du 14ᵉ au 3ᵉ jour avant la date, puis corrigée sur place selon l'humidité du lieu (relief, bilan hydrique, géologie). Quand le sol est sec, les versants nord sont favorisés.</li>
-        <li>Température : température du sol à 10 cm, estimée chaque jour à partir de la température de l'air (modèle calé sur la station MétéoSuisse d'Aigle, erreur moyenne 0,8 °C en automne), corrigée de l'altitude et de l'exposition ; l'effet de l'exposition dépend de l'ensoleillement des 10 derniers jours.</li>
-        <li>Gel : nuits sous −2 °C des 7 derniers jours.</li>
-      </ul>
-      <p><b>Zones de forêt</b> : la forêt est découpée par les routes et chemins (swissTLM3D) et par paliers d'altitude de 150 m ; les grandes zones sont recoupées en carrés d'environ 600 m. Une zone prend la valeur de ses 20 % meilleures cellules, pour ne pas noyer un bon coin dans une grande zone moyenne.</p>
-      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte.</p>
-      <p><b>Géographie</b> (bouton ⛰ ou option) : tracées à partir du relief swissALTI3D ramené à 25 m, tous les 20 m en traits blancs (plus marqués tous les 100 m) dès le zoom 14, tous les 50 m au zoom 13. En brun foncé, les pentes d'au moins 45° sur 25 m (falaises, barres rocheuses) ; en brun clair, les pentes de 38 à 45° (très raides, prudence). En bleu, les cours d'eau à ciel ouvert (swissTLM3D 2026), plus épais pour les rivières et ruisseaux nommés ; les tronçons canalisés sous terre ne sont pas tracés. En vert, les routes et chemins dès le zoom 12, comme sur la carte nationale : double trait pour les routes de 1re et 2e classe, trait de 2 px pour la 3e classe, trait fin pour les chemins de 4e et 5e classe. Les sentiers balisés restent en jaune. Le bouton affiche aussi les arrêts de transports publics et les parkings. Dans Plus d'options, section Géographie, une case par couche permet de masquer séparément les cours d'eau, les routes, les arrêts, les parkings ou les sentiers. Une petite barre de quelques mètres peut ne pas apparaître : la carte nationale reste la référence.</p>
-      <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
-      <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
-      <p><b>Validation</b> (15.11.2026) : sur 51 observations iNaturalist indépendantes, le modèle les place en moyenne au 52ᵉ-54ᵉ rang sur 100 (50 = hasard). C'est mieux qu'avant (48), mais encore faible : vos coins permettront de le caler.</p>
     </details>
-    <details>
-      <summary>Sources et limites</summary>
-      <ul>
-        <li>Météo : MétéoSuisse, analyses en grille 1 km (pluie provisoire, température, minimum, ensoleillement), open data.</li>
-        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km. Observations précises : iNaturalist, qualité « recherche », via GBIF (licences CC BY ou CC BY-NC des observateurs, voir chaque observation).</li>
-        <li>Sol et eau : carte géologique GeoCover © swisstopo (données ouvertes) ; atlas géochimique des sols de Suisse (calcium) et bilan hydrique des stations forestières, OFEV/WSL, geo.admin.ch.</li>
-        <li>Forêt : OFEV/WSL, Inventaire forestier national (degré de mélange, hauteur de végétation) ; Carte des milieux naturels de Suisse v1.2 (OFEV/WSL, TypoCH, geo.admin.ch).</li>
-        <li>Relief, cartes et photos : © swisstopo. Réserves : Pro Natura, inventaires fédéraux des marais, Parcs suisses (zones, OFEV). Milieux à ménager : réserves forestières, inventaires fédéraux des zones alluviales et des sites de reproduction de batraciens (OFEV, geo.admin.ch).</li>
-        <li>Sentiers, routes et cours d'eau : swissTLM3D (swisstopo).</li>
-        <li>Arrêts et gares : Office fédéral des transports (arrêts des transports publics). Lignes : horaire officiel suisse 2026 (GTFS, opentransportdata.swiss), sans bus de remplacement ni lignes de nuit. Les arrêts de bus situés dans les grandes agglomérations (par exemple Lausanne et sa couronne, Vevey–Montreux, Yverdon : zones bâties continues de plus de 250 ha) ne sont affichés que s’il y a, à moins de 1 km, une forêt en classe moyenne ou élevée pour l’espèce choisie (pour au moins une espèce en mode « forte concentration »). La liste change avec l’espèce, la date et les filtres. Parkings : swissTLM3D, aires de stationnement publiques.</li>
-      </ul>
-      <p>Les essences sont résumées en part de résineux et en grands types de forêt modélisés : la carte ne distingue pas directement l'épicéa du sapin. Les réserves cantonales vaudoises et fribourgeoises ne sont pas toutes affichées. Règles de cueillette vérifiées le 15 novembre 2026 : Vaud, RLPrPNP art. 12 (2 kg par personne et par jour, 7 h à 20 h, tous les jours) ; Fribourg, arrêté du 9 juin 1998 et RPNat art. 26 (2 kg, 7 h à 20 h). Les règles communales ou de propriétaires privés ne sont pas prises en compte.</p>
-    </details>
+
+
   </aside>
   <div class="mapwrap">
     <div id="map" role="region" aria-label="Carte"></div>
-    <div class="menu-pop" id="menu-pop" hidden role="dialog" aria-label="Réglages">
-      <div class="menu-head"><b>Réglages</b><button class="ti-x" id="menu-x" type="button" aria-label="Fermer">×</button></div>
-      <div class="menu-sec" id="menu-reg"><b>Région</b><div class="row" style="gap:6px;margin-top:6px"><a class="btn region-link" href="../ple/" style="">Riviera-Chablais</a><a class="btn region-link" href="../lsn/" aria-current="page" style="font-weight:700;outline:2px solid var(--accent)">Région lausannoise</a><a class="btn region-link" href="../gdv/" style="">Gros-de-Vaud</a></div><p class="small" style="margin:6px 0 0"><a href="../">Page d'accueil des cartes</a></p></div>
-      <details class="menu-sec" id="menu-sp"><summary>Champignons affichés</summary><p class="small" style="margin:4px 0 6px">Décochez les espèces que vous ne cherchez pas : elles disparaissent de la liste et de la forte concentration.</p><div id="sp-filter"></div></details>
-      <details class="menu-sec" open><summary>Affichage, saison, fond de carte, couches</summary>
+    <div class="menu-pop" id="menu-pop" hidden role="dialog" aria-label="Menu">
+      <div class="menu-head"><button class="mh-btn" id="menu-prev" type="button" aria-label="Page précédente">‹</button><select id="menu-toc" class="coin-sel" aria-label="Table des matières du menu"></select><button class="mh-btn" id="menu-next" type="button" aria-label="Page suivante">›</button><button class="ti-x" id="menu-x" type="button" aria-label="Fermer">×</button></div>
+      <div class="menu-page" data-t="Région" id="menu-reg"><h3>Région</h3><div class="row" style="gap:6px;margin-top:6px"><a class="btn region-link" href="../ple/" style="">Riviera-Chablais</a><a class="btn region-link" href="../lsn/" aria-current="page" style="font-weight:700;outline:2px solid var(--accent)">Région lausannoise</a><a class="btn region-link" href="../gdv/" style="">Gros-de-Vaud</a></div><p class="small" style="margin:6px 0 0"><a href="../">Page d'accueil des cartes</a></p></div>
+      <div class="menu-page" data-t="Champignons affichés" id="menu-sp"><h3>Champignons affichés</h3><p class="small" style="margin:4px 0 6px">Décochez les espèces que vous ne cherchez pas : elles disparaissent de la liste et de la forte concentration, et les seuils de concentration diminuent en proportion.</p><div id="sp-filter"></div></div>
+      <div class="menu-page" data-t="Affichage et couches"><h3>Affichage, saison, fond de carte, couches</h3>
       <div class="seg" role="group" aria-label="Affichage" style="margin-top:10px">
         <button id="v-zone" aria-pressed="true">Par zone de forêt</button>
         <button id="v-cell" aria-pressed="false">Détail 25 m</button>
@@ -1163,12 +1149,73 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk"><input type="checkbox" id="o-tp" checked> <span class="acc-ic acc-tp" aria-hidden="true">211</span> <span>Arrêts de bus, train et funiculaire <span class="small">(numéro affiché s’il n’y a qu’une ligne ; en ville, seulement à moins de 1 km d’une forêt propice)</span></span></label>
         <label class="chk"><input type="checkbox" id="o-park" checked> <span class="acc-ic acc-park" aria-hidden="true">P</span> Parkings publics</label>
         <label class="chk"><input type="checkbox" id="o-trail" checked> <span class="trail-sw" aria-hidden="true"></span> <span>Sentiers de randonnée pédestre <span class="small">(affichés aussi sans la géographie)</span></span></label>
-        <label class="chk"><input type="checkbox" id="o-hunt" checked> <span class="hunt-sw" aria-hidden="true"></span> <span>Battues ou chasse en équipe ce jour-là <span class="small">(Vaud et Fribourg ; sans les zones où la chasse est interdite)</span></span></label>
-        <label class="chk"><input type="checkbox" id="o-hunti" checked> <span class="hunt-sw i" aria-hidden="true"></span> <span>Chasse individuelle seulement ce jour-là <span class="small">(affût, bécasse, renard, sanglier hors battue)</span></span></label>
+        <label class="chk"><input type="checkbox" id="o-hunt" checked> <span class="hunt-sw" aria-hidden="true"></span> <span>Chasse</span></label>
+        <input type="checkbox" id="o-hunti" checked hidden>
         <label class="chk"><input type="checkbox" id="o-vapko" checked> <span class="vapko-pin" aria-hidden="true" style="width:15px;height:15px;font-size:10px">✓</span> <span>Contrôles officiels des champignons</span></label>
         </div>
       </div>
-      </details>
+</div>
+      <div class="menu-page" data-t="Communauté"><h3>Communauté</h3>
+        <label class="chk"><input type="checkbox" id="o-sorties" checked> <span><span class="sortie-sw" aria-hidden="true"></span> Coins des sorties (contour bleu foncé) et rendez-vous 🍄</span></label>
+        <div class="sub-h">Sociétés mycologiques</div>
+        <p class="small" style="margin:2px 0 6px">Décochez une société pour masquer ses sorties sur la carte et dans l'agenda.</p>
+        <div id="soc-list"></div>
+      </div>
+      <div class="menu-page" data-t="Alertes" id="menu-al"><h3>Alertes</h3>
+        <div class="row" style="gap:6px;align-items:center"><button class="btn primary" id="al-add" type="button">🔔 Créer une alerte</button><button class="ti" id="al-i" type="button" aria-label="À quoi servent les alertes ?" aria-expanded="false">i</button></div>
+        <div class="tier-info" id="al-info" hidden><p class="small" style="margin:0 0 4px">Une alerte surveille un lieu (toute la carte, une commune, une forêt, une fenêtre ou un point GPS) pour une saison, soit pour une forte concentration d'espèces, soit pour des espèces choisies. Elle prévient par e-mail, tous les jours, une fois par semaine ou à la prochaine occasion.</p><p class="small" style="margin:0">Pour l'instant, l'envoi des e-mails est suspendu : les alertes sont enregistrées sur cet appareil.</p></div>
+        <div id="al-form" class="al-form" hidden></div>
+        <details class="al-list" id="al-listbox"><summary>Voir et modifier mes alertes <span id="al-count"></span></summary><div class="coins" id="alerts"></div></details>
+        <p class="small" id="al-msg" role="status" style="margin:6px 0 0" hidden></p>
+      </div>
+      <div class="menu-page" data-t="Météo et outils"><h3>Météo et outils</h3>
+      <p class="small" id="upd" style="margin:6px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span id="upd-lab"></span><button class="btn" id="upd-btn" style="padding:2px 10px;font-size:12px">Actualiser</button><button class="btn" id="tour-btn" style="padding:2px 10px;font-size:12px" title="Revoir le guide animé">? Guide</button></p>
+        <p class="small">« Actualiser » recharge les prévisions de MétéoSuisse. « Guide » rejoue la visite animée. « Hors ligne » télécharge toute la carte pour l'utiliser sans réseau.</p>
+      </div>
+      <div class="menu-page" data-t="Calcul du score" id="menu-score"><h3>Comment le score est calculé</h3>
+      <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue × observations proches. Elle ne dépend pas de la météo.</p>
+      <ul>
+        <li>Type de forêt : Carte des milieux naturels de Suisse (hêtraie acidophile, hêtraie à sapin, pinède, conifères d'altitude…), pondéré selon les milieux typiques de l'espèce. Cette carte est elle-même modélisée : elle peut se tromper localement.</li>
+        <li>Essences : part de résineux du LFI (10 m), comparée aux hôtes de l'espèce. Quand le type de forêt est connu, ce facteur compte deux fois moins, pour ne pas compter deux fois la même information.</li>
+        <li>Altitude : fourchette de chaque espèce calée sur l'altitude des relevés SwissFungi de la région.</li>
+        <li>Peuplement : hauteur de la végétation LFI 2025 (forêt adulte ou lisière ; léger avantage aux lisières pour le cèpe).</li>
+        <li>Humidité : moitié humidité topographique (creux et bas de versant, calculée sur swissALTI3D), moitié bilan hydrique des stations forestières OFEV/WSL (avril-août, moyenne 2009-2018).</li>
+        <li>Sol : roche et dépôts de surface de la carte géologique GeoCover (swisstopo, 1:25 000), classés de très acide à calcaire et comparés aux préférences de l'espèce. Les marais et glissements de terrain comptent aussi comme lieux plus humides. Là où GeoCover manque, l'atlas géochimique des sols (OFEV, 1 km) est utilisé.</li>
+        <li>Présence connue : l'espèce est-elle signalée à SwissFungi dans la maille de 5 km (×1), une maille voisine (×0,93) ou pas du tout (×0,85) ? Le curseur « Relevés SwissFungi » limite ces relevés aux 2 ou 5 dernières années.</li>
+        <li>Observations iNaturalist : affichées pour information et utilisées pour vérifier le modèle, mais elles n'entrent plus dans le score depuis le 16 nov. 2026 (licences souvent non commerciales).</li>
+              </ul>
+      <p><b>Classes</b> : les seuils sont fixes pour chaque espèce. Ils ont été calculés sur toutes les forêts de cette carte : 15 % y sont en classe élevée et 25 % en moyenne. Le meilleur quart de la classe élevée (4 % des forêts) est affiché à part, en « très élevé » (bleu-violet). La classe d'un lieu ne change donc pas quand on déplace ou zoome la carte. Les seuils sont propres à chaque carte, car avec des seuils communs aux trois cartes, la région de Lausanne passait jusqu'à 60 % de ses forêts en classe élevée.</p>
+      <p><b>Conditions du moment</b> = aptitude × saison × eau du sol × température × gel. Une météo défavorable abaisse la classe d'un ou deux crans ; une météo très favorable (indice d'au moins 0,6) la relève d'un cran.</p>
+      <ul>
+        <li>Saison : répartition mensuelle des 1 000 à 5 000 relevés suisses de l'espèce, décalée d'une semaine plus tôt par 250 m au-dessus de 600 m (au plus 4 semaines). Le filtre « champignons de saison » utilise l'altitude médiane des forêts affichées.</li>
+        <li>Eau du sol : réserve d'un sol de 60 mm, remplie par la pluie et vidée par l'évaporation (estimée avec la température et l'ensoleillement), en moyenne du 14ᵉ au 3ᵉ jour avant la date, puis corrigée sur place selon l'humidité du lieu (relief, bilan hydrique, géologie). Quand le sol est sec, les versants nord sont favorisés.</li>
+        <li>Température : température du sol à 10 cm, estimée chaque jour à partir de la température de l'air (modèle calé sur la station MétéoSuisse d'Aigle, erreur moyenne 0,8 °C en automne), corrigée de l'altitude et de l'exposition ; l'effet de l'exposition dépend de l'ensoleillement des 10 derniers jours.</li>
+        <li>Gel : nuits sous −2 °C des 7 derniers jours.</li>
+      </ul>
+      <p><b>Zones de forêt</b> : la forêt est découpée par les routes et chemins (swissTLM3D) et par paliers d'altitude de 150 m ; les grandes zones sont recoupées en carrés d'environ 600 m. Une zone prend la valeur de ses 20 % meilleures cellules, pour ne pas noyer un bon coin dans une grande zone moyenne.</p>
+      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte.</p>
+      <p><b>Géographie</b> (bouton ⛰ ou option) : tracées à partir du relief swissALTI3D ramené à 25 m, tous les 20 m en traits blancs (plus marqués tous les 100 m) dès le zoom 14, tous les 50 m au zoom 13. En brun foncé, les pentes d'au moins 45° sur 25 m (falaises, barres rocheuses) ; en brun clair, les pentes de 38 à 45° (très raides, prudence). En bleu, les cours d'eau à ciel ouvert (swissTLM3D 2026), plus épais pour les rivières et ruisseaux nommés ; les tronçons canalisés sous terre ne sont pas tracés. En vert, les routes et chemins dès le zoom 12, comme sur la carte nationale : double trait pour les routes de 1re et 2e classe, trait de 2 px pour la 3e classe, trait fin pour les chemins de 4e et 5e classe. Les sentiers balisés restent en jaune. Le bouton affiche aussi les arrêts de transports publics et les parkings. Dans Plus d'options, section Géographie, une case par couche permet de masquer séparément les cours d'eau, les routes, les arrêts, les parkings ou les sentiers. Une petite barre de quelques mètres peut ne pas apparaître : la carte nationale reste la référence.</p>
+      <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
+      <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
+      <p><b>Validation</b> (15.11.2026) : sur 51 observations iNaturalist indépendantes, le modèle les place en moyenne au 52ᵉ-54ᵉ rang sur 100 (50 = hasard). C'est mieux qu'avant (48), mais encore faible : vos coins permettront de le caler.</p>
+      <p><b>Forte concentration</b> : chaque espèce affichée rapporte 3 points en « très élevé », 2 en « élevé » et 1 en « moyen ». Seuils minimaux : plus de 2, 4 et 6 points pour une catégorie (stars, bons ou intéressants), plus de 4, 6 et 8 pour toutes, réduits proportionnellement si vous décochez des espèces (au minimum 1, 2 et 3 points). Pour que la carte reste lisible, ces seuils sont relevés au besoin afin que la concentration très forte, forte et moyenne ne couvrent que les 4 %, 15 % et 40 % de forêts les mieux notées. En « conditions du moment », une espèce à moins de 30 % de saison n'est jamais en « très élevé ».</p>
+</div>
+      <div class="menu-page" data-t="Sources et limites"><h3>Sources et limites</h3>
+      <ul>
+        <li>Météo : MétéoSuisse, analyses en grille 1 km (pluie provisoire, température, minimum, ensoleillement), open data.</li>
+        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km. Observations précises : iNaturalist, qualité « recherche », via GBIF (licences CC BY ou CC BY-NC des observateurs, voir chaque observation).</li>
+        <li>Sol et eau : carte géologique GeoCover © swisstopo (données ouvertes) ; atlas géochimique des sols de Suisse (calcium) et bilan hydrique des stations forestières, OFEV/WSL, geo.admin.ch.</li>
+        <li>Forêt : OFEV/WSL, Inventaire forestier national (degré de mélange, hauteur de végétation) ; Carte des milieux naturels de Suisse v1.2 (OFEV/WSL, TypoCH, geo.admin.ch).</li>
+        <li>Relief, cartes et photos : © swisstopo. Réserves : Pro Natura, inventaires fédéraux des marais, Parcs suisses (zones, OFEV). Milieux à ménager : réserves forestières, inventaires fédéraux des zones alluviales et des sites de reproduction de batraciens (OFEV, geo.admin.ch).</li>
+        <li>Sentiers, routes et cours d'eau : swissTLM3D (swisstopo).</li>
+        <li>Arrêts et gares : Office fédéral des transports (arrêts des transports publics). Lignes : horaire officiel suisse 2026 (GTFS, opentransportdata.swiss), sans bus de remplacement ni lignes de nuit. Les arrêts de bus situés dans les grandes agglomérations (par exemple Lausanne et sa couronne, Vevey–Montreux, Yverdon : zones bâties continues de plus de 250 ha) ne sont affichés que s’il y a, à moins de 1 km, une forêt en classe moyenne ou élevée pour l’espèce choisie (pour au moins une espèce en mode « forte concentration »). La liste change avec l’espèce, la date et les filtres. Parkings : swissTLM3D, aires de stationnement publiques.</li>
+      </ul>
+      <p>Les essences sont résumées en part de résineux et en grands types de forêt modélisés : la carte ne distingue pas directement l'épicéa du sapin. Les réserves cantonales vaudoises et fribourgeoises ne sont pas toutes affichées. Règles de cueillette vérifiées le 15 novembre 2026 : Vaud, RLPrPNP art. 12 (2 kg par personne et par jour, 7 h à 20 h, tous les jours) ; Fribourg, arrêté du 9 juin 1998 et RPNat art. 26 (2 kg, 7 h à 20 h). Les règles communales ou de propriétaires privés ne sont pas prises en compte.</p>
+</div>
+    </div>
+    <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
+      <p class="small" id="hunt-day" style="margin:6px 0"></p>
+      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures rouges ?</b> Seulement dans les forêts d'au moins 10 hectares, à plus de 1 km des villages et de 2 km des villes. Ailleurs (forêts plus petites ou proches des habitations), seule la chasse individuelle reste possible : hachures orange.</p>
     </div>
     <div class="loading" id="loading">Chargement des données…</div>
     <div class="sheet" id="sheet" hidden role="dialog" aria-label="Fiche du lieu"><div class="sheet-head"><button class="grip" id="sheet-grip" aria-label="Agrandir ou réduire la fiche"><span id="sheet-grip-lab">agrandir</span></button><button class="x" id="sheet-x" aria-label="Fermer la fiche">✕</button></div><div class="sheet-body" id="sheet-body"></div></div>
@@ -1578,7 +1625,7 @@ function classesFor(sp){
   return {C,zone:{W:zW,cls:zcls}};
 }
 const MULTI_COLORS=[null,null,[255,214,0,165],[255,110,0,215],[225,0,190,255]];
-const MULTI_LAB=["","","Concentration moyenne : les 25 % suivants","Forte concentration : les 11 % suivants","Très forte concentration : les 4 % les mieux notés"];
+const MULTI_LAB=["","","Concentration moyenne","Forte concentration","Très forte concentration"];
 // forte concentration : chaque espèce affichée rapporte 3 points en très élevé, 2 en élevé et 1 en moyen ;
 // les niveaux sont fixés sur la somme des points des forêts chargées (4 %, 15 % et 40 % les mieux notés, comme pour une espèce)
 const MULTI_PTS=[0,0,1,2,3],MULTI_Q=[.6,.85,.96];
@@ -1615,11 +1662,16 @@ function renderInner(){
       const per={},pts=new Uint16Array(n),cnt=new Uint8Array(n).fill(255);let has=new Uint8Array(n);
       activeSpecies().forEach(sp=>{const C=classesFor(sp).C;per[sp.id]=C;
         for(let i=0;i<n;i++){const k=C[i];if(k===255)continue;has[i]=1;pts[i]+=MULTI_PTS[k]}});
-      // seuils : quantiles des points sur les forêts chargées (au moins 2, 4 et 6 points)
+      // seuils fixes : plus de 2, 4 et 6 points avec une catégorie, plus de 4, 6 et 8 avec « Toutes » ;
+      // réduits proportionnellement quand des espèces sont décochées (au minimum 1, 2 et 3)
+      const tierAll=SPECIES.filter(s=>!state.tier||s.tier===state.tier),fr=tierAll.length?tierAll.filter(s=>!state.hide.includes(s.id)).length/tierAll.length:1,B=state.tier?[2,4,6]:[4,6,8];
+      const T3=B.map((b,k)=>Math.max(k+1,Math.round(b*fr)));T3[1]=Math.max(T3[1],T3[0]+1);T3[2]=Math.max(T3[2],T3[1]+1);
+      const f1=T3[0]+1,f2=T3[1]+1,f3=T3[2]+1;
+      // niveaux proportionnels : au moins les seuils ci-dessus, relevés pour ne garder que les 40 %, 15 % et 4 % de forêts les mieux notées
       let mx=0;for(let i=0;i<n;i++)if(has[i]&&pts[i]>mx)mx=pts[i];
       const H=new Uint32Array(mx+2);let tot=0;for(let i=0;i<n;i++)if(has[i]){H[pts[i]]++;tot++}
       const qv=q=>{let c=0;for(let v=0;v<=mx;v++){c+=H[v];if(c>=q*tot)return v+1}return mx+1};
-      const t1=Math.max(2,qv(MULTI_Q[0])),t2=Math.max(t1+1,4,qv(MULTI_Q[1])),t3=Math.max(t2+1,6,qv(MULTI_Q[2]));
+      const t1=Math.max(f1,qv(MULTI_Q[0])),t2=Math.max(t1+1,f2,qv(MULTI_Q[1])),t3=Math.max(t2+1,f3,qv(MULTI_Q[2]));
       for(let i=0;i<n;i++)if(has[i]){const p=pts[i];cnt[i]=p>=t3?4:p>=t2?3:p>=t1?2:p>0?1:0}
       multiCache={key,per,cnt,pts,thr:[t1,t2,t3]};
     }
@@ -1628,7 +1680,7 @@ function renderInner(){
     for(let i=0;i<n;i++){const c=cnt[i];if(c===255)continue;tot++;if(c>=3)h3++;if(c>=4)h5++;
       if(c>=2){const col=MULTI_COLORS[c],o=i*4;px[o]=col[0];px[o+1]=col[1];px[o+2]=col[2];px[o+3]=Math.min(255,col[3]*ALPHA_BOOST)}}
     const pc=v=>(100*v/(tot||1)).toFixed(1).replace(".",","),T=multiCache.thr;
-    $("stats").textContent=`Points par forêt : 3 par espèce en très élevé, 2 en élevé, 1 en moyen. Très forte concentration dès ${T[2]} points, forte dès ${T[1]}, moyenne dès ${T[0]} (${pc(h5)} % et ${pc(h3)} % des forêts chargées en très forte et forte).`;
+    $("stats").textContent=`Points par forêt : 3 par espèce en très élevé, 2 en élevé, 1 en moyen. Plus de ${T[2]-1} points : très forte concentration ; plus de ${T[1]-1} : forte ; plus de ${T[0]-1} : moyenne (${pc(h5)} % et ${pc(h3)} % des forêts chargées en très forte et forte).`;
   }
   updateLegend();
   
@@ -1781,6 +1833,8 @@ const sortFmt=d=>`${SORT_WD[d.getDay()]} ${d.getDate()} ${SORT_MO[d.getMonth()]}
 // date probable de l'année suivante : même semaine, même jour (+364 jours)
 const sortNext=s=>{let d=sortD(s);while(d<SORT_TODAY)d=new Date(d.getTime()+364*864e5);return d};
 let sortLayer=null;
+let SOC_OFF=new Set();try{SOC_OFF=new Set(JSON.parse(localStorage.getItem("champi-soc-off")||"[]"))}catch(e){}
+const sortVis=p=>p.ev.some(e=>!SOC_OFF.has(e.s));
 function sortNextOf(p){return p.ev.map(e=>sortNext(e.d)).sort((a,b)=>a-b)[0]}
 function sortHtml(p){const S=SORT_SRC,soc=[...new Set(p.ev.map(e=>e.s))];
   let h=`<div class="sortie-box"><div class="sortie-h">🍄 Sortie de société mycologique</div><b>${esc(p.nom)}</b>`;
@@ -1795,7 +1849,7 @@ function sortHtml(p){const S=SORT_SRC,soc=[...new Set(p.ev.map(e=>e.s))];
   return h+`<div class="small sortie-note">Contour bleu : forêts dans un rayon d'environ ${p.r>=1500?"1,5 km":p.r>=1200?"1,2 km":"1 km"} du lieu, où la société cherche.</div></div>`}
 function sortInside(p,ll){let n=0;for(const R of p.rings){for(let i=0,j=R.length-1;i<R.length;j=i++){const [ya,xa]=R[i],[yb,xb]=R[j];
   if((ya>ll.lat)!==(yb>ll.lat)&&ll.lng<(xb-xa)*(ll.lat-ya)/(yb-ya)+xa)n++}}return n%2===1}
-function sortAt(ll){if(!sortLayer||!map.hasLayer(sortLayer))return "";return SORT_P.filter(p=>sortInside(p,ll)).map(sortHtml).join("")}
+function sortAt(ll){if(!sortLayer||!map.hasLayer(sortLayer))return "";return SORT_P.filter(sortVis).filter(p=>sortInside(p,ll)).map(sortHtml).join("")}
 function openSortie(p){const ll=L.latLng(p.lat,p.lon),h=`<div class="pp">${sortHtml(p)}</div>`;
   if(NARROW.matches){map.closePopup();showSheet(h,ll);return}closeSheet();L.popup({maxWidth:320,autoPanPadding:[20,20],offset:[0,-8]}).setLatLng(ll).setContent(h).openOn(map)}
 // attendre que le rechargement de la région (qui ferme les fiches) soit fini
@@ -1803,19 +1857,22 @@ function sortWhenIdle(p,t){setTimeout(()=>{if(regionBusy)return sortWhenIdle(p,2
 function setupSorties(){
   const sec=$("sec-sorties");if(!SORT_P.length){if(sec)sec.hidden=true;return}
   sortLayer=L.layerGroup();
-  SORT_P.forEach(p=>{
+  const sortBuild=()=>{sortLayer.clearLayers();SORT_P.filter(sortVis).forEach(p=>{
     L.polygon(p.rings,{renderer:VEC,color:"#0b2a6f",weight:1,opacity:1,fill:false,interactive:false}).addTo(sortLayer);
     L.marker([p.lat,p.lon],{icon:L.divIcon({className:"",html:`<span class="sortie-pin" title="${esc(p.nom)}">🍄</span>`,iconSize:[22,22],iconAnchor:[11,11]}),keyboard:false})
-      .bindTooltip(`${esc(p.nom)} · sortie de société mycologique`).on("click",ev=>{L.DomEvent.stop(ev);openSortie(p)}).addTo(sortLayer)});
+      .bindTooltip(`${esc(p.nom)} · sortie de société mycologique`).on("click",ev=>{L.DomEvent.stop(ev);openSortie(p)}).addTo(sortLayer)});};sortBuild();
   let on=true;try{on=localStorage.getItem("champi-sorties")!=="0"}catch(e){}
   $("o-sorties").checked=on;if(on&&COMM.on)sortLayer.addTo(map);
   $("o-sorties").onchange=e=>{try{localStorage.setItem("champi-sorties",e.target.checked?"1":"0")}catch(x){}if(e.target.checked&&!COMM.on)setComm(true);else syncComm()};
-  const list=[...SORT_P].sort((a,b)=>sortNextOf(a)-sortNextOf(b));
+  const sortListR=()=>{const list=SORT_P.filter(sortVis).sort((a,b)=>sortNextOf(a)-sortNextOf(b));
   $("sortie-list").innerHTML=list.map(p=>{const n=sortNextOf(p),th=p.ev.find(e=>sortNext(e.d).getTime()===n.getTime())||p.ev[0];
     return `<button class="sortie-item" data-sortie="${p.id}"><span class="sortie-pin" aria-hidden="true">🍄</span><span><b>${esc(p.nom)}</b><span class="small">${sortFmt(n)}${n.getFullYear()>2026?" (date probable)":""} · ${esc(th.th)}</span></span></button>`}).join("");
   document.querySelectorAll("[data-sortie]").forEach(b=>b.onclick=()=>{const p=SORT_P.find(x=>x.id===b.dataset.sortie);if(!p)return;
     if(!map.hasLayer(sortLayer)){$("o-sorties").checked=true;try{localStorage.setItem("champi-sorties","1")}catch(x){}if(!COMM.on)setComm(true);else syncComm()}
-    map.once("moveend",()=>sortWhenIdle(p));map.fitBounds(L.latLngBounds(p.rings.flat()).pad(.1),{maxZoom:15})});
+    map.once("moveend",()=>sortWhenIdle(p));map.fitBounds(L.latLngBounds(p.rings.flat()).pad(.1),{maxZoom:15})});};sortListR();
+  {const cnt={};SORT_P.forEach(p=>[...new Set(p.ev.map(e=>e.s))].forEach(s=>cnt[s]=(cnt[s]||0)+1));
+   const box=$("soc-list");if(box){box.innerHTML=Object.keys(SORT_SRC).filter(k=>cnt[k]).map(k=>`<label class="chk"><input type="checkbox" data-soc="${k}"${SOC_OFF.has(k)?"":" checked"}> <span>${esc(SORT_SRC[k].soc)} <span class="small">(${cnt[k]} lieu${cnt[k]>1?"x":""})</span></span></label>`).join("");
+     box.querySelectorAll("[data-soc]").forEach(c=>c.onchange=()=>{if(c.checked)SOC_OFF.delete(c.dataset.soc);else SOC_OFF.add(c.dataset.soc);try{localStorage.setItem("champi-soc-off",JSON.stringify([...SOC_OFF]))}catch(e){}sortBuild();sortListR();syncComm()})}}
 }
 /* ---------- bouton « Communauté » : affiche ou masque d'un coup les sources communautaires cochées dans les options
    (sorties des sociétés mycologiques, observations iNaturalist) ---------- */
@@ -1860,7 +1917,7 @@ function updateLegend(){
   const el=$("legend");
   if(state.sp!=="multi"){el.innerHTML=`<span class="sw" style="background:var(--s-top)"></span><span>Très élevé : le meilleur quart de la classe élevée (4 % des forêts de la carte)</span><span class="sw" style="background:var(--s-high)"></span><span>Élevé : au-dessus du seuil de l'espèce (15 % des forêts de la carte, très élevé compris)</span><span class="sw" style="background:var(--s-mid)"></span><span>Moyen : les 25 % suivants</span><span class="sw" style="background:var(--s-low)"></span><span>Faible : le reste des forêts</span>`;return}
   let h="";for(let k=MULTI_MAX;k>=2;k--){const a=MULTI_COLORS[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${MULTI_LAB[k]}</span>`}
-  el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Le reste des forêts. Points par espèce affichée : 3 en très élevé, 2 en élevé, 1 en moyen.</span>`;
+  el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Le reste des forêts</span>`;
 }
 // nombre de relevés SwissFungi de l'espèce dans les mailles de la carte, selon le curseur d'ancienneté
 function fsCount(fs){const col=YR_IDX[state.yr];let n=0;for(const k in fs.squares){const a=fs.squares[k];if(a&&a[col])n+=a[col]}return n}
@@ -1874,7 +1931,7 @@ function renderSpeciesList(){
   const date=seasonDate(),multi=state.sp==="multi";
   $("sp-box").hidden=multi;$("t-multi").setAttribute("aria-pressed",multi);$("t-sp").setAttribute("aria-pressed",!multi);
   const TN=["toutes catégories","stars","bons comestibles","comestibles intéressants"][state.tier];
-  $("t-help").textContent=multi?`Nombre d'espèces (${TN}) en classe élevée au même endroit, de 2 à 4 et plus.`:"Choisissez une espèce pour voir ses forêts favorables.";
+  $("t-help").textContent=multi?`Concentration d'espèces (${TN}) au même endroit : 3 points par espèce en très élevé, 2 en élevé, 1 en moyen.`:"Choisissez une espèce pour voir ses forêts favorables.";
   document.querySelectorAll("#tiers [data-tier]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.tier===state.tier));
   const TL=SPECIES.filter(inTier),nIn=TL.filter(inSeason).length;
   $("tier-off").hidden=!(state.seasonOnly&&nIn===0&&state.sp!=="multi");
@@ -1901,7 +1958,13 @@ function showTierInfo(t){
   el.hidden=false;
 }
 // menu « Réglages » : ouverture depuis le panneau ou le bouton de la carte
-function openMenu(open){const m=$("menu-pop");m.hidden=open===undefined?!m.hidden:!open;if(!m.hidden)fillSpFilter()}
+let menuPg=0;
+function menuGo(k){const P=[...document.querySelectorAll("#menu-pop .menu-page")];if(!P.length)return;menuPg=(k+P.length)%P.length;P.forEach((p,j)=>p.hidden=j!==menuPg);$("menu-toc").value=menuPg;$("menu-pop").scrollTop=0}
+function openMenu(open,page){const m=$("menu-pop");m.hidden=open===undefined?!m.hidden:!open;
+  if(!m.hidden){fillSpFilter();if(page!=null){const P=[...document.querySelectorAll("#menu-pop .menu-page")],k=typeof page==="number"?page:P.findIndex(p=>p.id===page);if(k>=0)menuGo(k)}}}
+function menuSetup(){const P=[...document.querySelectorAll("#menu-pop .menu-page")];
+  $("menu-toc").innerHTML=P.map((p,k)=>`<option value="${k}">${esc(p.dataset.t)}</option>`).join("");
+  $("menu-toc").onchange=e=>menuGo(+e.target.value);$("menu-prev").onclick=()=>menuGo(menuPg-1);$("menu-next").onclick=()=>menuGo(menuPg+1);menuGo(0)}
 const TIER_NAMES=["","★ Stars","Bons comestibles","Comestibles intéressants"];
 function fillSpFilter(){
   const box=$("sp-filter");if(!box)return;
@@ -2224,7 +2287,7 @@ const TOUR=[
   {m:"pied",el:"#sec-sorties",t:"Les sorties des sociétés",b:"Les forêts entourées de bleu foncé et les 🍄 sont les lieux de rendez-vous des sociétés mycologiques. Touche-les pour la date, le thème et l'inscription. Les dates de l'an prochain sont estimées : vérifie le programme de la société."},
   {m:"cepe",el:"#sec-coins",t:"Tes coins secrets",b:"« ＋ Nouveau coin » : ta position GPS ou un point sur la carte, le champignon, la date et une photo. Ils restent sur ton téléphone ; tu peux les partager si tu veux."},
   {m:"pied",el:"#sec-warn",t:"Cueillette responsable",b:"Lis cet encadré avant de partir : règles de cueillette, réserves et horaires. Ne cueille que ce que tu connais parfaitement !"},
-  {m:"girolle",el:"#tour-btn",t:"Bonne cueillette !",b:"Tu peux revoir ce guide à tout moment avec le bouton « ? Guide ». À toi de jouer !"}];
+  {m:"girolle",el:".menu-btn",t:"Bonne cueillette !",b:"Tout le reste est dans le menu ☰ : régions, espèces affichées, couches, alertes, et « Météo et outils » pour revoir ce guide. À toi de jouer !"}];
 let tourEl=null,tourI=0;
 function tourPlace(){if(!tourEl)return;const st=TOUR[tourI],ring=tourEl.querySelector(".tour-ring"),card=tourEl.querySelector(".tour-card");
   const t=st.el&&document.querySelector(st.el);const vh=innerHeight;
@@ -2325,52 +2388,116 @@ function nearName(lat,lng,maxC){const P=PLACES_G||(meta.clab||[]).map(([n,a,b])=
 function alMsg(t,warn){const el=$("al-msg");if(!el)return;el.hidden=!t;el.textContent=t||"";el.className="small"+(warn?" bk-warn":"")}
 const alSpName=id=>id==="any"?"Toutes les espèces":(SPECIES.find(s=>s.id===id)||{fr:id}).fr;
 const r5=x=>Math.round(x*1e5)/1e5;
-function alWhereOpts(){
-  const o=[],v=map.getBounds(),c=v.getCenter();
-  if(AL.forest)o.push(AL.forest);
-  o.push({k:"view",name:"Vue actuelle, autour de "+(nearName(c.lat,c.lng,2)||"la carte"),b:[[r5(v.getSouth()),r5(v.getWest())],[r5(v.getNorth()),r5(v.getEast())]]});
-  areasOf().forEach(a=>o.push({k:"area",name:"Toute la zone "+(a.short||a.name),b:a.bounds}));
-  state.coins.forEach(cn=>{if(isFinite(cn.lat))o.push({k:"coin",name:"Coin « "+cn.name+" » et 500 m autour",c:[r5(cn.lat),r5(cn.lng)],r:500})});
-  return o}
-// la vue actuelle suit la carte tant que le formulaire est ouvert
-function alSyncView(){if($("al-form").hidden)return;const k=AL.opts.findIndex(w=>w.k==="view");if(k<0)return;
-  const v=map.getBounds(),c=v.getCenter();AL.opts[k]={k:"view",name:"Vue actuelle, autour de "+(nearName(c.lat,c.lng,2)||"la carte"),b:[[r5(v.getSouth()),r5(v.getWest())],[r5(v.getNorth()),r5(v.getEast())]]};
-  const o=$("al-where").querySelector(`option[value="${k}"]`);if(o)o.textContent=AL.opts[k].name}
+/* ---- formulaire d'alerte en 6 étapes (menu ☰ › Alertes) ----
+   Une alerte = lieu + saison + événement (concentration ou espèces) + rythme d'envoi. Le brouillon complet est gardé dans a.d ;
+   a.sp, a.thr et a.day restent remplis pour l'ancien évaluateur. */
+const AL_SEA=[["early","Espèces précoces","mars à mai"],["summer","Été","juin à août"],["fall1","Début d'automne","septembre à mi-octobre"],["fall2","Fin d'automne","mi-octobre à novembre"],["winter","Hiver","décembre à février"],["all","Toutes","toute l'année"]];
+const AL_LEV=[[4,"Très élevée"],[3,"Élevée"],[2,"Moyenne"],[1,"Basse"]];
+const AL_STAGE=[["start","Début de saison (plus de 25 %)"],["max","Maximum de saison (100 %)"],["any","Indifférent (seulement les conditions présentes sur la carte)"]];
+const AL_COND=[["2","Moyen"],["3","Élevé"],["4","Très élevé"],["season","Seulement la saison"]];
+const AL_STEPS=["Nom","Région","Saison","Événement","Détails","Envoi"];
+const AL_TIERN={1:"★ Stars",2:"Bons comestibles",3:"Intéressants"};
+function alDraft(){return {name:"Alerte "+(AL.list.length+1),where:{k:"map",name:"Toute la carte active",b:meta.bounds},sea:["all"],kind:"conc",lev:[4,3],tiers:[1,2,3],sp:[],stage:["any"],cond:["3","4"],freq:"daily",wday:1,at:"meteo",time:"13:45"}}
+function alCommunes(){const P=PLACES_G||(meta.clab||[]).map(([n,a,b])=>[n,a,b,1]);return P.filter(p=>p[3]<=2).sort((a,b)=>a[0].localeCompare(b[0],"fr"))}
+function alViewT(){const v=map.getBounds(),c=v.getCenter();return {k:"view",name:"Fenêtre capturée, autour de "+(nearName(c.lat,c.lng,2)||"la carte"),b:[[r5(v.getSouth()),r5(v.getWest())],[r5(v.getNorth()),r5(v.getEast())]]}}
+const alList=(a,f)=>a.length?a.map(f).join(", "):"—";
+function alSummary(d){
+  const sea=d.sea.includes("all")?"toutes saisons":alList(d.sea,s=>(AL_SEA.find(x=>x[0]===s)||[0,s])[1].toLowerCase());
+  const ev=d.kind==="sp"?(d.sp.length===1?alSpName(d.sp[0]):d.sp.length+" espèces"):"concentration "+alList(d.lev,l=>(AL_LEV.find(x=>x[0]===l)||[0,l])[1].toLowerCase());
+  const fq=d.freq==="daily"?"tous les jours":d.freq==="weekly"?"le "+AL_DAYS[d.wday]:"à la prochaine occasion";
+  return `${d.where.name} · ${ev} · ${sea} · ${fq}, ${d.at==="meteo"?"après la météo":"vers "+d.time}`}
+function alOpen(edit,step){
+  AL.edit=edit==null?-1:edit;
+  if(AL.edit>=0){const a=AL.list[AL.edit];AL.draft=Object.assign(alDraft(),a.d||{where:a.t,name:a.name||alSpName(a.sp)})}
+  else{AL.draft=alDraft();if(AL.forest)AL.draft.where=AL.forest}
+  AL.step=step||0;$("al-form").hidden=false;alRender()}
 function alertForest(lat,lng,z){
-  const n=nearName(lat,lng,3);AL.forest={k:"forest",name:"Forêt cliquée"+(n?", près de "+n:""),c:[r5(lat),r5(lng)],z};alOpen();
-  $("sec-alerts").scrollIntoView({behavior:"smooth",block:"start"})}
-function alOpen(){
-  AL.opts=alWhereOpts();
-  $("al-sp").innerHTML=SPECIES.map(x=>`<option value="${x.id}">${esc(x.fr)}</option>`).join("")+`<option value="any">Toutes les espèces</option>`;
-  $("al-sp").value=state.sp!=="multi"?state.sp:"any";
-  $("al-where").innerHTML=AL.opts.map((w,k)=>`<option value="${k}">${esc(w.name)}</option>`).join("");
-  $("al-form").hidden=false;if(typeof openPanel==="function")openPanel()}
+  const n=nearName(lat,lng,3);AL.forest={k:"forest",name:"Forêt touchée"+(n?", près de "+n:""),c:[r5(lat),r5(lng)],z};alOpen(-1,1);openMenu(true,"menu-al")}
+function alRender(){
+  const f=$("al-form"),d=AL.draft,s=AL.step,chk=(n,v,on,l)=>`<label class="chk"><input type="checkbox" data-f="${n}" value="${v}"${on?" checked":""}> <span>${l}</span></label>`,
+    rad=(n,v,on,l,dis)=>`<label class="chk"><input type="radio" name="alf-${n}" data-f="${n}" value="${v}"${on?" checked":""}${dis?" disabled":""}> <span>${l}</span></label>`;
+  let b="";
+  if(s===0)b=`<label class="cf-l">Nom de l'alerte<input id="alf-name" type="text" maxlength="60" autocomplete="off" value="${esc(d.name)}"></label>`;
+  else if(s===1){const k=d.where.k;
+    b=`<div class="cf-l">Région surveillée</div>`+rad("wk","map",k==="map","Toute la carte active")+
+      rad("wk","commune",k==="commune",`Une commune <select id="alf-com" class="coin-sel">${alCommunes().map(p=>`<option value="${esc(p[0])}"${d.where.k==="commune"&&d.where.name==="Commune : "+p[0]?" selected":""}>${esc(p[0])}</option>`).join("")}</select>`)+
+      rad("wk","forest",k==="forest","Une forêt"+(AL.forest?" : "+esc(AL.forest.name):' <span class="small">(touchez une forêt sur la carte, puis « 🔔 Alerte pour cette forêt » dans sa fiche)</span>'),!AL.forest&&k!=="forest")+
+      rad("wk","view",k==="view",`Capturer une fenêtre <button class="btn" id="alf-cap" type="button">Capturer la vue actuelle</button>`)+
+      rad("wk","gps",k==="gps",`Placer un point GPS <input id="alf-gps" type="text" inputmode="decimal" placeholder="46.4712, 6.8523" value="${k==="gps"?d.where.c.join(", "):""}" style="width:9.5em"> <button class="btn" id="alf-loc" type="button">📡</button>`)+
+      `<p class="small" style="margin:6px 0 0">Choix actuel : <b>${esc(d.where.name)}</b></p>`}
+  else if(s===2)b=`<div class="cf-l">Saison</div>`+AL_SEA.map(([k,l,m])=>chk("sea",k,d.sea.includes(k),`${l} <span class="small">(${m})</span>`)).join("");
+  else if(s===3)b=`<div class="cf-l">Type d'événement</div>`+rad("kind","conc",d.kind==="conc","Forte concentration d'espèces")+rad("kind","sp",d.kind==="sp","Sélection d'espèces");
+  else if(s===4){
+    if(d.kind==="conc")b=`<div class="cf-l">Niveau de concentration</div>`+AL_LEV.map(([k,l])=>chk("lev",k,d.lev.includes(k),l)).join("")+`<div class="cf-l" style="margin-top:8px">Catégories</div>`+[1,2,3].map(t=>chk("tiers",t,d.tiers.includes(t),AL_TIERN[t])).join("");
+    else b=`<div class="cf-l">Champignons</div><div class="al-sp">`+[1,2,3].map(t=>`<div class="sub-h">${AL_TIERN[t]}</div>`+SPECIES.filter(x=>x.tier===t).map(x=>chk("sp",x.id,d.sp.includes(x.id),`${esc(x.fr)}`)).join("")).join("")+`</div>`+
+      `<div class="cf-l" style="margin-top:8px">Stade de la saison</div>`+AL_STAGE.map(([k,l])=>chk("stage",k,d.stage.includes(k),l)).join("")+
+      `<div class="cf-l" style="margin-top:8px">Conditions présentes sur la carte</div>`+AL_COND.map(([k,l])=>chk("cond",k,d.cond.includes(k),l)).join("")}
+  else b=`<div class="cf-l">Fréquence</div>`+rad("freq","daily",d.freq==="daily","Tous les jours")+rad("freq","weekly",d.freq==="weekly",`Une fois par semaine, le <select id="alf-wd" class="coin-sel">${[1,2,3,4,5,6,0].map(x=>`<option value="${x}"${x===d.wday?" selected":""}>${AL_DAYS[x]}</option>`).join("")}</select>`)+rad("freq","next",d.freq==="next","À la prochaine occasion (dès que les conditions sont remplies, puis l'alerte s'arrête)")+
+    `<div class="cf-l" style="margin-top:8px">Heure d'envoi</div>`+rad("at","meteo",d.at==="meteo","Après la mise à jour de MétéoSuisse (vers 13 h 45)")+rad("at","time",d.at==="time",`Heure précise <input id="alf-time" type="time" value="${d.time}">`)+
+    `<p class="small al-recap"><b>Résumé</b> : ${esc(d.name)} · ${esc(alSummary(d))}</p>`;
+  const last=s===AL_STEPS.length-1;
+  f.innerHTML=`<div class="al-nav"><button class="mh-btn" type="button" data-alnav="-1" aria-label="Étape précédente"${s?"":" disabled"}>‹</button><div class="al-toc">${AL_STEPS.map((t,k)=>`<button type="button" class="al-chip${k===s?" on":""}" data-alstep="${k}">${k+1}. ${t}</button>`).join("")}</div><button class="mh-btn" type="button" data-alnav="1" aria-label="Étape suivante"${last?" disabled":""}>›</button></div>`+
+    `<div class="al-title">${AL.edit>=0?"Modifier l'alerte":"Nouvelle alerte"} · étape ${s+1} sur ${AL_STEPS.length}</div><div class="al-body">${b}</div>`+
+    `<div class="row al-foot"><button class="btn primary" type="button" id="al-next">${last?"Enregistrer":"Suivant ›"}</button><button class="btn" type="button" id="al-cancel">Annuler</button><span style="flex:1"></span>${AL.edit>=0?'<button class="btn cf-del" type="button" id="al-del">Supprimer</button>':""}</div>`;
+  const go=k=>{AL.step=Math.max(0,Math.min(AL_STEPS.length-1,k));alRender()};
+  f.querySelectorAll("[data-alnav]").forEach(x=>x.onclick=()=>go(s+ +x.dataset.alnav));f.querySelectorAll("[data-alstep]").forEach(x=>x.onclick=()=>go(+x.dataset.alstep));
+  $("al-next").onclick=()=>last?alSave():go(s+1);$("al-cancel").onclick=()=>{$("al-form").hidden=true;AL.forest=null};
+  if($("al-del"))$("al-del").onclick=()=>{AL.list.splice(AL.edit,1);$("al-form").hidden=true;renderAlerts();alPush()};
+  const nm=$("alf-name");if(nm)nm.oninput=()=>{d.name=nm.value};
+  const setWhere=()=>{const k=(f.querySelector('[data-f="wk"]:checked')||{}).value;
+    if(k==="map")d.where={k:"map",name:"Toute la carte active",b:meta.bounds};
+    else if(k==="commune"){const p=alCommunes().find(x=>x[0]===$("alf-com").value);if(p)d.where={k:"commune",name:"Commune : "+p[0],c:[r5(p[1]),r5(p[2])],r:2500}}
+    else if(k==="forest"&&AL.forest)d.where=AL.forest;
+    else if(k==="view")d.where=alViewT();
+    else if(k==="gps")alGps()};
+  const alGps=()=>{const m=String($("alf-gps").value).match(/(-?\d+(?:[.,]\d+)?)[\s,;]+(-?\d+(?:[.,]\d+)?)/);if(!m)return;const la=+m[1].replace(",","."),lo=+m[2].replace(",",".");
+    if(la>45&&la<48.5&&lo>5&&lo<11)d.where={k:"gps",name:"Point GPS "+r5(la)+", "+r5(lo),c:[r5(la),r5(lo)],r:500}};
+  f.querySelectorAll('[data-f="wk"]').forEach(x=>x.onchange=()=>{setWhere();alRender()});
+  if($("alf-com"))$("alf-com").onchange=()=>{f.querySelector('[data-f="wk"][value="commune"]').checked=true;setWhere();alRender()};
+  if($("alf-cap"))$("alf-cap").onclick=()=>{d.where=alViewT();alRender()};
+  if($("alf-gps"))$("alf-gps").onchange=()=>{alGps();alRender()};
+  if($("alf-loc"))$("alf-loc").onclick=()=>{if(!navigator.geolocation){alMsg("Position GPS indisponible ici : collez des coordonnées.",true);return}
+    navigator.geolocation.getCurrentPosition(p=>{$("alf-gps").value=r5(p.coords.latitude)+", "+r5(p.coords.longitude);alGps();alRender()},()=>alMsg("Position refusée ou introuvable : collez des coordonnées.",true),{timeout:15000})};
+  const arr={sea:"sea",lev:"lev",tiers:"tiers",sp:"sp",stage:"stage",cond:"cond"};
+  f.querySelectorAll("input[type=checkbox][data-f]").forEach(x=>x.onchange=()=>{const n=arr[x.dataset.f];let v=x.value;if(n==="lev"||n==="tiers")v=+v;
+    const a=d[n];if(x.checked){if(!a.includes(v))a.push(v)}else{const k=a.indexOf(v);if(k>=0)a.splice(k,1)}
+    if(n==="sea"){if(x.checked&&v==="all")d.sea=["all"];else if(x.checked)d.sea=d.sea.filter(y=>y!=="all");else if(!d.sea.length)d.sea=["all"];alRender()}
+    if(n==="stage"&&x.checked&&v==="any"){d.stage=["any"];alRender()}
+    if(n==="stage"&&x.checked&&v!=="any"){d.stage=d.stage.filter(y=>y!=="any");alRender()}});
+  f.querySelectorAll('input[type=radio][data-f="kind"],input[type=radio][data-f="freq"],input[type=radio][data-f="at"]').forEach(x=>x.onchange=()=>{d[x.dataset.f]=x.value;alRender()});
+  if($("alf-wd"))$("alf-wd").onchange=()=>{d.wday=+$("alf-wd").value;d.freq="weekly";alRender()};
+  if($("alf-time"))$("alf-time").onchange=()=>{d.time=$("alf-time").value||"13:45";d.at="time";alRender()}}
 async function alPush(){
   try{localStorage.setItem("champi-alerts",JSON.stringify(AL.list))}catch(e){}
-  if(!AL.ref){alMsg("Alerte gardée sur cet appareil seulement : connectez-vous à claude.ai pour qu'elle soit envoyée par e-mail.",true);return}
+  if(!AL.ref){alMsg("Alerte gardée sur cet appareil. L'envoi des e-mails est suspendu pour le moment.",true);return}
   try{await AL.ref.set({list:AL.list,at:Date.now()});alMsg("🔔 Alertes enregistrées.")}
   catch(e){alMsg("Alertes non enregistrées en ligne ("+(e&&e.code||"erreur")+"). Réessayez plus tard.",true)}}
 function alSave(){
-  alSyncView();const w=AL.opts[+$("al-where").value];if(!w)return;
-  const a={id:"a"+Date.now().toString(36),sp:$("al-sp").value,thr:+$("al-thr").value,day:+$("al-day").value,on:true,t:w,map:meta.title||document.title,created:localToday()};
-  AL.list.push(a);AL.forest=null;$("al-form").hidden=true;renderAlerts();alPush()}
+  const d=AL.draft;if(!d.name.trim())d.name="Alerte";
+  if(d.kind==="conc"&&(!d.lev.length||!d.tiers.length)){alMsg("Cochez au moins un niveau et une catégorie.",true);AL.step=4;alRender();return}
+  if(d.kind==="sp"&&!d.sp.length){alMsg("Cochez au moins un champignon.",true);AL.step=4;alRender();return}
+  const lv=d.kind==="conc"?Math.min(...d.lev):Math.min(4,...d.cond.filter(x=>x!=="season").map(Number)),old=AL.edit>=0?AL.list[AL.edit]:null;
+  const a={id:old?old.id:"a"+Date.now().toString(36),on:old?old.on:true,name:d.name.trim(),t:d.where,sp:d.kind==="sp"&&d.sp.length===1?d.sp[0]:"any",thr:lv>=4?4:3,day:d.freq==="weekly"?d.wday:5,map:meta.title||document.title,created:old?old.created:localToday(),d:JSON.parse(JSON.stringify(d))};
+  if(old)AL.list[AL.edit]=a;else AL.list.push(a);
+  AL.forest=null;$("al-form").hidden=true;alMsg("");renderAlerts();alPush();$("al-listbox").open=true}
 function renderAlerts(){
-  const box=$("alerts");if(!box)return;
-  if(!AL.list.length){box.innerHTML=`<p class="small" style="margin:0">Aucune alerte. Vous pouvez aussi toucher une forêt, puis « 🔔 Alerte pour cette forêt » dans sa fiche.</p>`;return}
-  box.innerHTML=AL.list.map((a,k)=>`<div class="coin" style="grid-template-columns:auto 1fr auto auto"><span class="th ph" aria-hidden="true">${a.on?"🔔":"🔕"}</span>
-    <span><b>${esc(alSpName(a.sp))}</b><span class="cm">${esc(a.t.name)}</span><span class="cm">${AL_DAYS[a.day]} vers 13 h 45 · ${a.thr>=4?"très élevé":"élevé ou plus"}${a.on?"":" · en pause"}</span></span>
+  const box=$("alerts");if(!box)return;$("al-count").textContent=AL.list.length?"("+AL.list.length+")":"";
+  if(!AL.list.length){box.innerHTML=`<p class="small" style="margin:6px 0 0">Aucune alerte. Vous pouvez aussi toucher une forêt, puis « 🔔 Alerte pour cette forêt » dans sa fiche.</p>`;return}
+  box.innerHTML=AL.list.map((a,k)=>{const d=a.d||{where:a.t,sea:["all"],kind:"sp",sp:[a.sp],lev:[],freq:"weekly",wday:a.day,at:"meteo",time:"13:45"};
+    return `<div class="coin al-row" style="grid-template-columns:auto 1fr auto auto"><span class="th ph" aria-hidden="true">${a.on?"🔔":"🔕"}</span>
+    <span><b>${esc(a.name||alSpName(a.sp))}</b><span class="cm al-sum">${esc(alSummary(d))}${a.on?"":" · en pause"}</span></span>
     <button class="ed" data-alon="${k}" title="${a.on?"Mettre en pause":"Réactiver"}" aria-label="${a.on?"Mettre en pause":"Réactiver"}">${a.on?"⏸":"▶"}</button>
-    <button class="ed" data-aldel="${k}" title="Supprimer" aria-label="Supprimer l'alerte">✕</button></div>`).join("");
+    <button class="ed" data-aledit="${k}" title="Configurer l'alerte" aria-label="Configurer l'alerte">⚙</button></div>`}).join("");
   box.querySelectorAll("[data-alon]").forEach(b=>b.onclick=()=>{const a=AL.list[+b.dataset.alon];a.on=!a.on;renderAlerts();alPush()});
-  box.querySelectorAll("[data-aldel]").forEach(b=>b.onclick=()=>{AL.list.splice(+b.dataset.aldel,1);renderAlerts();alPush()})}
+  box.querySelectorAll("[data-aledit]").forEach(b=>b.onclick=()=>alOpen(+b.dataset.aledit,0))}
 async function setupAlerts(){
-  $("al-day").innerHTML=[1,2,3,4,5,6,0].map(d=>`<option value="${d}"${d===5?" selected":""}>${AL_DAYS[d][0].toUpperCase()+AL_DAYS[d].slice(1)}</option>`).join("");
   try{AL.list=JSON.parse(localStorage.getItem("champi-alerts")||"[]")||[]}catch(e){AL.list=[]}
   renderAlerts();
-  $("al-add").onclick=()=>{AL.forest=null;alOpen()};$("al-cancel").onclick=()=>{$("al-form").hidden=true;AL.forest=null};$("al-save").onclick=alSave;map.on("moveend",alSyncView);
-  if(!window.claude||!window.claude.use){alMsg("Les alertes e-mail fonctionnent quand la carte est ouverte sur claude.ai, connecté à votre compte.");return}
+  $("al-add").onclick=()=>{AL.forest=null;alOpen(-1,0)};
+  $("al-i").onclick=()=>{const i=$("al-info");i.hidden=!i.hidden;$("al-i").setAttribute("aria-expanded",!i.hidden)};
+  if(!window.claude||!window.claude.use){alMsg("Les alertes sont gardées sur cet appareil. L'envoi des e-mails est suspendu pour le moment.");return}
   let db=null,user=null,uid=null;try{[db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);uid=user&&await user.id()}catch(e){}
-  if(!db||!uid){alMsg("Connectez-vous à claude.ai pour recevoir les alertes par e-mail.");return}
+  if(!db||!uid){alMsg("Les alertes sont gardées sur cet appareil. L'envoi des e-mails est suspendu pour le moment.");return}
   const ref=db.doc("data/users/"+uid+"/alerts");
   try{const s=await ref.get();AL.ref=ref;const r=s&&s.exists?s.data():null;
     if(r&&Array.isArray(r.list)){AL.list=r.list;try{localStorage.setItem("champi-alerts",JSON.stringify(AL.list))}catch(e){}renderAlerts()}
@@ -2557,14 +2684,38 @@ function cellCantons(){const key=meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows
   fill((r,c)=>r*W+c,W,H);fill((c,r)=>r*W+c,H,W);
   return cantArr=C}
 function cellCanton(i){const C=cellCantons();return CANT_CODES[C[i]]||null}
+// critère des hachures rouges : massif forestier d'au moins 10 ha, à plus de 1 km du bord d'une zone bâtie (village) et de 2 km de celui d'une ville.
+// Bord de zone bâtie = forêt à moins de 100 m d'une localité (G.fx = 2) ; ville = bord situé à moins de 3 km du centre d'une localité de classe 0 ou 1 (places.json).
+let huntGeoArr=null,huntGeoKey="";
+function huntGeo(){
+  const key=meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntGeoKey&&huntGeoArr)return huntGeoArr;huntGeoKey=key;
+  const W=meta.cols,H=meta.rows,n=W*H,res=meta.res,fx=G.fx;
+  const lab=new Int32Array(n),sz=[0],st=new Int32Array(n);let nl=0;
+  for(let s=0;s<n;s++){if(!fx[s]||lab[s])continue;nl++;let top=0,cnt=0;st[top++]=s;lab[s]=nl;
+    while(top){const i=st[--top];cnt++;const r=(i/W)|0,c=i-r*W;
+      for(let dr=-1;dr<=1;dr++){const rr=r+dr;if(rr<0||rr>=H)continue;for(let dc=-1;dc<=1;dc++){const cc=c+dc;if(cc<0||cc>=W)continue;const j=rr*W+cc;if(fx[j]&&!lab[j]){lab[j]=nl;st[top++]=j}}}}
+    sz.push(cnt)}
+  const minC=100000/(res*res);
+  const cities=(PLACES_G||(meta.clab||[]).map(([nm,a,b])=>[nm,a,b,1])).filter(p=>p[3]<=1).map(p=>{const q=L.CRS.EPSG3857.project(L.latLng(p[1],p[2]));return [q.x,q.y]});
+  const R2=3000*3000,BIG=60000,D1=new Uint16Array(n).fill(BIG),D2=new Uint16Array(n).fill(BIG);
+  for(let i=0;i<n;i++){if(fx[i]!==2)continue;D1[i]=0;const r=(i/W)|0,c=i-r*W,x=meta.x0+(c+.5)*res,y=meta.y1-(r+.5)*res;
+    if(cities.some(([a,b])=>(a-x)**2+(b-y)**2<R2))D2[i]=0}
+  const chamfer=D=>{for(let r=0;r<H;r++)for(let c=0;c<W;c++){const i=r*W+c;let v=D[i];
+      if(c>0&&D[i-1]+3<v)v=D[i-1]+3;if(r>0){if(D[i-W]+3<v)v=D[i-W]+3;if(c>0&&D[i-W-1]+4<v)v=D[i-W-1]+4;if(c<W-1&&D[i-W+1]+4<v)v=D[i-W+1]+4}D[i]=v}
+    for(let r=H-1;r>=0;r--)for(let c=W-1;c>=0;c--){const i=r*W+c;let v=D[i];
+      if(c<W-1&&D[i+1]+3<v)v=D[i+1]+3;if(r<H-1){if(D[i+W]+3<v)v=D[i+W]+3;if(c<W-1&&D[i+W+1]+4<v)v=D[i+W+1]+4;if(c>0&&D[i+W-1]+4<v)v=D[i+W-1]+4}D[i]=v}};
+  chamfer(D1);chamfer(D2);
+  const u1=1000/res*3,u2=2000/res*3,ok=new Uint8Array(n);
+  for(let i=0;i<n;i++)if(fx[i]&&sz[lab[i]]>=minC&&D1[i]>=u1&&D2[i]>=u2)ok[i]=1;
+  return huntGeoArr=ok}
 function huntBuild(){
-  const ds=seasonDate(),key=ds+"|"+state.excl+state.resp+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows;if(key===huntKey)return;huntKey=key;huntDay=ds;
-  const n=meta.cols*meta.rows,C=cellCantons(),on=CANT_CODES.map(c=>!!(c&&huntColl(c,ds).length)),onI=CANT_CODES.map(c=>!!(c&&huntOn(c,ds).length)),FR_=cellFree(),cants=new Set();let any=false;
+  const ds=seasonDate(),key=ds+"|"+state.excl+state.resp+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntKey)return;huntKey=key;huntDay=ds;
+  const n=meta.cols*meta.rows,C=cellCantons(),on=CANT_CODES.map(c=>!!(c&&huntColl(c,ds).length)),onI=CANT_CODES.map(c=>!!(c&&huntOn(c,ds).length)),FR_=cellFree(),HG=huntGeo(),cants=new Set();let any=false;
   if(!huntMask){huntMask=document.createElement("canvas");huntMaskI=document.createElement("canvas")}
   huntMask.width=huntMaskI.width=meta.cols;huntMask.height=huntMaskI.height=meta.rows;
   const cx=huntMask.getContext("2d"),img=cx.createImageData(meta.cols,meta.rows),px=img.data,cxI=huntMaskI.getContext("2d"),imgI=cxI.createImageData(meta.cols,meta.rows),pxI=imgI.data;let anyI=false;
   for(let i=0;i<n;i++){const f=G.fx[i];if(!f||!C[i])continue;cants.add(CANT_CODES[C[i]]);if(f===4||FR_[i]||!usable(i))continue;
-    if(on[C[i]]){px[i*4+3]=255;any=true}else if(onI[C[i]]){pxI[i*4+3]=255;anyI=true}}
+    if(on[C[i]]&&HG[i]){px[i*4+3]=255;any=true}else if(onI[C[i]]){pxI[i*4+3]=255;anyI=true}}
   cx.putImageData(img,0,0);cxI.putImageData(imgI,0,0);huntMask.any=any;huntMaskI.any=anyI;huntMask.cants=cants}
 const HuntLayer=L.Layer.extend({
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";m.getPane("hunt").appendChild(this._c);
@@ -2596,14 +2747,15 @@ function huntUpdate(){if(!map||!G)return;try{huntBuild()}catch(e){console.warn(e
       :`Pas de chasse le ${esc(fmtDate(ds))}${K.has("FR")?" (Vaud et Fribourg)":" (Vaud)"}.`}}
 // avertissement dans le coin de la carte : chasse ouverte ce jour-là dans un canton de la carte (calendrier cantonal)
 let huntCtl=null;
+function huntInfo(){const m=$("hunt-modal");m.hidden=!m.hidden}
 function huntBadge(ds,c){
-  if(!huntCtl){huntCtl=L.control({position:"topright"});huntCtl.onAdd=()=>{const d=L.DomUtil.create("button","hunt-badge");d.type="button";
-      L.DomEvent.disableClickPropagation(d);d.onclick=()=>{const e=$("hunt-day");if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.classList.add("flash");setTimeout(()=>e.classList.remove("flash"),1600)}};return d};huntCtl.addTo(map)}
-  const d=huntCtl.getContainer(),open=["VD","FR"].filter(k=>c[k].length),bat=open.filter(k=>c[k].some(l=>!HUNT_INDIV.test(l)));
-  if(!open.length||ds>HUNT_END){d.hidden=true;return}d.hidden=false;
+  if(!huntCtl){huntCtl=L.control({position:"topright"});huntCtl.onAdd=()=>{const w=L.DomUtil.create("div","hunt-wrap");
+      w.innerHTML='<button type="button" class="hunt-badge"></button><button type="button" class="hunt-i" aria-label="Informations sur la chasse" title="Informations sur la chasse">i</button>';
+      L.DomEvent.disableClickPropagation(w);w.querySelectorAll("button").forEach(b=>b.onclick=huntInfo);return w};huntCtl.addTo(map)}
+  const w=huntCtl.getContainer(),d=w.querySelector(".hunt-badge"),open=["VD","FR"].filter(k=>c[k].length),bat=open.filter(k=>c[k].some(l=>!HUNT_INDIV.test(l)));
+  if(!open.length||ds>HUNT_END){w.hidden=true;return}w.hidden=false;
   const nm={VD:"Vaud",FR:"Fribourg"};
-  d.innerHTML=`⚠ Chasse ouverte le ${esc(fmtDate(ds))}<small>${esc(open.map(k=>nm[k]).join(" et "))}${bat.length?" · battues possibles":" · chasse individuelle seulement"}</small>`;
-  d.title="Calendrier cantonal : détails dans la légende. Forêts hachurées = battues ou chasse en équipe prévues ce jour-là."}
+  d.innerHTML=`⚠ Chasse le ${esc(fmtDate(ds))}<small>${esc(open.map(k=>nm[k]).join(" et "))}${bat.length?" · battues":" · individuelle"}</small>`}
 // encadré de la fiche d'un lieu, les jours de chasse
 function huntBox(i){const c=G.fx[i]?cellCanton(i):null,ds=seasonDate();if(!c||G.fx[i]===4)return "";
   if(c==="VS"||c==="NE")return "";const fz=cellFree()[i];
@@ -2626,7 +2778,7 @@ function setupVapko(){const b=L.latLngBounds(meta.bounds||regionLL()).pad(.15);
     .bindPopup(`<div class="pp"><h3>Contrôle des champignons · ${esc(p.n)}</h3><p style="margin:4px 0">${esc(p.a)}</p><p style="margin:4px 0"><b>${esc(p.h)}</b></p>${itinLink(p.ll[0],p.ll[1])}<p class="small" style="margin:6px 0 0">Horaires lus le 16 novembre 2026 ; ceux de 2027 ne sont pas encore publiés. <a href="${p.src}" target="_blank" rel="noopener">Source</a> · <a href="https://www.vapko.ch/index.php/fr/lieux-et-places-de-controle" target="_blank" rel="noopener">tous les lieux (VAPKO)</a></p></div>`,{maxWidth:300})));
   const sync=()=>{const v=$("o-vapko").checked;if(v&&!map.hasLayer(vapkoLayer))vapkoLayer.addTo(map);else if(!v&&map.hasLayer(vapkoLayer))map.removeLayer(vapkoLayer)};
   $("o-vapko").onchange=()=>{saveLay();sync()};sync();
-  $("o-hunt").onchange=$("o-hunti").onchange=()=>{saveLay();huntUpdate()}}
+  $("o-hunti").checked=$("o-hunt").checked;$("o-hunt").onchange=()=>{$("o-hunti").checked=$("o-hunt").checked;saveLay();huntUpdate()}}
 /* ---------- ma position en temps réel : point bleu, précision, centrer, suivi, boussole ---------- */
 // 1er appui : démarre le GPS et suit la position. Glisser la carte arrête le suivi (le point reste).
 // Appui suivant : recentre et reprend le suivi ; appui quand déjà centré et suivi : arrête la localisation.
@@ -2689,7 +2841,7 @@ function setupGeoloc(){map.createPane("loc").style.zIndex=650;
       else if(!LOC.follow){LOC.follow=true;if(LOC.ll)map.setView(LOC.ll,Math.max(map.getZoom(),15));locUi()}
       else locStop()});
     return d}});
-  new Ctl().addTo(map);
+  {const c=new Ctl().addTo(map),zr=document.querySelector(".zl-row");if(zr)zr.appendChild(c.getContainer())}
   map.on("dragstart",()=>{if(LOC.follow){LOC.follow=false;locUi()}});
   try{LOC.blocked=localStorage.getItem("locBlocked")==="1"}catch(e){}
   locUi()}
@@ -2910,7 +3062,7 @@ async function boot(){
 
   loadLay();
   const b=L.latLngBounds(meta.bounds);  // emprise des données préparées
-  map=L.map("map",{minZoom:8,maxZoom:18,zoomControl:true,attributionControl:true}).fitBounds(L.latLngBounds(meta.view||meta.bounds));
+  map=L.map("map",{minZoom:8,maxZoom:18,zoomControl:false,attributionControl:true}).fitBounds(L.latLngBounds(meta.view||meta.bounds));
   const attr='© <a href="https://www.swisstopo.admin.ch" target="_blank" rel="noopener">swisstopo</a> · MétéoSuisse · SwissFungi/WSL · OFEV';
   // une couche pour les petits zooms (11-13, toute l'emprise) puis une par zone, agrandie par Leaflet au-delà de son zoom maximal
   // carte nationale sur écran haute résolution : tuiles du zoom suivant affichées à demi-taille,
@@ -2931,7 +3083,11 @@ async function boot(){
     L.DomEvent.disableClickPropagation(d);return d}});
   map.addControl(new RegionCtl());
   // boutons d'affichage, petits et alignés en bas de la carte
-  {const v=L.DomUtil.create("div","view-btns",map.getContainer());v.innerHTML=`<button class="btn" id="base-btn" title="Basculer entre photo aérienne et carte nationale">🗺 Carte</button><button class="btn" id="best-btn" aria-pressed="false" title="Met en évidence le lieu le plus favorable dans la partie visible de la carte">★ Meilleur lieu</button><button class="btn" id="geo-btn" aria-pressed="false" title="Courbes de niveau, falaises, cours d'eau, routes, chemins, arrêts de transports publics et parkings (visibles en zoomant)">⛰ Géographie</button>`;L.DomEvent.disableClickPropagation(v);L.DomEvent.disableScrollPropagation(v)}
+  {const v=L.DomUtil.create("div","view-btns",map.getContainer());v.innerHTML=`<button class="btn" id="base-btn" title="Basculer entre photo aérienne et carte nationale">🗺 Carte</button><button class="btn" id="best-btn" aria-pressed="false" title="Met en évidence le lieu le plus favorable dans la partie visible de la carte">★ Meilleur lieu</button><button class="btn" id="geo-btn" aria-pressed="false" title="Courbes de niveau, falaises, cours d'eau, routes, chemins, arrêts de transports publics et parkings (visibles en zoomant)">⛰ Géographie</button>`;
+    const z=L.DomUtil.create("div","zl-row",v),zb=L.DomUtil.create("div","leaflet-bar zl-zoom",z);
+    [["+","Zoom avant",()=>map.zoomIn()],["−","Zoom arrière",()=>map.zoomOut()]].forEach(([t,l,f])=>{const a=L.DomUtil.create("a","",zb);a.href="#";a.setAttribute("role","button");a.title=l;a.setAttribute("aria-label",l);a.textContent=t;
+      L.DomEvent.on(a,"click",e=>{L.DomEvent.preventDefault(e);f()})});
+    L.DomEvent.disableClickPropagation(v);L.DomEvent.disableScrollPropagation(v)}
   $("load-region").onclick=reloadRegion;
   document.querySelectorAll("[data-area]").forEach(bt=>bt.onclick=()=>{const a=areasOf()[+bt.dataset.area];
     map.once("moveend",()=>reloadRegion(a));map.fitBounds(a.view||a.bounds)});
@@ -2949,8 +3105,8 @@ async function boot(){
   VEC=L.canvas({padding:.3});
   sqLayer=L.layerGroup().addTo(map);obsLayer=L.layerGroup().addTo(map);coinLayer=L.layerGroup().addTo(map);
   $("o-obs").onchange=renderObs;
-  {const MenuCtl=L.Control.extend({options:{position:"topleft"},onAdd(){const b=L.DomUtil.create("button","menu-btn");b.type="button";b.textContent="☰ Menu";b.setAttribute("aria-label","Ouvrir les réglages");L.DomEvent.disableClickPropagation(b);b.onclick=()=>openMenu();return b}});new MenuCtl().addTo(map)}
-  document.querySelectorAll("[data-menu]").forEach(b=>b.onclick=()=>openMenu(true));$("menu-x").onclick=()=>openMenu(false);
+  {const MenuCtl=L.Control.extend({options:{position:"topleft"},onAdd(){const b=L.DomUtil.create("button","menu-btn");b.type="button";b.textContent="☰ Menu";b.setAttribute("aria-label","Ouvrir le menu");L.DomEvent.disableClickPropagation(b);b.onclick=()=>openMenu();return b}});new MenuCtl().addTo(map)}
+  menuSetup();$("menu-x").onclick=()=>openMenu(false);$("hunt-x").onclick=()=>{$("hunt-modal").hidden=true};
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("menu-pop").hidden)openMenu(false)});
   L.control.scale({imperial:false}).addTo(map);
   // couches secondaires, branchées à leur arrivée
@@ -2990,7 +3146,7 @@ async function boot(){
       if(boxes.some(q=>r[0]<q[2]&&r[2]>q[0]&&r[1]<q[3]&&r[3]>q[1]))continue;boxes.push(r);
       h+=`<div class="plab pc${c}" style="left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px">${esc(n)}</div>`}
     plBox.innerHTML=h};
-  fetch("places.json",NC).then(r=>r.ok?r.json():null).then(p=>{if(p){PLACES=PLACES_G=p;syncClab()}else{PLACES=(meta.clab||[]).map(([n,la,lo])=>[n,la,lo,1]);syncClab()}}).catch(()=>{});
+  fetch("places.json",NC).then(r=>r.ok?r.json():null).then(p=>{if(p){PLACES=PLACES_G=p;syncClab();try{huntUpdate()}catch(e){}}else{PLACES=(meta.clab||[]).map(([n,la,lo])=>[n,la,lo,1]);syncClab()}}).catch(()=>{});
   map.on("moveend",syncClab);
   map.on("zoomend",syncClab);
   const setBase=k=>{state.base=k;saveState();setTimeout(syncClab,0);Object.entries(bases).forEach(([n,l])=>{if(n===k)l.addTo(map);else map.removeLayer(l)});$("b-carte").setAttribute("aria-pressed",k==="carte");$("b-ortho").setAttribute("aria-pressed",k==="ortho");const bb=$("base-btn");if(bb)bb.textContent=k==="ortho"?"🗺 Carte":"📷 Photo"};
