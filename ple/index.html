@@ -1626,8 +1626,13 @@ let canvas,ctx,imgData,overlay,map,currentClass,stats=[0,0,0,0,0];
 function classAt(i,sp,st,season){
   const a=st.SC[i];if(a===255)return 255;
   if(state.mode!=="now")return a;
-  return wAdj(a,weatherW(i,sp,season));
+  return nowCls(a,weatherW(i,sp,season));
 }
+// conditions du moment : pourcentage de l'aptitude maximale du lieu (saison et météo optimales) ; seuls les terrains au moins moyens sont colorés
+const NOW_T=[.45,.6,.75,.9];
+const nowCls=(a,W)=>a<2?0:W>=NOW_T[3]?4:W>=NOW_T[2]?3:W>=NOW_T[1]?2:W>=NOW_T[0]?1:0;
+const NOW_COLORS=[null,[255,214,0,170],[255,105,180,200],[255,120,0,225],[30,60,220,250]];
+const NOW_LAB=["","Jaune : plus de 45 % de l'aptitude maximale","Rose : plus de 60 %","Orange : plus de 75 %","Bleu : plus de 90 %"];
 let zoneNow=null; // {W, cls} par zone pour le rendu courant
 let multiCls=null,multiCache=null;  // classes par espèce en mode forte concentration
 function classesFor(sp){
@@ -1641,12 +1646,11 @@ function classesFor(sp){
     if(now){for(let i=0;i<n;i++){const z=G.zone[i];if(z&&st.P[i]!==P_NONE)zW[z]+=weatherW(i,sp,season)}}
     for(let z=1;z<nz;z++){if(st.zone.P[z]<0){zcls[z]=255;continue}
       if(now)zW[z]/=st.zone.count[z];
-      zcls[z]=now?wAdj(st.zone.cls[z],zW[z]):st.zone.cls[z]}
+      zcls[z]=now?nowCls(st.zone.cls[z],zW[z]):st.zone.cls[z]}
   }
   for(let i=0;i<n;i++){
     const z=G.zone[i];
     let k=(state.view==="zone"&&z&&st.P[i]!==P_NONE)?zcls[z]:classAt(i,sp,st,season);
-    if(now&&k===4&&seasonAt(i)<SEASON_CAP)k=3;
     C[i]=k;
   }
   return {C,zone:{W:zW,cls:zcls}};
@@ -1680,7 +1684,7 @@ function renderInner(){
     const sp=SPECIES.find(s=>s.id===state.sp);const r=classesFor(sp);zoneNow=r.zone;multiCls=null;
     const C=currentClass=r.C;
     for(let i=0;i<n;i++){const k=C[i];if(k===255)continue;stats[k]++;
-      const c=COLORS[k];if(c){const o=i*4;px[o]=c[0];px[o+1]=c[1];px[o+2]=c[2];px[o+3]=Math.min(255,c[3]*ALPHA_BOOST)}}
+      const c=(state.mode==='now'?NOW_COLORS:COLORS)[k];if(c){const o=i*4;px[o]=c[0];px[o+1]=c[1];px[o+2]=c[2];px[o+3]=Math.min(255,c[3]*ALPHA_BOOST)}}
     const tot=stats.reduce((a,b)=>a+b,0)||1;
     $("stats").textContent=`Forêts de la région chargée : ${Math.round(100*stats[4]/tot)} % en très élevé, ${Math.round(100*(stats[3]+stats[4])/tot)} % en élevé ou très élevé, ${Math.round(100*stats[2]/tot)} % en moyen (sur toute la carte : 4 %, 15 % et 25 %).`;
   }else{
@@ -1705,7 +1709,7 @@ function renderInner(){
     multiCls=multiCache.per;const cnt=multiCache.cnt;
     currentClass=cnt;let tot=0,h3=0,h5=0;
     for(let i=0;i<n;i++){const c=cnt[i];if(c===255)continue;tot++;if(c>=3)h3++;if(c>=4)h5++;
-      if(c>=2){const col=MULTI_COLORS[c],o=i*4;px[o]=col[0];px[o+1]=col[1];px[o+2]=col[2];px[o+3]=Math.min(255,col[3]*ALPHA_BOOST)}}
+      if(c>=(state.mode==='now'?1:2)){const col=(state.mode==='now'?NOW_COLORS:MULTI_COLORS)[c],o=i*4;px[o]=col[0];px[o+1]=col[1];px[o+2]=col[2];px[o+3]=Math.min(255,col[3]*ALPHA_BOOST)}}
     const pc=v=>(100*v/(tot||1)).toFixed(1).replace(".",","),T=multiCache.thr;
     $("stats").textContent=`Points par forêt : 3 par espèce en très élevé, 2 en élevé, 1 en moyen. Plus de ${T[2]-1} points : très forte concentration ; plus de ${T[1]-1} : forte ; plus de ${T[0]-1} : moyenne (${pc(h5)} % et ${pc(h3)} % des forêts chargées en très forte et forte).`;
   }
@@ -1946,8 +1950,10 @@ function multiPopup(i,latlng){
 /* ---------- species list ---------- */
 function updateLegend(){
   const el=$("legend");
+  if(state.mode==="now"&&state.sp!=="multi"){let h="";for(let k=4;k>=1;k--){const a=NOW_COLORS[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${NOW_LAB[k]}</span>`}
+    el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Pas de couleur : moins de 45 % ou terrain peu favorable</span>`;return}
   if(state.sp!=="multi"){el.innerHTML=`<span class="sw" style="background:var(--s-top)"></span><span>Très élevé : le meilleur quart de la classe élevée (4 % des forêts de la carte)</span><span class="sw" style="background:var(--s-high)"></span><span>Élevé : au-dessus du seuil de l'espèce (15 % des forêts de la carte, très élevé compris)</span><span class="sw" style="background:var(--s-mid)"></span><span>Moyen : les 25 % suivants</span><span class="sw" style="background:var(--s-low)"></span><span>Faible : le reste des forêts</span>`;return}
-  let h="";for(let k=MULTI_MAX;k>=2;k--){const a=MULTI_COLORS[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${MULTI_LAB[k]}</span>`}
+  const nw=state.mode==="now";let h="";for(let k=MULTI_MAX;k>=(nw?1:2);k--){const a=(nw?NOW_COLORS:MULTI_COLORS)[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${nw&&k===1?"Concentration faible":MULTI_LAB[k]}</span>`}
   el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Le reste des forêts</span>`;
 }
 // nombre de relevés SwissFungi de l'espèce dans les mailles de la carte, selon le curseur d'ancienneté
