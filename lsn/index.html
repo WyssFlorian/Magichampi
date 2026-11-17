@@ -1232,7 +1232,7 @@ details.more[open]>summary{margin-bottom:4px}
     </div>
     <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
       <p class="small" id="hunt-day" style="margin:6px 0"></p>
-      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Seulement dans les massifs forestiers d'au moins 10 hectares (forêts contiguës, séparées de moins de 10 m), à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
+      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Sur les massifs forestiers entiers (forêts contiguës, séparées de moins de 10 m) d'au moins 10 hectares dont au moins 10 hectares sont à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
     </div>
     <div class="loading" id="loading">Chargement des données…</div>
     <div class="sheet" id="sheet" hidden role="dialog" aria-label="Fiche du lieu"><div class="sheet-head"><button class="grip" id="sheet-grip" aria-label="Agrandir ou réduire la fiche"><span id="sheet-grip-lab">agrandir</span></button><button class="x" id="sheet-x" aria-label="Fermer la fiche">✕</button></div><div class="sheet-body" id="sheet-body"></div></div>
@@ -2739,7 +2739,9 @@ function huntGeo(){
       if(c<W-1&&D[i+1]+3<v)v=D[i+1]+3;if(r<H-1){if(D[i+W]+3<v)v=D[i+W]+3;if(c<W-1&&D[i+W+1]+4<v)v=D[i+W+1]+4;if(c>0&&D[i+W-1]+4<v)v=D[i+W-1]+4}D[i]=v}};
   chamfer(D1);chamfer(D2);
   const u1=1000/res*3,u2=2000/res*3,ok=new Uint8Array(n);
-  for(let i=0;i<n;i++)if(fx[i]&&sz[lab[i]]>=minC&&D1[i]>=u1&&D2[i]>=u2)ok[i]=1;
+  // le critère s'applique au massif entier : s'il a au moins 10 ha de forêt assez loin des localités, tout le massif est retenu
+  const good=new Int32Array(nl+1);for(let i=0;i<n;i++)if(fx[i]&&D1[i]>=u1&&D2[i]>=u2)good[lab[i]]++;
+  for(let i=0;i<n;i++)if(fx[i]&&sz[lab[i]]>=minC&&good[lab[i]]>=minC)ok[i]=1;
   return huntGeoArr=ok}
 function huntBuild(){
   const ds=seasonDate(),key=ds+"|"+state.excl+state.acc+state.resp+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntKey)return;huntKey=key;huntDay=ds;
