@@ -1121,8 +1121,9 @@ details.more[open]>summary{margin-bottom:4px}
       <div class="menu-page" data-t="Champignons affichés" id="menu-sp"><h3>Champignons affichés</h3><p class="small" style="margin:4px 0 6px">Décochez les espèces que vous ne cherchez pas : elles disparaissent de la liste et de la forte concentration, et les seuils de concentration diminuent en proportion.</p><div id="sp-filter"></div></div>
       <div class="menu-page" data-t="Affichage et couches"><h3>Affichage, saison, fond de carte, couches</h3>
       <div class="seg" role="group" aria-label="Affichage" style="margin-top:10px">
-        <button id="v-zone" aria-pressed="true">Par zone de forêt</button>
-        <button id="v-cell" aria-pressed="false">Détail 25 m</button>
+        <button id="v-auto" aria-pressed="true">Auto</button>
+        <button id="v-zone" aria-pressed="false">Par zone</button>
+        <button id="v-cell" aria-pressed="false">Maillage fin</button>
       </div>
       <p class="small" id="view-help"></p>
       <label class="chk"><input type="checkbox" id="o-excl"> Afficher aussi les forêts exclues</label>
@@ -3175,9 +3176,16 @@ async function boot(){
   const dateLab=()=>{const k=fcKind(state.d);$("date-lab").textContent=fmtDate(meteo.dates[state.d])+(state.d===todayIdx()?" · aujourd'hui":"")+(k?" · "+k:"")};
   let tmr;dr.oninput=()=>{state.d=+dr.value;dateLab();clearTimeout(tmr);tmr=setTimeout(render,60)};
   dateLab();window.__dateLab=dateLab;$("upd-btn").onclick=refreshData;
-  const setView=v=>{state.view=v;saveState();$("v-zone").setAttribute("aria-pressed",v==="zone");$("v-cell").setAttribute("aria-pressed",v==="cell");
-    $("view-help").textContent=v==="zone"?"Chaque zone (bornée par les chemins, routes et paliers d'altitude de 150 m) prend la valeur de ses 20 % meilleures cellules.":"Chaque cellule de 25 m garde sa propre valeur.";rerender()};
-  $("v-zone").onclick=()=>setView("zone");$("v-cell").onclick=()=>setView("cell");
+  // affichage : maillage fin (25 m) ou zones de forêt ; en Auto, maillage fin dès que la largeur de l'écran couvre 1 km ou moins
+  const VP={p:"auto"};try{const v=localStorage.getItem("champi-view");if(v==="zone"||v==="cell"||v==="auto")VP.p=v}catch(e){}
+  const autoView=()=>{const c=map.getCenter(),mpp=156543.03392*Math.cos(c.lat*Math.PI/180)/Math.pow(2,map.getZoom());return mpp*map.getSize().x<=1000?"cell":"zone"};
+  const effView=()=>VP.p==="auto"?autoView():VP.p;
+  const setView=v=>{state.view=v;saveState();rerender()};
+  const viewBtns=()=>{["auto","zone","cell"].forEach(k=>$("v-"+k).setAttribute("aria-pressed",VP.p===k));
+    $("view-help").textContent=VP.p==="auto"?"Maillage fin (cellules de 25 m) quand l'écran couvre 1 km ou moins, zones de forêt au-delà.":VP.p==="zone"?"Chaque zone (bornée par les chemins, routes et paliers d'altitude de 150 m) prend la valeur de ses 20 % meilleures cellules.":"Chaque cellule de 25 m garde sa propre valeur."};
+  const applyViewPref=(pref,force)=>{VP.p=pref;try{localStorage.setItem("champi-view",pref)}catch(e){}viewBtns();const v=effView();if(force||v!==state.view)setView(v)};
+  $("v-auto").onclick=()=>applyViewPref("auto");$("v-zone").onclick=()=>applyViewPref("zone");$("v-cell").onclick=()=>applyViewPref("cell");
+  map.on("zoomend resize",()=>{if(VP.p==="auto"&&effView()!==state.view)setView(effView())});
   $("o-excl").onchange=e=>{state.excl=!e.target.checked;render()};
   const respHelp=()=>{$("resp-help").textContent=""};
   $("o-resp").checked=state.resp;respHelp();$("o-resp").onchange=e=>{state.resp=e.target.checked;saveState();respHelp();render()};
@@ -3222,8 +3230,8 @@ async function boot(){
   setupCoinForm();setupShare();setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
   $("tour-btn").onclick=tourStart;
   {let seen=null;try{seen=localStorage.getItem("champi-tour2")}catch(e){seen="?"}if(!seen)setTimeout(tourStart,1200)}
-  state.view=state.view||"zone";$("v-zone").setAttribute("aria-pressed",state.view==="zone");$("v-cell").setAttribute("aria-pressed",state.view==="cell");
-  setMode(state.mode);setView(state.view);
+  state.view=state.view||"zone";
+  setMode(state.mode);applyViewPref(VP.p,true);
   booted=true;render();
   $("loading").hidden=true;
 }
