@@ -1232,7 +1232,7 @@ details.more[open]>summary{margin-bottom:4px}
     </div>
     <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
       <p class="small" id="hunt-day" style="margin:6px 0"></p>
-      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Sur les massifs forestiers entiers (forêts contiguës, séparées de moins de 10 m) d'au moins 10 hectares dont au moins 10 hectares sont à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
+      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Sur les massifs forestiers entiers (forêts contiguës ; une bande boisée de moins de 50 m de large coupe le massif) d'au moins 10 hectares dont au moins 10 hectares sont à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
     </div>
     <div class="loading" id="loading">Chargement des données…</div>
     <div class="sheet" id="sheet" hidden role="dialog" aria-label="Fiche du lieu"><div class="sheet-head"><button class="grip" id="sheet-grip" aria-label="Agrandir ou réduire la fiche"><span id="sheet-grip-lab">agrandir</span></button><button class="x" id="sheet-x" aria-label="Fermer la fiche">✕</button></div><div class="sheet-body" id="sheet-body"></div></div>
@@ -2726,7 +2726,9 @@ function cellCanton(i){const C=cellCantons();return CANT_CODES[C[i]]||null}
 let huntGeoArr=null,huntGeoKey="";
 function huntGeo(){
   const key=meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntGeoKey&&huntGeoArr)return huntGeoArr;huntGeoKey=key;
-  const W=meta.cols,H=meta.rows,n=W*H,res=meta.res,fx=G.fx;
+  const W=meta.cols,H=meta.rows,n=W*H,res=meta.res,fx0=G.fx;
+  // bandes étroites (≈ 1 cellule, moins de 20-25 m) : elles coupent le massif. Ouverture morphologique 3×3 : on ne garde que les cellules faisant partie d'un bloc forestier 3×3 (bandes jusqu'à 50 m coupées)
+  const fx=new Uint8Array(n);for(let r=0;r<H-2;r++)for(let c=0;c<W-2;c++){const i=r*W+c;if(fx0[i]&&fx0[i+1]&&fx0[i+2]&&fx0[i+W]&&fx0[i+W+1]&&fx0[i+W+2]&&fx0[i+2*W]&&fx0[i+2*W+1]&&fx0[i+2*W+2]){for(let a=0;a<3;a++)for(let b=0;b<3;b++)fx[i+a*W+b]=1}}
   const GAP=Math.max(1,Math.round(10/res)),lab=new Int32Array(n),sz=[0],st=new Int32Array(n);let nl=0; // massif = forêts contiguës (séparées de moins de 10 m ; la grille fait 25 m : cellules voisines)
   for(let s=0;s<n;s++){if(!fx[s]||lab[s])continue;nl++;let top=0,cnt=0;st[top++]=s;lab[s]=nl;
     while(top){const i=st[--top];cnt++;const r=(i/W)|0,c=i-r*W;
@@ -2735,7 +2737,7 @@ function huntGeo(){
   const minC=100000/(res*res);
   const cities=(PLACES_G||(meta.clab||[]).map(([nm,a,b])=>[nm,a,b,1])).filter(p=>p[3]<=1).map(p=>{const q=L.CRS.EPSG3857.project(L.latLng(p[1],p[2]));return [q.x,q.y]});
   const R2=3000*3000,BIG=60000,D1=new Uint16Array(n).fill(BIG),D2=new Uint16Array(n).fill(BIG);
-  for(let i=0;i<n;i++){if(fx[i]!==2)continue;D1[i]=0;const r=(i/W)|0,c=i-r*W,x=meta.x0+(c+.5)*res,y=meta.y1-(r+.5)*res;
+  for(let i=0;i<n;i++){if(fx0[i]!==2)continue;D1[i]=0;const r=(i/W)|0,c=i-r*W,x=meta.x0+(c+.5)*res,y=meta.y1-(r+.5)*res;
     if(cities.some(([a,b])=>(a-x)**2+(b-y)**2<R2))D2[i]=0}
   const chamfer=D=>{for(let r=0;r<H;r++)for(let c=0;c<W;c++){const i=r*W+c;let v=D[i];
       if(c>0&&D[i-1]+3<v)v=D[i-1]+3;if(r>0){if(D[i-W]+3<v)v=D[i-W]+3;if(c>0&&D[i-W-1]+4<v)v=D[i-W-1]+4;if(c<W-1&&D[i-W+1]+4<v)v=D[i-W+1]+4}D[i]=v}
@@ -2746,7 +2748,10 @@ function huntGeo(){
   // le critère s'applique au massif entier : s'il a au moins 10 ha de forêt assez loin des localités, tout le massif est retenu
   const good=new Int32Array(nl+1);for(let i=0;i<n;i++)if(fx[i]&&D1[i]>=u1&&D2[i]>=u2)good[lab[i]]++;
   for(let i=0;i<n;i++)if(fx[i]&&sz[lab[i]]>=minC&&good[lab[i]]>=minC)ok[i]=1;
-  return huntGeoArr=ok}
+  // les cellules des bandes étroites suivent le massif voisin retenu
+  const ok2=ok.slice();for(let r=0;r<H;r++)for(let c=0;c<W;c++){const i=r*W+c;if(!fx0[i]||fx[i])continue;
+    for(let dr=-1;dr<=1&&!ok2[i];dr++){const rr=r+dr;if(rr<0||rr>=H)continue;for(let dc=-1;dc<=1;dc++){const cc=c+dc;if(cc>=0&&cc<W&&ok[rr*W+cc]){ok2[i]=1;break}}}}
+  return huntGeoArr=ok2}
 function huntBuild(){
   const ds=seasonDate(),key=ds+"|"+state.excl+state.acc+state.resp+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntKey)return;huntKey=key;huntDay=ds;
   const n=meta.cols*meta.rows,C=cellCantons(),on=CANT_CODES.map(c=>!!(c&&huntColl(c,ds).length)),onI=CANT_CODES.map(c=>!!(c&&huntOn(c,ds).length)),FR_=cellFree(),HG=huntGeo(),cants=new Set();let any=false;
