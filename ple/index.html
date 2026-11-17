@@ -1195,19 +1195,19 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Type de forêt : Carte des milieux naturels de Suisse (hêtraie acidophile, hêtraie à sapin, pinède, conifères d'altitude…), pondéré selon les milieux typiques de l'espèce. Cette carte est elle-même modélisée : elle peut se tromper localement.</li>
         <li>Essences : part de résineux du LFI (10 m), comparée aux hôtes de l'espèce. Quand le type de forêt est connu, ce facteur compte deux fois moins, pour ne pas compter deux fois la même information.</li>
         <li>Altitude : fourchette de chaque espèce calée sur l'altitude des relevés SwissFungi de la région.</li>
-        <li>Peuplement : hauteur de la végétation LFI 2025 (forêt adulte ou lisière ; léger avantage aux lisières pour le cèpe).</li>
+        <li>Peuplement : hauteur de la végétation LFI 2025 (forêt adulte ou lisière). Là où le type de forêt est inconnu, il compte pour la moyenne des types de forêt de l'espèce.</li>
         <li>Humidité : moitié humidité topographique (creux et bas de versant, calculée sur swissALTI3D), moitié bilan hydrique des stations forestières OFEV/WSL (avril-août, moyenne 2009-2018).</li>
         <li>Sol : roche et dépôts de surface de la carte géologique GeoCover (swisstopo, 1:25 000), classés de très acide à calcaire et comparés aux préférences de l'espèce. Les marais et glissements de terrain comptent aussi comme lieux plus humides. Là où GeoCover manque, l'atlas géochimique des sols (OFEV, 1 km) est utilisé.</li>
         <li>Présence connue : l'espèce est-elle signalée à SwissFungi dans la maille de 5 km (×1), une maille voisine (×0,93) ou pas du tout (×0,85) ? Le curseur « Relevés SwissFungi » limite ces relevés aux 2 ou 5 dernières années.</li>
         <li>Observations iNaturalist : affichées pour information et utilisées pour vérifier le modèle, mais elles n'entrent plus dans le score depuis le 16 nov. 2026 (licences souvent non commerciales).</li>
               </ul>
-      <p><b>Classes</b> : les seuils sont fixes pour chaque espèce. Ils ont été calculés sur toutes les forêts de cette carte : 15 % y sont en classe élevée et 25 % en moyenne. Le meilleur quart de la classe élevée (4 % des forêts) est affiché à part, en « très élevé » (bleu-violet). La classe d'un lieu ne change donc pas quand on déplace ou zoome la carte. Les seuils sont propres à chaque carte, car avec des seuils communs aux trois cartes, la région de Lausanne passait jusqu'à 60 % de ses forêts en classe élevée.</p>
-      <p><b>Conditions du moment</b> = aptitude × saison × eau du sol × température × gel. Une météo défavorable abaisse la classe d'un ou deux crans ; une météo très favorable (indice d'au moins 0,6) la relève d'un cran.</p>
+      <p><b>Classes</b> : les seuils sont fixes pour chaque espèce. Ils ont été calculés sur toutes les forêts de cette carte : 15 % y sont en classe élevée et 25 % en moyenne. Le meilleur quart de la classe élevée (4 % des forêts) est affiché à part, en « très élevé » (bleu-violet). La classe d'un lieu ne change donc pas quand on déplace ou zoome la carte. Attention : une classe est un rang parmi les forêts de la carte, pas une probabilité de trouver l'espèce. « Très élevé » veut dire « parmi les 4 % de forêts les plus favorables de cette carte ». Les seuils sont propres à chaque carte, car avec des seuils communs aux trois cartes, la région de Lausanne passait jusqu'à 60 % de ses forêts en classe élevée.</p>
+      <p><b>Conditions du moment</b> = aptitude × saison (renforcée : exposant 1,6 sur la fréquence des relevés) × eau du sol × température × gel. Une météo défavorable abaisse la classe d'un ou deux crans ; une météo très favorable (indice d'au moins 0,6) la relève d'un cran.</p>
       <ul>
         <li>Saison : répartition mensuelle des 1 000 à 5 000 relevés suisses de l'espèce, décalée d'une semaine plus tôt par 250 m au-dessus de 600 m (au plus 4 semaines). Le filtre « champignons de saison » utilise l'altitude médiane des forêts affichées.</li>
         <li>Eau du sol : réserve d'un sol de 60 mm, remplie par la pluie et vidée par l'évaporation (estimée avec la température et l'ensoleillement), en moyenne du 14ᵉ au 3ᵉ jour avant la date, puis corrigée sur place selon l'humidité du lieu (relief, bilan hydrique, géologie). Quand le sol est sec, les versants nord sont favorisés.</li>
         <li>Température : température du sol à 10 cm, estimée chaque jour à partir de la température de l'air (modèle calé sur la station MétéoSuisse d'Aigle, erreur moyenne 0,8 °C en automne), corrigée de l'altitude et de l'exposition ; l'effet de l'exposition dépend de l'ensoleillement des 10 derniers jours.</li>
-        <li>Gel : nuits sous −2 °C des 7 derniers jours.</li>
+        <li>Gel : somme des degrés sous 0 °C des nuits des 7 derniers jours, divisée par 3 (une nuit à −3 °C compte comme une nuit de gel, une nuit à −6 °C comme deux).</li>
       </ul>
       <p><b>Zones de forêt</b> : la forêt est découpée par les routes et chemins (swissTLM3D) et par paliers d'altitude de 150 m ; les grandes zones sont recoupées en carrés d'environ 600 m. Une zone prend la valeur de ses 20 % meilleures cellules, pour ne pas noyer un bon coin dans une grande zone moyenne.</p>
       <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte.</p>
@@ -1394,7 +1394,6 @@ function hostF(c,pref,soft){
   }
 }
 function standF(h,edge,pref,id){
-  if(id==="edulis"&&pref==="mature")return standF(h,edge,pref)*(edge<=40?1:.9);
   if(pref==="edge"){const e=edge<=30?1:edge>=150?.45:1-.55*(edge-30)/120;const o=h<14?1:.75;return e*o}
   if(pref==="any")return h<2?.4:1;
   return h<3?.2:h>=15?1:.2+.8*(h-3)/12;
@@ -1487,7 +1486,9 @@ const HAB={comatus:[1,1,.5,.6,.5,.8,.5,.5,.4],edulis:[1,.3,1,.8,1,.7,.6,1,.9],ci
   sparassis:[1,.2,.6,.4,.7,.4,1,.9,.6],virescens:[1,.3,1,.9,.8,1,.5,.4,.2],prunulus:[1,.5,.9,.9,.9,.9,.8,.9,.7],amethystina:[1,.4,1,.9,1,.8,.6,.9,.8],
   ostreatus:[1,1,.7,.9,.7,1,.3,.3,.2],erythropus:[1,.2,1,.8,1,.7,.6,1,.9],cylindracea:[1,1,0.3,0.5,0.3,0.9,0.2,0.2,0.1],glutinosus:[1,0.1,0.5,0.3,0.8,0.3,0.8,1,1],laccata:[1,0.5,0.9,0.9,1,0.8,0.7,0.9,0.8],bicolor:[1,0.2,0.6,0.4,0.9,0.4,0.8,1,1],sordida:[1,0.9,0.5,0.8,0.6,1,0.6,0.6,0.4],polioleuca:[1,0.6,0.7,0.9,0.8,1,0.8,0.8,0.6],decastes:[1,0.8,0.7,0.9,0.8,1,0.6,0.6,0.4],varius:[1,0.1,0.4,0.6,1,0.4,0.5,1,1],praestans:[1,0.2,0.6,1,0.9,0.8,0.4,0.4,0.2],capnoides:[1,0.1,0.5,0.3,0.9,0.3,0.8,1,1],ostoyae:[1,0.3,0.6,0.5,0.9,0.5,0.8,1,0.9],mastoidea:[1,0.7,0.8,0.9,0.8,1,1,0.8,0.7],vesca:[1,0.3,1,0.9,0.9,1,0.5,0.6,0.3],aurea:[1,0.3,0.7,1,0.9,1,0.4,0.4,0.2],turci:[1,0.1,0.3,0.2,0.4,0.3,1,0.9,0.8],vinosa:[1,0.1,0.3,0.2,0.8,0.2,0.5,0.9,1],decolorans:[1,0.1,0.3,0.2,0.7,0.2,0.6,0.9,1],paludosa:[1,0.1,0.3,0.2,0.7,0.2,0.6,0.9,1],mustelina:[1,0.1,0.3,0.2,0.8,0.2,0.5,0.9,1],integra:[1,0.1,0.3,0.2,0.8,0.2,0.5,0.9,1],clavatus:[1,0.1,0.4,0.6,1,0.3,0.4,0.9,0.8],imbricatus:[1,0.1,0.3,0.2,0.8,0.2,0.6,1,1],umbellatus:[1,0.4,0.6,1,0.8,1,0.4,0.3,0.2],bovinus:[1,0.1,0.3,0.2,0.4,0.3,1,0.9,0.7],grevillei:[1,0.1,0.3,0.2,0.5,0.2,0.5,0.9,1],viscidus:[1,0.1,0.3,0.2,0.5,0.2,0.5,0.9,1],luteus:[1,0.2,0.3,0.2,0.4,0.3,1,0.9,0.7],luridus:[1,0.3,0.6,1,0.8,1,0.6,0.4,0.2]};
 let LITE=false;
-const habF=(i,sp)=>{if(LITE)return 1;const t=HAB[sp.id];return t&&G.hab?t[G.hab[i]]||1:1};
+// 17.11.2026 : type de forêt inconnu = moyenne des 8 types connus pour l'espèce (et non plus 1, valeur optimale)
+const HAB0={};
+const habF=(i,sp)=>{if(LITE)return 1;const t=HAB[sp.id];if(!t||!G.hab)return 1;const h=G.hab[i];if(h)return t[h]||1;let m=HAB0[sp.id];if(m==null){m=0;for(let k=1;k<9;k++)m+=t[k];m=HAB0[sp.id]=m/8}return m};
 function aptAt(i,sp,r,ob){
   const c=LITE||G.conif[i]===255?NaN:G.conif[i]/100;
   return habF(i,sp)*hostF(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*trap2(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
@@ -1570,13 +1571,14 @@ let STAB=null,STKEY="";
 function seasonTab(sp,dateStr){const k=sp.id+dateStr;if(k!==STKEY){STAB=new Float32Array(41);for(let b=0;b<=40;b++)STAB[b]=seasonF(sp.key,dateStr,b*100+50);STKEY=k}return STAB}
 const seasonAt=i=>STAB[Math.max(0,Math.min(40,(G.dem[i]/100)|0))];
 // 17.11.2026 : la saison pèse davantage dans les conditions du moment (exposant 1,6 sur l'indice de saison affiché)
-const seasonW=s=>Math.pow(s,1.6);
+// l'indice affiché vaut déjà (relevés)^0,7 : l'exposant 1,6/0,7 donne bien (relevés)^1,6 (avant : (relevés)^1,12 seulement)
+const seasonW=s=>Math.pow(s,1.6/.7);
 const soilW=(w,i)=>{const north=SOUTH?-SOUTH[i]/.8:0,dry=1-w.soil;return Math.min(1,(.15+.85*clamp((w.soil-.35)/.45,0,1))*(1+.3*north*dry))};
 function weatherAt(i,sp,d,season){
   const m=G.midx[i],w=wcache[m];season=seasonAt(i);
   const lapse=-.0055*(G.dem[i]-meteo.dem[m]);
   const T=w.ts-1.77+SOUTH[i]*(.4+1.2*w.sun)+lapse;  // température du sol ramenée à l'échelle de l'air ; effet de l'exposition selon l'ensoleillement
-  let fd=0;const tn=w.tn;for(let k=0;k<tn.length;k++)if(tn[k]+lapse<-2)fd++;
+  let fd=0;const tn=w.tn;for(let k=0;k<tn.length;k++)fd+=Math.max(0,-(tn[k]+lapse))/3;fd=Math.round(fd*10)/10;  // gel : somme des degrés sous 0 °C ÷ 3 (une nuit à −3 °C = 1, à −6 °C = 2)
   const rainF=soilW2(w,i),tempF=Math.max(.05,trap(T,sp.temp)),frostF=Math.pow(sp.frost,fd);
   return {W:seasonW(season)*rainF*tempF*frostF,rain:w.rain,soil:w.soil,T,fd,rainF,tempF,frostF,season};
 }
@@ -1585,7 +1587,7 @@ function weatherW(i,sp,season){
   const m=G.midx[i],w=wcache[m];season=seasonAt(i);
   const lapse=-.0055*(G.dem[i]-meteo.dem[m]);
   const T=w.ts-1.77+SOUTH[i]*(.4+1.2*w.sun)+lapse;  // température du sol ramenée à l'échelle de l'air ; effet de l'exposition selon l'ensoleillement
-  let fd=0;const tn=w.tn;for(let k=0;k<tn.length;k++)if(tn[k]+lapse<-2)fd++;
+  let fd=0;const tn=w.tn;for(let k=0;k<tn.length;k++)fd+=Math.max(0,-(tn[k]+lapse))/3;
   return seasonW(season)*soilW2(w,i)*Math.max(.05,trap(T,sp.temp))*(fd?Math.pow(sp.frost,fd):1);
 }
 let wcache=[],wcacheKey="";
@@ -1795,7 +1797,7 @@ function popupHtml(latlng){
   const S0=`<div class="pp"><h3>${sp.fr}</h3><div class="meta">${info.dem} m</div>`+placeHtml(i);
   let h=`<div class="pp"><h3>${sp.fr}</h3><div class="meta">${info.dem} m · pente ${info.sl}° · ${ASP[Math.round(info.asp/45)%8]} · ${E.toLocaleString("fr-CH")} / ${N.toLocaleString("fr-CH")}</div>`+placeHtml(i);
   const blk=blockReason(sp.id);if(blk)return null;
-  if(state.resp&&G.fx[i]===4)return null;
+  if(state.resp&&G.fx[i]===4){const m=`<p><b>Cueillette interdite</b> : forêt dans une réserve naturelle, un marais protégé ou la zone centrale du Parc naturel du Jorat (OParcs art. 23). Zone grisée tant que « Cueillette responsable » est cochée.</p></div>`;return {short:S0+m,full:h+m}}
   if(info.A<0){
     const ex=G.fx[i]-1;const isF=inForest(i);
     const m=isF&&state.acc&&SHOOT&&SHOOT[i]?`<p>Zone de tir militaire : masquée par le filtre « Accès libre seulement ».</p></div>`:isF&&ex>0&&state.excl?`<p>Forêt exclue : ${EX_LAB[ex]}. Cochez « Afficher aussi les forêts exclues » pour l'afficher.</p></div>`:`<p>Pas de forêt ici (ou couverture forestière trop faible). Le score n'est calculé qu'en forêt.</p></div>`;
@@ -1832,7 +1834,7 @@ function popupHtml(latlng){
     h+=fxRow("Saison",w.season,`fréquence de l'espèce à cette période, décalée de ${Math.round(-seasonShift(info.dem))} jours pour l'altitude`);
     h+=fxRow("Eau du sol",w.rainF,`réserve estimée ${Math.round(w.soil*100)} % entre J−14 et J−3 (pluie ${Math.round(w.rain)} mm de J−16 à J−3, moins l'évaporation)${w.soil<.6?" ; versants nord favorisés":""}`);
     h+=fxRow("Température",w.tempF,`${w.T.toFixed(1)} °C : température du sol estimée, corrigée de l'altitude et de l'exposition`);
-    h+=fxRow("Gel",w.frostF,`${w.fd} nuit(s) sous −2 °C sur 7 jours`);
+    h+=fxRow("Gel",w.frostF,`${String(w.fd).replace(".",",")} nuit(s) de gel à −3 °C (somme des degrés sous 0 °C sur 7 jours, ÷ 3)`);
   }
   h+=`</div>`;
   if(w){h+=`<hr>${rainSvg(G.midx[i])}`}
@@ -1847,6 +1849,8 @@ const SORT_P=[{"id":"bret","nom":"Lac de Bret (Puidoux)","lat":46.5137,"lon":6.7
 
 // seuils (60 %, 85 %, 96 % des forêts de la carte) des espèces ajoutées après la préparation des données (16.11.2026)
 const MAP_THR_EXTRA={comatus:[0.3360,0.4648,0.8378],cylindracea:[0.0202,0.1775,0.3461],glutinosus:[0.3439,0.4682,0.6775],laccata:[0.8127,0.9206,1.0056],bicolor:[0.3676,0.5153,0.7046],sordida:[0.1948,0.4625,0.6369],polioleuca:[0.4367,0.5913,0.6938],decastes:[0.1592,0.3488,0.5187],varius:[0.3318,0.5597,0.8574],praestans:[0.1579,0.4299,0.6986],capnoides:[0.3742,0.4980,0.7314],ostoyae:[0.4052,0.5416,0.7452],mastoidea:[0.2406,0.5344,0.6679],vesca:[0.3485,0.6191,0.8677],aurea:[0.3955,0.6193,0.8143],turci:[0.2214,0.3547,0.6528],vinosa:[0.2248,0.4571,0.7722],decolorans:[0.2241,0.4198,0.6078],paludosa:[0.2354,0.4202,0.6103],mustelina:[0.2144,0.4576,0.7413],integra:[0.2590,0.5342,0.8186],clavatus:[0.3154,0.4807,0.6999],imbricatus:[0.2274,0.4860,0.7746],umbellatus:[0.2334,0.4437,0.6787],bovinus:[0.1499,0.2400,0.5883],grevillei:[0.2527,0.4440,0.6904],viscidus:[0.2551,0.4472,0.7004],luteus:[0.1960,0.2989,0.6660],luridus:[0.3742,0.5614,0.7469]};const MAP_THR_V3={"edulis":[0.7209,0.8545,0.9352],"reticulatus":[0.4219,0.6534,0.8325],"pinophilus":[0.3749,0.5312,0.6635],"cibarius":[0.6108,0.7803,0.8667],"cornucopioides":[0.1119,0.3981,0.6679],"tubaeformis":[0.4252,0.6222,0.8023],"morelc":[0.6,0.7833,0.925],"morelb":[0.2024,0.3657,0.5961],"gambosa":[0.3659,0.5823,0.75],"repandum":[0.7066,0.8558,0.9315],"badia":[0.3865,0.5908,0.8115],"nuda":[0.5777,0.8436,0.9445],"procera":[0.3368,0.5796,0.7187],"deliciosus":[0.2365,0.3536,0.6841],"lutescens":[0.4757,0.5985,0.8294],"geotropa":[0.3355,0.497,0.6496],"sparassis":[0.1226,0.2983,0.5142],"virescens":[0.2808,0.5039,0.7614],"prunulus":[0.7648,0.8424,0.8982],"comatus":[0.338,0.4662,0.8411],"cyanoxantha":[0.3829,0.645,0.9101],"amethystina":[0.8137,0.9608,1.0373],"ostreatus":[0.1195,0.3921,0.6234],"sulphureus":[0.2877,0.4389,0.628],"erythropus":[0.7325,0.8659,0.9327]};  // 16.11.2026 : seuils 60/85/96,25 % des forêts (relevés « tous »), sol GeoCover, sans bonus iNat
+// 17.11.2026 (étape 1) : seuils recalculés après les corrections du type de forêt inconnu et de la lisière du cèpe (60/85/96,25 % des forêts de la carte)
+const MAP_THR_V4={"edulis":[0.7141,0.8863,0.9487],"reticulatus":[0.3999,0.6273,0.8305],"pinophilus":[0.3622,0.4976,0.633],"cibarius":[0.5866,0.7616,0.8574],"cornucopioides":[0.0928,0.3705,0.6445],"tubaeformis":[0.4069,0.5787,0.7673],"morelc":[0.6,0.7284,0.79],"morelb":[0.1838,0.3285,0.4997],"gambosa":[0.3552,0.5026,0.6281],"repandum":[0.6668,0.8335,0.9221],"badia":[0.3712,0.5493,0.7846],"nuda":[0.562,0.7888,0.9218],"procera":[0.3271,0.5616,0.6699],"deliciosus":[0.2246,0.3108,0.3927],"lutescens":[0.4605,0.5679,0.7576],"geotropa":[0.3242,0.474,0.6192],"sparassis":[0.1133,0.2711,0.3859],"virescens":[0.2527,0.4849,0.7519],"prunulus":[0.7353,0.8191,0.8726],"comatus":[0.3223,0.4312,0.5608],"cyanoxantha":[0.3611,0.6284,0.9051],"amethystina":[0.7644,0.9457,1.0309],"ostreatus":[0.1021,0.369,0.5952],"erythropus":[0.7033,0.8532,0.9252],"cylindracea":[0.0238,0.1599,0.3037],"glutinosus":[0.3205,0.4416,0.6083],"laccata":[0.7838,0.8974,0.9857],"bicolor":[0.3484,0.484,0.6395],"sordida":[0.2107,0.4526,0.555],"polioleuca":[0.4414,0.5557,0.675],"decastes":[0.1715,0.3512,0.5],"varius":[0.3104,0.5041,0.7897],"praestans":[0.1441,0.4096,0.6652],"capnoides":[0.3395,0.468,0.6701],"ostoyae":[0.3956,0.5093,0.6338],"mastoidea":[0.2556,0.5441,0.66],"vesca":[0.3266,0.5913,0.8549],"aurea":[0.3646,0.5948,0.779],"turci":[0.204,0.3081,0.4296],"vinosa":[0.2057,0.373,0.6881],"decolorans":[0.183,0.386,0.5729],"paludosa":[0.1963,0.3824,0.5686],"mustelina":[0.1939,0.381,0.6938],"integra":[0.2337,0.4273,0.722],"clavatus":[0.2924,0.4415,0.6388],"imbricatus":[0.2096,0.4003,0.7078],"umbellatus":[0.216,0.4261,0.6402],"bovinus":[0.1473,0.2261,0.3211],"grevillei":[0.2234,0.3958,0.573],"viscidus":[0.2264,0.3969,0.5732],"luteus":[0.1875,0.273,0.391],"luridus":[0.3423,0.5279,0.7105]};
 
 // zones sans chasse (districts francs fédéraux, réserves d'oiseaux d'eau ; geo.admin.ch, lues le 16.11.2026)
 // zones de tir militaires (avis de tir et zones de danger publiés, DDPS / geo.admin.ch, lues le 17.11.2026) ; [lat,lng]
@@ -1924,7 +1928,7 @@ function multiPopup(i,latlng){
   let h=`<div class="pp"><h3>Forte concentration</h3><div class="meta">${G.dem[i]} m · ${E.toLocaleString("fr-CH")} / ${N.toLocaleString("fr-CH")}</div>`+placeHtml(i);
   const S0=`<div class="pp"><h3>Forte concentration</h3><div class="meta">${G.dem[i]} m</div>`+placeHtml(i);
   const blk=blockReason(null);if(blk)return null;
-  if(state.resp&&G.fx[i]===4)return null;
+  if(state.resp&&G.fx[i]===4){const m=`<p><b>Cueillette interdite</b> : forêt dans une réserve naturelle, un marais protégé ou la zone centrale du Parc naturel du Jorat (OParcs art. 23). Zone grisée tant que « Cueillette responsable » est cochée.</p></div>`;return {short:S0+m,full:h+m}}
   const c=currentClass[i];
   if(c===255){const ex=G.fx[i]-1,isF=inForest(i);const m=(isF&&ex>0&&state.excl?`<p>Forêt exclue : ${EX_LAB[ex]}.</p>`:`<p>Pas de forêt ici.</p>`)+`</div>`;
     return {short:S0+m,full:h+m}}
@@ -2756,7 +2760,25 @@ function huntBuild(){
   const cx=huntMask.getContext("2d"),img=cx.createImageData(meta.cols,meta.rows),px=img.data,cxI=huntMaskI.getContext("2d"),imgI=cxI.createImageData(meta.cols,meta.rows),pxI=imgI.data;let anyI=false;
   for(let i=0;i<n;i++){const f=G.fx[i];if(!f||!C[i])continue;cants.add(CANT_CODES[C[i]]);if(f===4||FR_[i]||!usable(i))continue;
     if((on[C[i]]||onI[C[i]])&&HG[i]){px[i*4+3]=255;any=true}}
+  if(!exclMask)exclMask=document.createElement("canvas");exclMask.width=meta.cols;exclMask.height=meta.rows;
+  {const ex=exclMask.getContext("2d"),im=ex.createImageData(meta.cols,meta.rows),q=im.data;let a=false;
+   if(state.resp)for(let i=0;i<n;i++)if(G.fx[i]===4){q[i*4]=110;q[i*4+1]=110;q[i*4+2]=110;q[i*4+3]=185;a=true}
+   ex.putImageData(im,0,0);exclMask.any=a}
   cx.putImageData(img,0,0);cxI.putImageData(imgI,0,0);huntMask.any=any;huntMaskI.any=anyI;huntMask.cants=cants}
+// zones où la cueillette est interdite (fx = 4) : grisées quand « Cueillette responsable » est cochée
+let exclMask=null,exclLayer=null;
+const ExclLayer=L.Layer.extend({
+  onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";m.getPane("excl").appendChild(this._c);
+    m.on("moveend zoomend resize",this._draw,this);this._draw()},
+  onRemove(m){m.off("moveend zoomend resize",this._draw,this);L.DomUtil.remove(this._c)},
+  _draw(){const m=this._map;if(!m)return;const s=m.getSize(),dpr=window.devicePixelRatio||1,c=this._c;
+    c.width=s.x*dpr;c.height=s.y*dpr;c.style.width=s.x+"px";c.style.height=s.y+"px";L.DomUtil.setPosition(c,m.containerPointToLayerPoint([0,0]));
+    const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,s.x,s.y);
+    if(!exclMask||!regionLL)return;
+    const b=regionLL(),p0=m.latLngToContainerPoint(b.getNorthWest()),p1=m.latLngToContainerPoint(b.getSouthEast());
+    x.imageSmoothingEnabled=false;x.drawImage(exclMask,p0.x,p0.y,p1.x-p0.x,p1.y-p0.y)}});
+function exclUpdate(){if(!map||!exclMask)return;if(!exclLayer){map.createPane("excl").style.zIndex=412;map.getPane("excl").style.pointerEvents="none";exclLayer=new ExclLayer()}
+  const on=!!exclMask.any;if(on&&!map.hasLayer(exclLayer))exclLayer.addTo(map);else if(!on&&map.hasLayer(exclLayer))map.removeLayer(exclLayer);else if(on)exclLayer._draw()}
 const HuntLayer=L.Layer.extend({
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";m.getPane("hunt").appendChild(this._c);
     m.on("moveend zoomend resize",this._draw,this);this._draw()},
@@ -2776,7 +2798,7 @@ const HuntLayer=L.Layer.extend({
     const shR=$("o-hunt")&&$("o-hunt").checked,shI=$("o-hunti")&&$("o-hunti").checked;
     if(shR&&huntMask.any)hatch(huntMask,"rgba(214,0,0,.9)");
     if(shI&&huntMaskI.any)hatch(huntMaskI,"rgba(240,130,0,.95)")}});
-function huntUpdate(){if(!map||!G)return;try{huntBuild()}catch(e){console.warn(e)}
+function huntUpdate(){if(!map||!G)return;try{huntBuild();exclUpdate()}catch(e){console.warn(e)}
   const on=($("o-hunt")&&$("o-hunt").checked)||($("o-hunti")&&$("o-hunti").checked);if(!huntLayer){map.createPane("hunt").style.zIndex=415;map.getPane("hunt").style.pointerEvents="none";huntLayer=new HuntLayer()}
   if(on&&!map.hasLayer(huntLayer))huntLayer.addTo(map);else if(!on&&map.hasLayer(huntLayer))map.removeLayer(huntLayer);else if(on)huntLayer._draw();
   const el=$("hunt-day");if(el&&huntMask){const ds=huntDay,c={VD:[],FR:[]},K=huntMask.cants;["VD","FR"].forEach(k=>{if(K.has(k))c[k]=huntOn(k,ds)});
@@ -3092,7 +3114,7 @@ async function boot(){
   // couches secondaires : chargées en parallèle, affichées dès qu'elles arrivent (n'attendent pas la grille)
   const later={rs:fetch("reserves.geojson",NC).then(r=>r.json()),aj:fetch("acces.geojson",NC).then(r=>r.json()),tj:fetch("sentiers.geojson",NC).then(r=>r.json())};
   const [dj,ti]=await Promise.all([fetch("data.json",NC).then(r=>r.json()),fetch("tiles_index.json",NC).then(r=>r.json())]);
-  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{});
+  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{});
   // version test « données ouvertes » : altitudes et saisons d'expert, sans SwissFungi, carte des milieux, part de résineux ni iNaturalist
   if(meta.lite){LITE=true;SPECIES.forEach(s=>{if(meta.lite.alt[s.id])s.alt=meta.lite.alt[s.id]});document.body.classList.add("lite");
     const b=document.createElement("p");b.className="lite-banner";b.textContent="Version test « données ouvertes » : sans SwissFungi, sans carte des milieux ni part de résineux (essences), sans iNaturalist. Altitudes et saisons fixées à dire d'expert.";$("sec-head").appendChild(b)}
