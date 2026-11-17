@@ -1198,7 +1198,7 @@ details.more[open]>summary{margin-bottom:4px}
       <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
       <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
       <p><b>Validation</b> (15.11.2026) : sur 51 observations iNaturalist indépendantes, le modèle les place en moyenne au 52ᵉ-54ᵉ rang sur 100 (50 = hasard). C'est mieux qu'avant (48), mais encore faible : vos coins permettront de le caler.</p>
-      <p><b>Forte concentration</b> : chaque espèce affichée rapporte 3 points en « très élevé », 2 en « élevé » et 1 en « moyen ». La concentration est moyenne au-dessus de 2 points, forte au-dessus de 4 et très forte au-dessus de 6 pour une catégorie (stars, bons ou intéressants) ; au-dessus de 4, 6 et 8 quand toutes les catégories sont affichées. Ces seuils diminuent proportionnellement si vous décochez des espèces dans le menu (au minimum 1, 2 et 3 points). En « conditions du moment », une espèce à moins de 30 % de saison n'est jamais en « très élevé ».</p>
+      <p><b>Forte concentration</b> : chaque espèce affichée rapporte 3 points en « très élevé », 2 en « élevé » et 1 en « moyen ». Seuils minimaux : plus de 2, 4 et 6 points pour une catégorie (stars, bons ou intéressants), plus de 4, 6 et 8 pour toutes, réduits proportionnellement si vous décochez des espèces (au minimum 1, 2 et 3 points). Pour que la carte reste lisible, ces seuils sont relevés au besoin afin que la concentration très forte, forte et moyenne ne couvrent que les 4 %, 15 % et 40 % de forêts les mieux notées. En « conditions du moment », une espèce à moins de 30 % de saison n'est jamais en « très élevé ».</p>
 </div>
       <div class="menu-page" data-t="Sources et limites"><h3>Sources et limites</h3>
       <ul>
@@ -1666,7 +1666,12 @@ function renderInner(){
       // réduits proportionnellement quand des espèces sont décochées (au minimum 1, 2 et 3)
       const tierAll=SPECIES.filter(s=>!state.tier||s.tier===state.tier),fr=tierAll.length?tierAll.filter(s=>!state.hide.includes(s.id)).length/tierAll.length:1,B=state.tier?[2,4,6]:[4,6,8];
       const T3=B.map((b,k)=>Math.max(k+1,Math.round(b*fr)));T3[1]=Math.max(T3[1],T3[0]+1);T3[2]=Math.max(T3[2],T3[1]+1);
-      const t1=T3[0]+1,t2=T3[1]+1,t3=T3[2]+1;
+      const f1=T3[0]+1,f2=T3[1]+1,f3=T3[2]+1;
+      // niveaux proportionnels : au moins les seuils ci-dessus, relevés pour ne garder que les 40 %, 15 % et 4 % de forêts les mieux notées
+      let mx=0;for(let i=0;i<n;i++)if(has[i]&&pts[i]>mx)mx=pts[i];
+      const H=new Uint32Array(mx+2);let tot=0;for(let i=0;i<n;i++)if(has[i]){H[pts[i]]++;tot++}
+      const qv=q=>{let c=0;for(let v=0;v<=mx;v++){c+=H[v];if(c>=q*tot)return v+1}return mx+1};
+      const t1=Math.max(f1,qv(MULTI_Q[0])),t2=Math.max(t1+1,f2,qv(MULTI_Q[1])),t3=Math.max(t2+1,f3,qv(MULTI_Q[2]));
       for(let i=0;i<n;i++)if(has[i]){const p=pts[i];cnt[i]=p>=t3?4:p>=t2?3:p>=t1?2:p>0?1:0}
       multiCache={key,per,cnt,pts,thr:[t1,t2,t3]};
     }
