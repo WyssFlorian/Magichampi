@@ -1678,7 +1678,7 @@ function renderInner(){
   const img=imgData,px=img.data,n=meta.rows*meta.cols;px.fill(0);
   stats=[0,0,0,0,0];
   const blk=blockReason(multi?null:state.sp);
-  if(blk){currentClass=new Uint8Array(n).fill(255);multiCls=null;$("stats").textContent="";
+  if(blk){currentClass=new Uint8Array(n).fill(255);multiCls=null;$("stats").textContent="Carte vide : "+blk+(state.resp?" (option « Cueillette responsable » activée ; décochez-la pour voir les zones quand même.)":"");
     updateLegend();ctx.putImageData(img,0,0);renderObs();renderSquares();renderCoins();renderSpeciesList();updateUrbanBus();updateBest();huntUpdate();return}
   if(!multi){
     const sp=SPECIES.find(s=>s.id===state.sp);const r=classesFor(sp);zoneNow=r.zone;multiCls=null;
