@@ -1795,7 +1795,7 @@ function popupHtml(latlng){
   const S0=`<div class="pp"><h3>${sp.fr}</h3><div class="meta">${info.dem} m</div>`+placeHtml(i);
   let h=`<div class="pp"><h3>${sp.fr}</h3><div class="meta">${info.dem} m · pente ${info.sl}° · ${ASP[Math.round(info.asp/45)%8]} · ${E.toLocaleString("fr-CH")} / ${N.toLocaleString("fr-CH")}</div>`+placeHtml(i);
   const blk=blockReason(sp.id);if(blk)return null;
-  if(state.resp&&G.fx[i]===4)return null;
+  if(state.resp&&G.fx[i]===4){const m=`<p><b>Cueillette interdite</b> : forêt dans une réserve naturelle, un marais protégé ou la zone centrale du Parc naturel du Jorat (OParcs art. 23). Zone grisée tant que « Cueillette responsable » est cochée.</p></div>`;return {short:S0+m,full:h+m}}
   if(info.A<0){
     const ex=G.fx[i]-1;const isF=inForest(i);
     const m=isF&&state.acc&&SHOOT&&SHOOT[i]?`<p>Zone de tir militaire : masquée par le filtre « Accès libre seulement ».</p></div>`:isF&&ex>0&&state.excl?`<p>Forêt exclue : ${EX_LAB[ex]}. Cochez « Afficher aussi les forêts exclues » pour l'afficher.</p></div>`:`<p>Pas de forêt ici (ou couverture forestière trop faible). Le score n'est calculé qu'en forêt.</p></div>`;
@@ -1924,7 +1924,7 @@ function multiPopup(i,latlng){
   let h=`<div class="pp"><h3>Forte concentration</h3><div class="meta">${G.dem[i]} m · ${E.toLocaleString("fr-CH")} / ${N.toLocaleString("fr-CH")}</div>`+placeHtml(i);
   const S0=`<div class="pp"><h3>Forte concentration</h3><div class="meta">${G.dem[i]} m</div>`+placeHtml(i);
   const blk=blockReason(null);if(blk)return null;
-  if(state.resp&&G.fx[i]===4)return null;
+  if(state.resp&&G.fx[i]===4){const m=`<p><b>Cueillette interdite</b> : forêt dans une réserve naturelle, un marais protégé ou la zone centrale du Parc naturel du Jorat (OParcs art. 23). Zone grisée tant que « Cueillette responsable » est cochée.</p></div>`;return {short:S0+m,full:h+m}}
   const c=currentClass[i];
   if(c===255){const ex=G.fx[i]-1,isF=inForest(i);const m=(isF&&ex>0&&state.excl?`<p>Forêt exclue : ${EX_LAB[ex]}.</p>`:`<p>Pas de forêt ici.</p>`)+`</div>`;
     return {short:S0+m,full:h+m}}
@@ -2751,7 +2751,25 @@ function huntBuild(){
   const cx=huntMask.getContext("2d"),img=cx.createImageData(meta.cols,meta.rows),px=img.data,cxI=huntMaskI.getContext("2d"),imgI=cxI.createImageData(meta.cols,meta.rows),pxI=imgI.data;let anyI=false;
   for(let i=0;i<n;i++){const f=G.fx[i];if(!f||!C[i])continue;cants.add(CANT_CODES[C[i]]);if(f===4||FR_[i]||!usable(i))continue;
     if((on[C[i]]||onI[C[i]])&&HG[i]){px[i*4+3]=255;any=true}}
+  if(!exclMask)exclMask=document.createElement("canvas");exclMask.width=meta.cols;exclMask.height=meta.rows;
+  {const ex=exclMask.getContext("2d"),im=ex.createImageData(meta.cols,meta.rows),q=im.data;let a=false;
+   if(state.resp)for(let i=0;i<n;i++)if(G.fx[i]===4){q[i*4]=110;q[i*4+1]=110;q[i*4+2]=110;q[i*4+3]=185;a=true}
+   ex.putImageData(im,0,0);exclMask.any=a}
   cx.putImageData(img,0,0);cxI.putImageData(imgI,0,0);huntMask.any=any;huntMaskI.any=anyI;huntMask.cants=cants}
+// zones où la cueillette est interdite (fx = 4) : grisées quand « Cueillette responsable » est cochée
+let exclMask=null,exclLayer=null;
+const ExclLayer=L.Layer.extend({
+  onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";m.getPane("excl").appendChild(this._c);
+    m.on("moveend zoomend resize",this._draw,this);this._draw()},
+  onRemove(m){m.off("moveend zoomend resize",this._draw,this);L.DomUtil.remove(this._c)},
+  _draw(){const m=this._map;if(!m)return;const s=m.getSize(),dpr=window.devicePixelRatio||1,c=this._c;
+    c.width=s.x*dpr;c.height=s.y*dpr;c.style.width=s.x+"px";c.style.height=s.y+"px";L.DomUtil.setPosition(c,m.containerPointToLayerPoint([0,0]));
+    const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,s.x,s.y);
+    if(!exclMask||!regionLL)return;
+    const b=regionLL(),p0=m.latLngToContainerPoint(b.getNorthWest()),p1=m.latLngToContainerPoint(b.getSouthEast());
+    x.imageSmoothingEnabled=false;x.drawImage(exclMask,p0.x,p0.y,p1.x-p0.x,p1.y-p0.y)}});
+function exclUpdate(){if(!map||!exclMask)return;if(!exclLayer){map.createPane("excl").style.zIndex=412;map.getPane("excl").style.pointerEvents="none";exclLayer=new ExclLayer()}
+  const on=!!exclMask.any;if(on&&!map.hasLayer(exclLayer))exclLayer.addTo(map);else if(!on&&map.hasLayer(exclLayer))map.removeLayer(exclLayer);else if(on)exclLayer._draw()}
 const HuntLayer=L.Layer.extend({
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";m.getPane("hunt").appendChild(this._c);
     m.on("moveend zoomend resize",this._draw,this);this._draw()},
@@ -2771,7 +2789,7 @@ const HuntLayer=L.Layer.extend({
     const shR=$("o-hunt")&&$("o-hunt").checked,shI=$("o-hunti")&&$("o-hunti").checked;
     if(shR&&huntMask.any)hatch(huntMask,"rgba(214,0,0,.9)");
     if(shI&&huntMaskI.any)hatch(huntMaskI,"rgba(240,130,0,.95)")}});
-function huntUpdate(){if(!map||!G)return;try{huntBuild()}catch(e){console.warn(e)}
+function huntUpdate(){if(!map||!G)return;try{huntBuild();exclUpdate()}catch(e){console.warn(e)}
   const on=($("o-hunt")&&$("o-hunt").checked)||($("o-hunti")&&$("o-hunti").checked);if(!huntLayer){map.createPane("hunt").style.zIndex=415;map.getPane("hunt").style.pointerEvents="none";huntLayer=new HuntLayer()}
   if(on&&!map.hasLayer(huntLayer))huntLayer.addTo(map);else if(!on&&map.hasLayer(huntLayer))map.removeLayer(huntLayer);else if(on)huntLayer._draw();
   const el=$("hunt-day");if(el&&huntMask){const ds=huntDay,c={VD:[],FR:[]},K=huntMask.cants;["VD","FR"].forEach(k=>{if(K.has(k))c[k]=huntOn(k,ds)});
