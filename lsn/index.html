@@ -961,6 +961,14 @@ details.more[open]>summary{margin-bottom:4px}
 .spf-tier .row button{border:0;background:none;color:var(--accent,inherit);text-decoration:underline;cursor:pointer;font-size:12px;padding:0 0 0 8px}
 .spf-tier label{display:flex;gap:6px;align-items:baseline;padding:2px 0}
 .spf-tier label i{color:var(--muted);font-size:11.5px}
+/* menu : ne dépasse pas l'écran, défile jusqu'en bas (iPhone) */
+.menu-pop,.hunt-modal{box-sizing:border-box;max-width:calc(100vw - 24px);overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.menu-pop{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+.menu-pop *{max-width:100%;box-sizing:border-box;min-width:0}
+.menu-pop input[type=range]{width:100%}
+.menu-pop input[type=checkbox],.menu-pop input[type=radio]{flex:none}
+.menu-pop .acc-ic,.menu-pop .obs-icon,.menu-pop .hunt-sw,.menu-pop .vapko-pin,.menu-pop .trail-sw,.menu-pop .road-sw,.menu-pop .water-sw,.menu-pop .relief-sw,.menu-pop .sortie-sw{flex:none}
+.menu-pop .row{flex-wrap:wrap}
 /* refonte : contrôles de la carte, menu en pages, alertes, chasse */
 .view-btns{position:absolute}
 .zl-row{position:absolute;right:0;bottom:100%;margin-bottom:5px;display:flex;gap:4px;align-items:flex-end}
@@ -979,7 +987,6 @@ details.more[open]>summary{margin-bottom:4px}
 .menu-page{padding:6px 0 4px}
 .menu-page[hidden]{display:none}
 .menu-page h3{margin:6px 0 8px;font-size:15px}
-#menu-pop{max-height:calc(100vh - 70px)}
 .agenda>summary,.panel-det>summary{cursor:pointer;font:600 14px/1.3 var(--font-body);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .agenda>summary::after,.panel-det>summary::after{content:"▾";opacity:.7}
 .agenda[open]>summary::after,.panel-det[open]>summary::after{content:"▴"}
@@ -1215,7 +1222,7 @@ details.more[open]>summary{margin-bottom:4px}
     </div>
     <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
       <p class="small" id="hunt-day" style="margin:6px 0"></p>
-      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures rouges ?</b> Seulement dans les forêts d'au moins 10 hectares, à plus de 1 km des villages et de 2 km des villes. Ailleurs (forêts plus petites ou proches des habitations), seule la chasse individuelle reste possible : hachures orange.</p>
+      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Seulement dans les massifs forestiers d'au moins 10 hectares (forêts séparées de moins de 100 m réunies), à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
     </div>
     <div class="loading" id="loading">Chargement des données…</div>
     <div class="sheet" id="sheet" hidden role="dialog" aria-label="Fiche du lieu"><div class="sheet-head"><button class="grip" id="sheet-grip" aria-label="Agrandir ou réduire la fiche"><span id="sheet-grip-lab">agrandir</span></button><button class="x" id="sheet-x" aria-label="Fermer la fiche">✕</button></div><div class="sheet-body" id="sheet-body"></div></div>
@@ -2690,10 +2697,10 @@ let huntGeoArr=null,huntGeoKey="";
 function huntGeo(){
   const key=meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntGeoKey&&huntGeoArr)return huntGeoArr;huntGeoKey=key;
   const W=meta.cols,H=meta.rows,n=W*H,res=meta.res,fx=G.fx;
-  const lab=new Int32Array(n),sz=[0],st=new Int32Array(n);let nl=0;
+  const GAP=Math.round(100/res),lab=new Int32Array(n),sz=[0],st=new Int32Array(n);let nl=0; // massif = forêts séparées de moins de 100 m (route, clairière) réunies
   for(let s=0;s<n;s++){if(!fx[s]||lab[s])continue;nl++;let top=0,cnt=0;st[top++]=s;lab[s]=nl;
     while(top){const i=st[--top];cnt++;const r=(i/W)|0,c=i-r*W;
-      for(let dr=-1;dr<=1;dr++){const rr=r+dr;if(rr<0||rr>=H)continue;for(let dc=-1;dc<=1;dc++){const cc=c+dc;if(cc<0||cc>=W)continue;const j=rr*W+cc;if(fx[j]&&!lab[j]){lab[j]=nl;st[top++]=j}}}}
+      for(let dr=-GAP;dr<=GAP;dr++){const rr=r+dr;if(rr<0||rr>=H)continue;for(let dc=-GAP;dc<=GAP;dc++){const cc=c+dc;if(cc<0||cc>=W)continue;const j=rr*W+cc;if(fx[j]&&!lab[j]){lab[j]=nl;st[top++]=j}}}}
     sz.push(cnt)}
   const minC=100000/(res*res);
   const cities=(PLACES_G||(meta.clab||[]).map(([nm,a,b])=>[nm,a,b,1])).filter(p=>p[3]<=1).map(p=>{const q=L.CRS.EPSG3857.project(L.latLng(p[1],p[2]));return [q.x,q.y]});
@@ -2715,7 +2722,7 @@ function huntBuild(){
   huntMask.width=huntMaskI.width=meta.cols;huntMask.height=huntMaskI.height=meta.rows;
   const cx=huntMask.getContext("2d"),img=cx.createImageData(meta.cols,meta.rows),px=img.data,cxI=huntMaskI.getContext("2d"),imgI=cxI.createImageData(meta.cols,meta.rows),pxI=imgI.data;let anyI=false;
   for(let i=0;i<n;i++){const f=G.fx[i];if(!f||!C[i])continue;cants.add(CANT_CODES[C[i]]);if(f===4||FR_[i]||!usable(i))continue;
-    if(on[C[i]]&&HG[i]){px[i*4+3]=255;any=true}else if(onI[C[i]]){pxI[i*4+3]=255;anyI=true}}
+    if((on[C[i]]||onI[C[i]])&&HG[i]){px[i*4+3]=255;any=true}}
   cx.putImageData(img,0,0);cxI.putImageData(imgI,0,0);huntMask.any=any;huntMaskI.any=anyI;huntMask.cants=cants}
 const HuntLayer=L.Layer.extend({
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";m.getPane("hunt").appendChild(this._c);
@@ -2743,7 +2750,7 @@ function huntUpdate(){if(!map||!G)return;try{huntBuild()}catch(e){console.warn(e
     huntBadge(ds,c);
     el.innerHTML=ds>HUNT_END?`Le ${esc(fmtDate(ds))} : saison de chasse 2027-2028 pas encore publiée.`:
       (c.VD.length||c.FR.length)?(()=>{const co=k=>c[k].filter(l=>!HUNT_INDIV.test(l)),iv=k=>c[k].filter(l=>HUNT_INDIV.test(l)),part=(k,lab)=>c[k].length?` · ${lab} : ${co(k).length?`<b>${esc(co(k).join(", "))}</b>`:"pas de battue"}${iv(k).length?` (individuel : ${esc(iv(k).join(", "))})`:""}`:"";
-        return `<span class="hunt-sw" aria-hidden="true"></span> <b>Chasse le ${esc(fmtDate(ds))}</b>${part("VD","Vaud")}${part("FR","Fribourg")}. Hachures rouges : battues et chasses en équipe (en gras) ; orange : chasse individuelle. Horaires : ${HUNT_HOURS}.`})()
+        return `<span class="hunt-sw" aria-hidden="true"></span> <b>Chasse le ${esc(fmtDate(ds))}</b>${part("VD","Vaud")}${part("FR","Fribourg")}. Hachures rouges : forêts où la chasse est ouverte ce jour-là (battues ou chasse individuelle ; en gras, les chasses en équipe). Horaires : ${HUNT_HOURS}.`})()
       :`Pas de chasse le ${esc(fmtDate(ds))}${K.has("FR")?" (Vaud et Fribourg)":" (Vaud)"}.`}}
 // avertissement dans le coin de la carte : chasse ouverte ce jour-là dans un canton de la carte (calendrier cantonal)
 let huntCtl=null;
