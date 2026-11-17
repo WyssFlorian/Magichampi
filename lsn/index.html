@@ -969,6 +969,8 @@ details.more[open]>summary{margin-bottom:4px}
 .menu-pop input[type=checkbox],.menu-pop input[type=radio]{flex:none}
 .menu-pop .acc-ic,.menu-pop .obs-icon,.menu-pop .hunt-sw,.menu-pop .vapko-pin,.menu-pop .trail-sw,.menu-pop .road-sw,.menu-pop .water-sw,.menu-pop .relief-sw,.menu-pop .sortie-sw{flex:none}
 .menu-pop .row{flex-wrap:wrap}
+.inf-i{display:inline-grid;place-items:center;width:18px;height:18px;margin:2px 0;padding:0;font:700 11px/1 var(--font-body);border:1px solid var(--line);border-radius:50%;background:none;color:var(--muted);cursor:pointer;position:static}
+.menu-pop p.small[hidden]{display:none}
 /* refonte : contrôles de la carte, menu en pages, alertes, chasse */
 .view-btns{position:absolute}
 .zl-row{position:absolute;right:0;bottom:100%;margin-bottom:5px;display:flex;gap:4px;align-items:flex-end}
@@ -1123,8 +1125,9 @@ details.more[open]>summary{margin-bottom:4px}
         <button id="v-cell" aria-pressed="false">Détail 25 m</button>
       </div>
       <p class="small" id="view-help"></p>
-      <label class="chk"><input type="checkbox" id="o-excl"> Afficher aussi les forêts exclues : proches des localités (moins de 100 m) et des routes principales (moins de 20 m), réserves et marais protégés</label>
-      <label class="chk"><input type="checkbox" id="o-resp" checked> <span><b>Cueillette responsable</b> (voir « À lire avant de cueillir »)</span></label>
+      <label class="chk"><input type="checkbox" id="o-excl"> Afficher aussi les forêts exclues</label>
+      <p class="small">Forêts proches des localités (moins de 100 m) et des routes principales (moins de 20 m), réserves et marais protégés.</p>
+      <label class="chk"><input type="checkbox" id="o-resp" checked> <span><b>Cueillette responsable</b></span></label>
       <p class="small" id="resp-help" hidden></p>
       <div class="sub-h">Espèces et relevés</div>
       <div class="row" style="gap:8px;flex-wrap:nowrap"><span style="flex:1">Seulement les champignons de saison</span><div class="seg" id="season-seg" role="group" aria-label="Seulement les champignons de saison" style="flex:none"><button data-sea="on" title="Toujours">Oui</button><button data-sea="off" title="Jamais">Non</button><button data-sea="auto" title="Oui en « Conditions du moment », non en « Aptitude du lieu »">Auto</button></div><input type="checkbox" id="o-season" hidden></div>
@@ -1143,19 +1146,23 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk"><input type="checkbox" id="o-score" checked> Score</label>
         <label class="chk">Transparence <input type="range" id="o-alpha" min="20" max="130" value="130" style="max-width:140px" aria-label="Opacité du score"></label>
         <p class="small" style="margin:-4px 0 0">Le score s'éclaircit aussi automatiquement en zoomant, pour voir la forêt dessous.</p>
-        <label class="chk lite-hide"><input type="checkbox" id="o-sq"> Mailles SwissFungi 5 km (trait plein : espèce signalée)</label>
+        <label class="chk lite-hide"><input type="checkbox" id="o-sq"> Mailles SwissFungi 5 km</label>
+        <p class="small" style="margin:-4px 0 0">Trait plein : espèce signalée dans la maille.</p>
         <label class="chk"><input type="checkbox" id="o-res" checked> Réserves et marais protégés</label>
-        <label class="chk lite-hide"><input type="checkbox" id="o-obs" checked> <span class="obs-icon" aria-hidden="true" style="display:inline-block"></span> Observations iNaturalist précises (par espèce : seulement l’espèce choisie)</label>
+        <label class="chk lite-hide"><input type="checkbox" id="o-obs" checked> <span class="obs-icon" aria-hidden="true" style="display:inline-block"></span> Observations iNaturalist</label>
+        <p class="small" style="margin:-4px 0 0">Observations précises ; par espèce, seulement l'espèce choisie.</p>
       </div>
       <div class="sub-h" style="margin-top:12px">Géographie</div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label class="chk"><input type="checkbox" id="o-relief"> <span><span class="relief-sw" aria-hidden="true"></span> Afficher la géographie <span class="small">(comme le bouton ⛰ sur la carte : courbes de niveau et falaises, plus les couches cochées ci-dessous ; visibles en zoomant)</span></span></label>
+        <label class="chk"><input type="checkbox" id="o-relief"> <span><span class="relief-sw" aria-hidden="true"></span> Afficher la géographie</span></label>
+        <p class="small" style="margin:-4px 0 0">Comme le bouton ⛰ : courbes de niveau et falaises, plus les couches cochées ci-dessous ; visibles en zoomant.</p>
         <div class="geo-sub">
         <label class="chk"><input type="checkbox" id="o-water" checked> <span class="water-sw" aria-hidden="true"></span> Cours d'eau</label>
         <label class="chk"><input type="checkbox" id="o-road" checked> <span class="road-sw" aria-hidden="true"></span> Routes et chemins</label>
-        <label class="chk"><input type="checkbox" id="o-tp" checked> <span class="acc-ic acc-tp" aria-hidden="true">211</span> <span>Arrêts de bus, train et funiculaire <span class="small">(numéro affiché s’il n’y a qu’une ligne ; en ville, seulement à moins de 1 km d’une forêt propice)</span></span></label>
+        <label class="chk"><input type="checkbox" id="o-tp" checked> <span class="acc-ic acc-tp" aria-hidden="true">211</span> <span>Arrêts de bus, train et funiculaire</span></label>
+        <p class="small" style="margin:-4px 0 0">Numéro affiché s'il n'y a qu'une ligne ; en ville, seulement à moins de 1 km d'une forêt propice.</p>
         <label class="chk"><input type="checkbox" id="o-park" checked> <span class="acc-ic acc-park" aria-hidden="true">P</span> Parkings publics</label>
-        <label class="chk"><input type="checkbox" id="o-trail" checked> <span class="trail-sw" aria-hidden="true"></span> <span>Sentiers de randonnée pédestre <span class="small">(affichés aussi sans la géographie)</span></span></label>
+        <label class="chk"><input type="checkbox" id="o-trail" checked> <span class="trail-sw" aria-hidden="true"></span> <span>Sentiers de randonnée pédestre</span></label>
         <label class="chk"><input type="checkbox" id="o-hunt" checked> <span class="hunt-sw" aria-hidden="true"></span> <span>Chasse</span></label>
         <input type="checkbox" id="o-hunti" checked hidden>
         <label class="chk"><input type="checkbox" id="o-vapko" checked> <span class="vapko-pin" aria-hidden="true" style="width:15px;height:15px;font-size:10px">✓</span> <span>Contrôles officiels des champignons</span></label>
@@ -1222,7 +1229,7 @@ details.more[open]>summary{margin-bottom:4px}
     </div>
     <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
       <p class="small" id="hunt-day" style="margin:6px 0"></p>
-      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Seulement dans les massifs forestiers d'au moins 10 hectares (forêts séparées de moins de 100 m réunies), à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
+      <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Seulement dans les massifs forestiers d'au moins 10 hectares (forêts contiguës, séparées de moins de 10 m), à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
     </div>
     <div class="loading" id="loading">Chargement des données…</div>
     <div class="sheet" id="sheet" hidden role="dialog" aria-label="Fiche du lieu"><div class="sheet-head"><button class="grip" id="sheet-grip" aria-label="Agrandir ou réduire la fiche"><span id="sheet-grip-lab">agrandir</span></button><button class="x" id="sheet-x" aria-label="Fermer la fiche">✕</button></div><div class="sheet-body" id="sheet-body"></div></div>
@@ -1969,7 +1976,13 @@ let menuPg=0;
 function menuGo(k){const P=[...document.querySelectorAll("#menu-pop .menu-page")];if(!P.length)return;menuPg=(k+P.length)%P.length;P.forEach((p,j)=>p.hidden=j!==menuPg);$("menu-toc").value=menuPg;$("menu-pop").scrollTop=0}
 function openMenu(open,page){const m=$("menu-pop");m.hidden=open===undefined?!m.hidden:!open;
   if(!m.hidden){fillSpFilter();if(page!=null){const P=[...document.querySelectorAll("#menu-pop .menu-page")],k=typeof page==="number"?page:P.findIndex(p=>p.id===page);if(k>=0)menuGo(k)}}}
-function menuSetup(){const P=[...document.querySelectorAll("#menu-pop .menu-page")];
+function infoToggles(){
+  document.querySelectorAll('#menu-pop .menu-page p.small,#mode-help,#t-help,#fc-help,#sec-sorties>p.small').forEach(p=>{
+    if(p.dataset.inf||p.id==="al-msg"||p.id==="resp-help"||p.closest('#al-form,#al-info,[data-t="Calcul du score"],[data-t="Sources et limites"]')||p.querySelector("a"))return;
+    p.dataset.inf="1";p.hidden=true;
+    const b=document.createElement("button");b.type="button";b.className="ti inf-i";b.textContent="i";b.setAttribute("aria-label","Plus d'informations");b.setAttribute("aria-expanded","false");
+    b.onclick=()=>{p.hidden=!p.hidden;b.setAttribute("aria-expanded",String(!p.hidden))};p.parentNode.insertBefore(b,p)})}
+function menuSetup(){infoToggles();const P=[...document.querySelectorAll("#menu-pop .menu-page")];
   $("menu-toc").innerHTML=P.map((p,k)=>`<option value="${k}">${esc(p.dataset.t)}</option>`).join("");
   $("menu-toc").onchange=e=>menuGo(+e.target.value);$("menu-prev").onclick=()=>menuGo(menuPg-1);$("menu-next").onclick=()=>menuGo(menuPg+1);menuGo(0)}
 const TIER_NAMES=["","★ Stars","Bons comestibles","Comestibles intéressants"];
@@ -2697,7 +2710,7 @@ let huntGeoArr=null,huntGeoKey="";
 function huntGeo(){
   const key=meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows+"|"+(PLACES_G?1:0);if(key===huntGeoKey&&huntGeoArr)return huntGeoArr;huntGeoKey=key;
   const W=meta.cols,H=meta.rows,n=W*H,res=meta.res,fx=G.fx;
-  const GAP=Math.round(100/res),lab=new Int32Array(n),sz=[0],st=new Int32Array(n);let nl=0; // massif = forêts séparées de moins de 100 m (route, clairière) réunies
+  const GAP=Math.max(1,Math.round(10/res)),lab=new Int32Array(n),sz=[0],st=new Int32Array(n);let nl=0; // massif = forêts contiguës (séparées de moins de 10 m ; la grille fait 25 m : cellules voisines)
   for(let s=0;s<n;s++){if(!fx[s]||lab[s])continue;nl++;let top=0,cnt=0;st[top++]=s;lab[s]=nl;
     while(top){const i=st[--top];cnt++;const r=(i/W)|0,c=i-r*W;
       for(let dr=-GAP;dr<=GAP;dr++){const rr=r+dr;if(rr<0||rr>=H)continue;for(let dc=-GAP;dc<=GAP;dc++){const cc=c+dc;if(cc<0||cc>=W)continue;const j=rr*W+cc;if(fx[j]&&!lab[j]){lab[j]=nl;st[top++]=j}}}}
