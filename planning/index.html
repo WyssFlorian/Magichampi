@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planification Magichampi</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:12px;background:#151a17;color:#eee}
+h1{font-size:18px}table{border-collapse:collapse;width:100%}
+td,th{border-bottom:1px solid #333;padding:6px;text-align:left;font-size:14px;vertical-align:middle}
+select,input,button{font-size:16px;background:#222;color:#eee;border:1px solid #555;border-radius:6px;padding:4px}
+.k{font-size:12px;color:#aaa}
+</style></head><body>
+<h1>Planification Magichampi (18 nov. 2026)</h1>
+<p class="k">✅ fait · ❔ en attente · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur).</p>
+<table><thead><tr><th>Statut</th><th>↕</th><th>Action</th><th>Date</th><th>Tokens (est.)</th></tr></thead><tbody id="b"></tbody></table>
+<script>
+var D=[
+["Fusion des 3 cartes en une seule page (hors ligne par région)","2026-11-20","60-100 k"],
+["Étapes 2-4 du modèle + sources d'experts","2026-11-20","60-100 k"],
+["Couleurs en % sur Lausanne et Gros-de-Vaud","2026-11-20","15-25 k"],
+["Bandes boisées 50 m sur Lausanne et Gros-de-Vaud","2026-11-20","15-25 k"],
+["Carte WSL des essences (go donné 18 nov. : Riviera d'abord)","2026-11-18","80-125 k","✅"],
+["Extension NE (≈ 290 Mo)","","≈ 20 k"],
+["Extension JU (≈ 300 Mo)","","≈ 20 k"],
+["Extension VS (≈ 1,9 Go, bilingue)","","≈ 38 k"],
+["Extension GE (≈ 100 Mo)","","≈ 12 k"],
+["Menu multilingue FR / DE / IT","","30-50 k"],
+["Extension progressive aux autres cantons suisses","","≈ 350 k au total"],
+["Proposition hebdomadaire d'extension (chaque lundi 8 h)","2026-11-23","0"]
+].map(function(r,i){return{id:i,t:r[0],d:r[1],k:r[2],s:r[3]||"❔"}});
+var S=JSON.parse(localStorage.getItem("plan2")||"null")||D;
+function save(){localStorage.setItem("plan2",JSON.stringify(S));draw()}
+function mv(i,d){var j=i+d;if(j<0||j>=S.length)return;var x=S[i];S[i]=S[j];S[j]=x;save()}
+function draw(){var h="";S.forEach(function(r,i){
+h+="<tr><td><select onchange='S["+i+"].s=this.value;save()'>"+["✅","❔","🚫"].map(function(o){return"<option"+(o==r.s?" selected":"")+">"+o+"</option>"}).join("")+"</select></td>"+
+"<td><button onclick='mv("+i+",-1)'>↑</button><button onclick='mv("+i+",1)'>↓</button></td>"+
+"<td>"+r.t+"</td><td><input type='date' value='"+r.d+"' onchange='S["+i+"].d=this.value;save()'></td><td>"+r.k+"</td></tr>"});
+document.getElementById("b").innerHTML=h}
+draw();
+</script></body></html>
