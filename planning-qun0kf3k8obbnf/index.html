@@ -11,9 +11,9 @@ select,input,button{font-size:16px;background:#222;color:#eee;border:1px solid #
 .r td{background:#3a1a1a}.r .qq{color:#ff7b7b;font-weight:600}
 </style></head><body>
 <h1>Planification Magichampi (mise à jour 18 nov. 2026)</h1>
-<p class="k">✅ fait · ❔ en attente · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
-<div class="q">Quota restant au départ (ven. 20 nov. 8 h) : <input id="q0" type="number" min="0" max="100" step="1" onchange="qs()"> % · Taux : <input id="qr" type="number" min="1" max="100" step="0.5" onchange="qs()"> % de quota par 100 k tokens<br><label><input id="qa" type="checkbox" onchange="qs()"> compter aussi les ✅ (validées mais pas encore faites)</label></div>
-<p class="k">Quota restant = estimation grossière : milieu de la fourchette de tokens × taux, tâches décomptées par date, remise à 100 % chaque vendredi 8 h. Rouge sous 15 %.</p>
+<p class="k">✅ autorisé : Claude lance sans te demander · ❔ à valider : Claude te demande d'abord (tu vérifies le quota exact) · 🏁 terminé · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
+<div class="q">Quota restant au départ (ven. 20 nov. 8 h) : <input id="q0" type="number" min="0" max="100" step="1" onchange="qs()"> % · Taux : <input id="qr" type="number" min="1" max="100" step="0.5" onchange="qs()"> % de quota par 100 k tokens</div>
+<p class="k">Quota restant = estimation grossière : milieu de la fourchette de tokens × taux, tâches ✅ et ❔ décomptées par date (🏁 et 🚫 ne comptent pas), remise à 100 % chaque vendredi 8 h. Rouge sous 15 %.</p>
 <table><thead><tr><th>Statut</th><th>↕</th><th>Action</th><th>Date</th><th>Tokens (est.)</th><th>Quota restant</th></tr></thead><tbody id="b"></tbody></table>
 <script>
 /* Lignes de référence : id stable, titre, date, tokens, statut. Nouvelle ligne : nouvel id (6e champ = id devant lequel l'insérer). Date déplacée : l'ajouter à MOVED. */
@@ -52,9 +52,9 @@ function load(){
 var S=load();
 function save(){try{localStorage.setItem("plan3",JSON.stringify(S))}catch(e){}draw()}
 function mv(i,d){var j=i+d;if(j<0||j>=S.length)return;var x=S[i];S[i]=S[j];S[j]=x;save()}
-var Q={b0:100,rate:12,all:true};
+var Q={b0:100,rate:12};
 try{var qq=JSON.parse(localStorage.getItem("planq")||"null");if(qq)for(var k in Q)if(qq[k]!==undefined)Q[k]=qq[k]}catch(e){}
-function qs(){Q.b0=+document.getElementById("q0").value;Q.rate=+document.getElementById("qr").value||12;Q.all=document.getElementById("qa").checked;try{localStorage.setItem("planq",JSON.stringify(Q))}catch(e){}draw()}
+function qs(){Q.b0=+document.getElementById("q0").value;Q.rate=+document.getElementById("qr").value||12;try{localStorage.setItem("planq",JSON.stringify(Q))}catch(e){}draw()}
 function mid(k){var m=/(\d+)(?:\s*-\s*(\d+))?\s*k/.exec(k);return m?(m[2]?(+m[1]+ +m[2])/2:+m[1]):0}
 function fri(d){var t=new Date(d+"T00:00:00Z");t.setUTCDate(t.getUTCDate()-(t.getUTCDay()+2)%7);return t.toISOString().slice(0,10)}
 function calc(){var out={},it=S.map(function(x,i){return{x:x,i:i}});
@@ -62,12 +62,12 @@ function calc(){var out={},it=S.map(function(x,i){return{x:x,i:i}});
  var cur=null,bal=Q.b0;
  it.forEach(function(o){var x=o.x;
   if(x.d){var w=fri(x.d);if(w<"2026-11-20")w="2026-11-20";if(cur===null)cur=w;else if(w!=cur){cur=w;bal=100}}
-  var on=x.s=="❔"||(Q.all&&x.s=="✅");
+  var on=x.s=="❔"||x.s=="✅";
   if(on){bal-=mid(byId[x.id].k)/100*Q.rate;out[x.id]=bal}});
  return out}
 function draw(){var h="",q=calc();
-document.getElementById("q0").value=Q.b0;document.getElementById("qr").value=Q.rate;document.getElementById("qa").checked=Q.all;S.forEach(function(x,i){var r=byId[x.id],v=q[x.id],lo=v!==undefined&&v<15;
-h+="<tr"+(lo?" class='r'":"")+"><td><select onchange='S["+i+"].s=this.value;save()'>"+["✅","❔","🚫"].map(function(o){return"<option"+(o==x.s?" selected":"")+">"+o+"</option>"}).join("")+"</select></td>"+
+document.getElementById("q0").value=Q.b0;document.getElementById("qr").value=Q.rate;S.forEach(function(x,i){var r=byId[x.id],v=q[x.id],lo=v!==undefined&&v<15;
+h+="<tr"+(lo?" class='r'":"")+"><td><select onchange='S["+i+"].s=this.value;save()'>"+["✅","❔","🏁","🚫"].map(function(o){return"<option"+(o==x.s?" selected":"")+">"+o+"</option>"}).join("")+"</select></td>"+
 "<td><button onclick='mv("+i+",-1)'>↑</button><button onclick='mv("+i+",1)'>↓</button></td>"+
 "<td>"+r.t+"</td><td><input type='date' value='"+x.d+"' onchange='S["+i+"].d=this.value;save()'></td><td>"+r.k+"</td><td class='qq'>"+(v===undefined?"–":Math.round(v)+" %")+"</td></tr>"});
 document.getElementById("b").innerHTML=h}
