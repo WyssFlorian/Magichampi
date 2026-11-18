@@ -7,31 +7,35 @@ h1{font-size:18px}table{border-collapse:collapse;width:100%}
 td,th{border-bottom:1px solid #333;padding:6px;text-align:left;font-size:14px;vertical-align:middle}
 select,input,button{font-size:16px;background:#222;color:#eee;border:1px solid #555;border-radius:6px;padding:4px}
 .k{font-size:12px;color:#aaa}
+.q{margin:8px 0;font-size:14px}.q input[type=number]{width:4.5em}
+.r td{background:#3a1a1a}.r .qq{color:#ff7b7b;font-weight:600}
 </style></head><body>
 <h1>Planification Magichampi (mise à jour 18 nov. 2026)</h1>
-<p class="k">✅ fait · ❔ en attente · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
-<table><thead><tr><th>Statut</th><th>↕</th><th>Action</th><th>Date</th><th>Tokens (est.)</th></tr></thead><tbody id="b"></tbody></table>
+<p class="k">✅ autorisé : Claude lance sans te demander · ❔ à valider : Claude te demande d'abord (tu vérifies le quota exact) · 🏁 terminé · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
+<div class="q">Quota restant au départ (ven. 20 nov. 8 h) : <input id="q0" type="number" min="0" max="100" step="1" onchange="qs()"> % · Taux : <input id="qr" type="number" min="1" max="100" step="0.5" onchange="qs()"> % de quota par 100 k tokens</div>
+<p class="k">Quota restant = estimation grossière : milieu de la fourchette de tokens × taux, tâches ✅ et ❔ décomptées par date (🏁 et 🚫 ne comptent pas), remise à 100 % chaque vendredi 8 h. Rouge sous 15 %.</p>
+<table><thead><tr><th>Statut</th><th>↕</th><th>Action</th><th>Date</th><th>Tokens (est.)</th><th>Quota restant</th></tr></thead><tbody id="b"></tbody></table>
 <script>
 /* Lignes de référence : id stable, titre, date, tokens, statut. Nouvelle ligne : nouvel id (6e champ = id devant lequel l'insérer). Date déplacée : l'ajouter à MOVED. */
 var D=[
-["wsl","Carte WSL des essences (go donné 18 nov. : Riviera d'abord)","2026-11-18","80-125 k","✅"],
 ["fusion","Fusion des 3 cartes en une seule page (hors ligne par région)","2026-11-20","60-100 k","✅"],
-["modele","Étapes 2-4 du modèle + sources d'experts (sur les 3 régions fusionnées)","2026-11-20","60-100 k","✅"],
 ["couleurs","Couleurs en % (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
 ["bandes","Bandes boisées 50 m (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
+["wsl","Carte WSL des essences : intégration sur les 3 régions fusionnées, après la fusion du 20 nov. (go donné le 18 nov., pas encore démarrée)","2026-11-20","80-125 k","✅"],
+["modele","Étapes 2-4 du modèle + sources d'experts (sur les 3 régions fusionnées)","2026-11-20","60-100 k","✅"],
 ["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions","2026-11-21","≈ 40-70 k","✅"],
 ["coins","Partage chiffré des coins pour améliorer la prédiction","2026-11-21","≈ 40-80 k","✅"],
-["vaud","Extension de la carte de départ à tout le canton de Vaud","2026-11-27","≈ 100-130 k","❔","ne"],
-["ne","Extension NE (≈ 290 Mo)","2026-12-04","≈ 20 k","✅"],
-["ju","Extension JU (≈ 300 Mo)","2026-12-04","≈ 20 k","✅"],
-["ge","Extension GE (≈ 100 Mo)","2026-12-04","≈ 12 k","✅"],
-["vs","Extension VS (≈ 1,9 Go, bilingue)","2026-11-27","≈ 38 k","✅"],
-["langues","Menu multilingue FR / DE / IT","2026-11-27","30-50 k","✅"],
-["lundi","Proposition hebdomadaire d'extension (chaque lundi 8 h)","2026-12-04","0","✅"],
-["cantons","Extension progressive aux autres cantons suisses","2026-12-04","≈ 350 k au total"]
+["vaud","Extension de la carte de départ à tout le canton de Vaud (avant les autres cantons)","2026-11-27","≈ 100-130 k","✅","ne"],
+["ne","Extension NE (≈ 290 Mo), après Vaud","2026-12-04","≈ 20 k","✅"],
+["ju","Extension JU (≈ 300 Mo), après Vaud","2026-12-04","≈ 20 k","✅"],
+["ge","Extension GE (≈ 100 Mo), après Vaud","2026-12-04","≈ 12 k","✅"],
+["vs","Extension VS (≈ 1,9 Go, bilingue), après Vaud","2026-12-04","≈ 38 k","✅"],
+["langues","Menu multilingue FR / DE / IT (après Vaud)","2026-12-04","30-50 k","✅"],
+["lundi","Proposition d'extension avec coût : rendez-vous chaque vendredi 8 h dès le 11 déc.","2026-12-11","0","✅"],
+["cantons","Extension progressive aux autres cantons suisses (propositions hebdomadaires, coût validé chaque semaine)","2026-12-11","≈ 350 k au total"]
 ].map(function(r){return{id:r[0],t:r[1],d:r[2],k:r[3],s:r[4]||"❔",b:r[5]}});
 /* Dates déplacées : si la date enregistrée est encore l'ancienne valeur par défaut, elle passe à la nouvelle ; une date modifiée à la main n'est jamais touchée. */
-var MOVED={ne:["2026-11-27","2026-12-04"],ju:["2026-11-27","2026-12-04"],ge:["2026-11-27","2026-12-04"]};
+var MOVED={ne:["2026-11-27","2026-12-04"],ju:["2026-11-27","2026-12-04"],ge:["2026-11-27","2026-12-04"],vs:["2026-11-27","2026-12-04"],langues:["2026-11-27","2026-12-04"],lundi:["2026-12-04","2026-12-11"],cantons:["2026-12-04","2026-12-11"]};
 var byId={};D.forEach(function(r){byId[r.id]=r});
 function load(){
  var st=null;
@@ -48,10 +52,24 @@ function load(){
 var S=load();
 function save(){try{localStorage.setItem("plan3",JSON.stringify(S))}catch(e){}draw()}
 function mv(i,d){var j=i+d;if(j<0||j>=S.length)return;var x=S[i];S[i]=S[j];S[j]=x;save()}
-function draw(){var h="";S.forEach(function(x,i){var r=byId[x.id];
-h+="<tr><td><select onchange='S["+i+"].s=this.value;save()'>"+["✅","❔","🚫"].map(function(o){return"<option"+(o==x.s?" selected":"")+">"+o+"</option>"}).join("")+"</select></td>"+
+var Q={b0:100,rate:12};
+try{var qq=JSON.parse(localStorage.getItem("planq")||"null");if(qq)for(var k in Q)if(qq[k]!==undefined)Q[k]=qq[k]}catch(e){}
+function qs(){Q.b0=+document.getElementById("q0").value;Q.rate=+document.getElementById("qr").value||12;try{localStorage.setItem("planq",JSON.stringify(Q))}catch(e){}draw()}
+function mid(k){var m=/(\d+)(?:\s*-\s*(\d+))?\s*k/.exec(k);return m?(m[2]?(+m[1]+ +m[2])/2:+m[1]):0}
+function fri(d){var t=new Date(d+"T00:00:00Z");t.setUTCDate(t.getUTCDate()-(t.getUTCDay()+2)%7);return t.toISOString().slice(0,10)}
+function calc(){var out={},it=S.map(function(x,i){return{x:x,i:i}});
+ it.sort(function(a,b){var da=a.x.d||"9999",db=b.x.d||"9999";return da<db?-1:da>db?1:a.i-b.i});
+ var cur=null,bal=Q.b0;
+ it.forEach(function(o){var x=o.x;
+  if(x.d){var w=fri(x.d);if(w<"2026-11-20")w="2026-11-20";if(cur===null)cur=w;else if(w!=cur){cur=w;bal=100}}
+  var on=x.s=="❔"||x.s=="✅";
+  if(on){bal-=mid(byId[x.id].k)/100*Q.rate;out[x.id]=bal}});
+ return out}
+function draw(){var h="",q=calc();
+document.getElementById("q0").value=Q.b0;document.getElementById("qr").value=Q.rate;S.forEach(function(x,i){var r=byId[x.id],v=q[x.id],lo=v!==undefined&&v<15;
+h+="<tr"+(lo?" class='r'":"")+"><td><select onchange='S["+i+"].s=this.value;save()'>"+["✅","❔","🏁","🚫"].map(function(o){return"<option"+(o==x.s?" selected":"")+">"+o+"</option>"}).join("")+"</select></td>"+
 "<td><button onclick='mv("+i+",-1)'>↑</button><button onclick='mv("+i+",1)'>↓</button></td>"+
-"<td>"+r.t+"</td><td><input type='date' value='"+x.d+"' onchange='S["+i+"].d=this.value;save()'></td><td>"+r.k+"</td></tr>"});
+"<td>"+r.t+"</td><td><input type='date' value='"+x.d+"' onchange='S["+i+"].d=this.value;save()'></td><td>"+r.k+"</td><td class='qq'>"+(v===undefined?"–":Math.round(v)+" %")+"</td></tr>"});
 document.getElementById("b").innerHTML=h}
 save();
 </script></body></html>
