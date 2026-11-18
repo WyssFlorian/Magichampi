@@ -872,7 +872,6 @@ details.more[open]>summary{margin-bottom:4px}
   .species .sp .now br,.species .sp .now .rel{display:none}
   .seg button{padding:10px 8px}
   label.chk{min-height:34px}
-  #t-help{display:none}
   .mapwrap{order:1}
   /* la fiche du lieu s'ouvre en tête du menu, sous la carte, qui garde toute sa taille */
   .panel>.sheet{position:static;order:-4;max-height:none;border-radius:10px;box-shadow:none;border:2px solid var(--accent,#2f5d3a);flex:none;transition:none}
@@ -969,6 +968,8 @@ details.more[open]>summary{margin-bottom:4px}
 .menu-pop input[type=checkbox],.menu-pop input[type=radio]{flex:none}
 .menu-pop .acc-ic,.menu-pop .obs-icon,.menu-pop .hunt-sw,.menu-pop .vapko-pin,.menu-pop .trail-sw,.menu-pop .road-sw,.menu-pop .water-sw,.menu-pop .relief-sw,.menu-pop .sortie-sw{flex:none}
 .menu-pop .row{flex-wrap:wrap}
+.inf-extra{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}.inf-extra[hidden]{display:none}.inf-extra .btn{padding:3px 10px;font-size:12px}
+.tool-btns{display:flex;flex-direction:column;gap:10px}.tool-big{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;font-size:15px;text-align:left;width:100%}.tool-big span{font-size:12px;color:var(--muted)}
 .inf-i{display:inline-grid;place-items:center;width:18px;height:18px;margin:2px 0;padding:0;font:700 11px/1 var(--font-body);border:1px solid var(--line);border-radius:50%;background:none;color:var(--muted);cursor:pointer;position:static}
 .menu-pop p.small[hidden]{display:none}
 /* refonte : contrôles de la carte, menu en pages, alertes, chasse */
@@ -1040,13 +1041,14 @@ details.more[open]>summary{margin-bottom:4px}
 
     <section id="sec-what">
       <h2>Que chercher</h2>
+      <p class="small" id="t-help" style="margin:6px 0 0"></p>
+      <div class="inf-extra" id="t-extra" hidden><button class="btn" type="button" data-act="tour">? Guide</button><button class="btn" type="button" data-act="off" title="Télécharger toute la carte pour l'utiliser sans réseau"></button></div>
       <div class="seg" role="group" aria-label="Que chercher">
         <button id="t-multi" aria-pressed="false">Forte concentration</button>
         <button id="t-sp" aria-pressed="true">Par espèce</button>
       </div>
       <div class="seg tiers" id="tiers" role="group" aria-label="Catégorie" style="margin-top:8px"><button data-tier="1">★ Stars<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button><button data-tier="2">Bons<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button><button data-tier="3">Intéressants<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button><button data-tier="0">Toutes<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button></div>
       <div id="tier-info" class="tier-info" hidden></div>
-      <p class="small" id="t-help" style="margin:6px 0 0"></p>
       <p class="small" id="tier-off" hidden style="margin:4px 0 0;color:#6b4000">Aucune espèce de cette catégorie n'est de saison en ce moment : elles sont toutes affichées, mais leurs forêts ne donneront probablement rien avant la prochaine saison.</p>
       <div id="sp-box" style="margin-top:8px">
         <div class="species" id="species" role="group" aria-label="Espèce"></div>
@@ -1068,6 +1070,7 @@ details.more[open]>summary{margin-bottom:4px}
         <div class="row" style="justify-content:space-between"><span>Date de référence</span><span class="date" id="date-lab"></span></div>
         <input type="range" id="date" min="0" max="0" step="1" aria-label="Date de référence">
         <p class="small" id="fc-help" style="margin:2px 0 0"></p>
+        <div class="inf-extra" id="fc-extra" hidden><button class="btn" type="button" id="upd-btn">Actualiser</button></div>
       </div>
     </section>
 
@@ -1186,8 +1189,9 @@ details.more[open]>summary{margin-bottom:4px}
         <p class="small" id="al-msg" role="status" style="margin:6px 0 0" hidden></p>
       </div>
       <div class="menu-page" data-t="Météo et outils"><h3>Météo et outils</h3>
-      <p class="small" id="upd" style="margin:6px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span id="upd-lab"></span><button class="btn" id="upd-btn" style="padding:2px 10px;font-size:12px">Actualiser</button><button class="btn" id="tour-btn" style="padding:2px 10px;font-size:12px" title="Revoir le guide animé">? Guide</button></p>
-        <p class="small">« Actualiser » recharge les prévisions de MétéoSuisse. « Guide » rejoue la visite animée. « Hors ligne » télécharge toute la carte pour l'utiliser sans réseau.</p>
+      <p class="small" id="upd" style="margin:6px 0 10px"><span id="upd-lab"></span></p>
+        <div class="tool-btns"><button class="btn tool-big" type="button" data-act="tour"><b>? Guide</b><span>Revoir la visite animée</span></button><button class="btn tool-big" type="button" data-act="off" title="Télécharger toute la carte pour l'utiliser sans réseau"></button></div>
+        <p class="small" style="margin:10px 0 0">« Actualiser » (sous la date de référence, bouton « i ») recharge les prévisions de MétéoSuisse. « Hors ligne » télécharge toute la carte (≈ 125 Mo) pour l'utiliser sans réseau.</p>
       </div>
       <div class="menu-page" data-t="Calcul du score" id="menu-score"><h3>Comment le score est calculé</h3>
       <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue × observations proches. Elle ne dépend pas de la météo.</p>
@@ -2008,10 +2012,11 @@ function openMenu(open,page){const m=$("menu-pop");m.hidden=open===undefined?!m.
   if(!m.hidden){fillSpFilter();if(page!=null){const P=[...document.querySelectorAll("#menu-pop .menu-page")],k=typeof page==="number"?page:P.findIndex(p=>p.id===page);if(k>=0)menuGo(k)}}}
 function infoToggles(){
   document.querySelectorAll('#menu-pop .menu-page p.small,#mode-help,#t-help,#fc-help,#sec-sorties>p.small').forEach(p=>{
-    if(p.dataset.inf||p.id==="al-msg"||p.id==="resp-help"||p.closest('#al-form,#al-info,[data-t="Calcul du score"],[data-t="Sources et limites"]')||p.querySelector("a"))return;
+    if(p.dataset.inf||p.id==="upd"||p.id==="al-msg"||p.id==="resp-help"||p.closest('#al-form,#al-info,[data-t="Calcul du score"],[data-t="Sources et limites"]')||p.querySelector("a"))return;
     p.dataset.inf="1";p.hidden=true;
     const b=document.createElement("button");b.type="button";b.className="ti inf-i";b.textContent="i";b.setAttribute("aria-label","Plus d'informations");b.setAttribute("aria-expanded","false");
-    b.onclick=()=>{p.hidden=!p.hidden;b.setAttribute("aria-expanded",String(!p.hidden))};p.parentNode.insertBefore(b,p)})}
+    const ex=document.getElementById({"fc-help":"fc-extra","t-help":"t-extra"}[p.id]||"");if(ex)ex.hidden=true;
+    b.onclick=()=>{p.hidden=!p.hidden;if(ex)ex.hidden=p.hidden;b.setAttribute("aria-expanded",String(!p.hidden))};p.parentNode.insertBefore(b,p)})}
 function menuSetup(){infoToggles();const P=[...document.querySelectorAll("#menu-pop .menu-page")];
   $("menu-toc").innerHTML=P.map((p,k)=>`<option value="${k}">${esc(p.dataset.t)}</option>`).join("");
   $("menu-toc").onchange=e=>menuGo(+e.target.value);$("menu-prev").onclick=()=>menuGo(menuPg-1);$("menu-next").onclick=()=>menuGo(menuPg+1);menuGo(0)}
@@ -3283,7 +3288,7 @@ async function boot(){
   $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();
   $("o-sq").onchange=renderSquares;
   setupCoinForm();setupShare();setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
-  $("tour-btn").onclick=tourStart;
+  document.querySelectorAll("[data-act=tour]").forEach(b=>b.onclick=tourStart);
   {let seen=null;try{seen=localStorage.getItem("champi-tour2")}catch(e){seen="?"}if(!seen)setTimeout(tourStart,1200)}
   state.view=state.view||"zone";
   setMode(state.mode);applyViewPref(VP.p,true);
@@ -3298,14 +3303,19 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
   if(!("serviceWorker" in navigator))return;
   navigator.serviceWorker.register("../sw.js",{scope:"../"}).catch(function(e){console.warn(e)});
   var zone=location.pathname.split("/").filter(Boolean).slice(-2,-1)[0]||"";
+  var MB="≈ 125 Mo";
   function addBtn(){
-    var p=document.getElementById("upd");if(!p){return setTimeout(addBtn,300)}
-    var b=document.createElement("button");b.className="btn";b.id="off-btn";
-    b.style.cssText="padding:2px 10px;font-size:12px";b.title="Télécharger toute la carte pour l'utiliser sans réseau";
-    var lab=function(t){b.textContent=t};
-    try{lab(localStorage.getItem("offline-"+zone)?"Hors ligne ✓":"Hors ligne")}catch(e){lab("Hors ligne")}
-    b.onclick=async function(){
-      b.disabled=true;lab("…");
+    var bs=document.querySelectorAll("[data-act=off]");if(!bs.length){return setTimeout(addBtn,300)}
+    var busy=false;
+    var lab=function(t,big){bs.forEach(function(b){
+      var big=b.classList.contains("tool-big");
+      if(big){b.innerHTML="<b>"+t+"</b><span>Toute la carte sans réseau ("+MB+")</span>"}
+      else b.textContent=t+(/%|…|Échec|Incomplet/.test(t)?"":" ("+MB+")")})};
+    var set=function(d){busy=d;bs.forEach(function(b){b.disabled=d})};
+    var done=function(){try{return localStorage.getItem("offline-"+zone)}catch(e){return null}};
+    lab(done()?"Hors ligne ✓":"Télécharger hors ligne");
+    var go=async function(){
+      if(busy)return;set(true);lab("…");
       try{
         var list=await fetch("files.json",{cache:"no-cache"}).then(function(r){return r.json()});
         var c=await caches.open("cartes-donnees"),n=0,fail=0,i=0,N=list.length;
@@ -3313,12 +3323,12 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
           try{var r=await fetch(f,{cache:"no-cache"});if(r.ok){await c.put(new URL(f,location.href).href,r)}else fail++}catch(e){fail++}
           n++;if(n%10===0||n===N)lab(Math.round(100*n/N)+" %")}}
         await Promise.all([one(),one(),one(),one()]);
-        if(fail){lab("Incomplet, réessayer");b.disabled=false;return}
+        if(fail){lab("Incomplet, réessayer");set(false);return}
         try{localStorage.setItem("offline-"+zone,new Date().toISOString())}catch(e){}
-        lab("Hors ligne ✓");b.disabled=false;
-      }catch(e){console.warn(e);lab("Échec, réessayer");b.disabled=false}
+        lab("Hors ligne ✓");set(false);
+      }catch(e){console.warn(e);lab("Échec, réessayer");set(false)}
     };
-    p.appendChild(b);
+    bs.forEach(function(b){b.onclick=go});
   }
   addBtn();
 })();
