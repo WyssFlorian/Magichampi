@@ -17,18 +17,18 @@ var D=[
 ["fusion","Fusion des 3 cartes en une seule page (hors ligne par région)","2026-11-20","60-100 k","✅"],
 ["couleurs","Couleurs en % (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
 ["bandes","Bandes boisées 50 m (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
-["wsl","Carte WSL des essences (go donné 18 nov. : Riviera d'abord)","2026-11-20","80-125 k","✅"],
+["wsl","Carte WSL des essences : intégration sur les 3 régions fusionnées, après la fusion du 20 nov. (go donné le 18 nov., pas encore démarrée)","2026-11-20","80-125 k","✅"],
 ["modele","Étapes 2-4 du modèle + sources d'experts (sur les 3 régions fusionnées)","2026-11-20","60-100 k","✅"],
 ["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions","2026-11-21","≈ 40-70 k","✅"],
 ["coins","Partage chiffré des coins pour améliorer la prédiction","2026-11-21","≈ 40-80 k","✅"],
-["vaud","Extension de la carte de départ à tout le canton de Vaud","2026-11-27","≈ 100-130 k","✅","ne"],
-["ne","Extension NE (≈ 290 Mo)","2026-12-04","≈ 20 k","✅"],
-["ju","Extension JU (≈ 300 Mo)","2026-12-04","≈ 20 k","✅"],
-["ge","Extension GE (≈ 100 Mo)","2026-12-04","≈ 12 k","✅"],
-["vs","Extension VS (≈ 1,9 Go, bilingue)","2026-12-04","≈ 38 k","✅"],
-["langues","Menu multilingue FR / DE / IT","2026-12-04","30-50 k","✅"],
-["lundi","Proposition hebdomadaire d'extension (chaque lundi 8 h)","2026-12-11","0","✅"],
-["cantons","Extension progressive aux autres cantons suisses","2026-12-11","≈ 350 k au total"]
+["vaud","Extension de la carte de départ à tout le canton de Vaud (avant les autres cantons)","2026-11-27","≈ 100-130 k","✅","ne"],
+["ne","Extension NE (≈ 290 Mo), après Vaud","2026-12-04","≈ 20 k","✅"],
+["ju","Extension JU (≈ 300 Mo), après Vaud","2026-12-04","≈ 20 k","✅"],
+["ge","Extension GE (≈ 100 Mo), après Vaud","2026-12-04","≈ 12 k","✅"],
+["vs","Extension VS (≈ 1,9 Go, bilingue), après Vaud","2026-12-04","≈ 38 k","✅"],
+["langues","Menu multilingue FR / DE / IT (après Vaud)","2026-12-04","30-50 k","✅"],
+["lundi","Proposition d'extension avec coût : rendez-vous chaque vendredi 8 h dès le 11 déc.","2026-12-11","0","✅"],
+["cantons","Extension progressive aux autres cantons suisses (propositions hebdomadaires, coût validé chaque semaine)","2026-12-11","≈ 350 k au total"]
 ].map(function(r){return{id:r[0],t:r[1],d:r[2],k:r[3],s:r[4]||"❔",b:r[5]}});
 /* Dates déplacées : si la date enregistrée est encore l'ancienne valeur par défaut, elle passe à la nouvelle ; une date modifiée à la main n'est jamais touchée. */
 var MOVED={ne:["2026-11-27","2026-12-04"],ju:["2026-11-27","2026-12-04"],ge:["2026-11-27","2026-12-04"],vs:["2026-11-27","2026-12-04"],langues:["2026-11-27","2026-12-04"],lundi:["2026-12-04","2026-12-11"],cantons:["2026-12-04","2026-12-11"]};
