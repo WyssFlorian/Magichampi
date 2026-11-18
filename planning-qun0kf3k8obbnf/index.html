@@ -11,7 +11,7 @@ select,input,button{font-size:16px;background:#222;color:#eee;border:1px solid #
 .r td{background:#3a1a1a}.qq{color:#9fd8a0;font-size:13px;margin-top:4px}.r .qq{color:#ff7b7b;font-weight:600}
 td,th{padding:6px 4px}td button{display:block;margin-bottom:3px}.m{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:4px;color:#aaa;font-size:13px}
 </style></head><body>
-<h1>Planification Magichampi (mise à jour 18 nov. 2026, v6)</h1>
+<h1>Planification Magichampi (mise à jour 18 nov. 2026, v8)</h1>
 <p class="k">✅ autorisé : Claude lance sans te demander · ❔ à valider : Claude te demande d'abord (tu vérifies le quota exact) · 🏁 terminé · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
 <div class="q">Quota restant au départ (ven. 20 nov. 8 h) : <input id="q0" type="number" min="0" max="100" step="1" onchange="qs()"> % · Taux : <input id="qr" type="number" min="1" max="100" step="0.5" onchange="qs()"> % de quota par 100 k tokens</div>
 <p class="k">Sous chaque ligne : date, tokens, coût de la tâche, cumul de la semaine et quota restant. Estimation grossière : milieu de la fourchette de tokens × taux, tâches ✅ et ❔ décomptées par date (🏁 et 🚫 ne comptent pas), remise à 100 % chaque vendredi 8 h. Rouge sous 15 %.</p>
@@ -20,23 +20,23 @@ td,th{padding:6px 4px}td button{display:block;margin-bottom:3px}.m{display:flex;
 /* Lignes de référence : id stable, titre, date, tokens, statut. Nouvelle ligne : nouvel id (6e champ = id devant lequel l'insérer). Date déplacée : l'ajouter à MOVED. */
 var D=[
 ["fusion","Fusion des 3 cartes en une seule page (hors ligne par région)","2026-11-20","60-100 k","✅"],
-["couleurs","Couleurs en % (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
-["bandes","Bandes boisées 50 m (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
-["wsl","Intégration carte WSL des essences (sur les 3 régions fusionnées, dès le départ)","2026-11-20","80-125 k","✅"],
-["modele","Étapes 2-4 du modèle + sources d'experts (sur les 3 régions fusionnées)","2026-11-20","60-100 k","✅"],
-["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions","2026-11-21","≈ 40-70 k","✅"],
-["coins","Partage chiffré des coins pour améliorer la prédiction","2026-11-21","≈ 40-80 k","✅"],
-["vaud","Extension de la carte de départ à tout le canton de Vaud (avant les autres cantons)","2026-11-27","≈ 100-130 k","✅","ne"],
-["ne","Extension NE (≈ 290 Mo), après Vaud","2026-12-04","≈ 20 k","✅"],
-["ju","Extension JU (≈ 300 Mo), après Vaud","2026-12-04","≈ 20 k","✅"],
-["ge","Extension GE (≈ 100 Mo), après Vaud","2026-12-04","≈ 12 k","✅"],
-["vs","Extension VS (≈ 1,9 Go, bilingue), après Vaud","2026-12-04","≈ 38 k","✅"],
-["langues","Menu multilingue FR / DE / IT (après Vaud)","2026-12-04","30-50 k","✅"],
-["lundi","Proposition d'extension avec coût : rendez-vous chaque vendredi 8 h dès le 11 déc.","2026-12-11","0","✅"],
-["cantons","Extension progressive aux autres cantons suisses (propositions hebdomadaires, coût validé chaque semaine)","2026-12-11","≈ 350 k au total"]
+["wsl","Intégration carte WSL des essences (sur les 3 régions fusionnées, dès le départ)","2026-11-20","80-125 k","❔"],
+["couleurs","Couleurs en % (sur les 3 régions fusionnées)","2026-11-21","15-25 k","✅"],
+["modele","Étapes 2-4 du modèle + sources d'experts (sur les 3 régions fusionnées)","2026-11-21","60-100 k","✅"],
+["bandes","Bandes boisées 50 m (sur les 3 régions fusionnées)","2026-11-21","15-25 k","❔"],
+["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions","2026-11-22","≈ 40-70 k","✅"],
+["coins","Partage chiffré des coins pour améliorer la prédiction","2026-11-22","≈ 40-80 k","❔"],
+["vaud","Extension de la carte de départ à tout le canton de Vaud (avant les autres cantons)","2026-11-27","≈ 100-130 k","✅"],
+["ne","Extension NE (≈ 290 Mo), après Vaud","2026-11-28","≈ 20 k","✅"],
+["ju","Extension JU (≈ 300 Mo), après Vaud","2026-11-28","≈ 20 k","✅"],
+["ge","Extension GE (≈ 100 Mo), après Vaud","2026-11-28","≈ 12 k","✅"],
+["vs","Extension VS (≈ 1,9 Go, bilingue), après Vaud","2026-11-29","≈ 38 k","❔"],
+["langues","Menu multilingue FR / DE / IT (après Vaud)","2026-11-29","30-50 k","❔"],
+["lundi","Proposition d'extension avec coût : rendez-vous chaque vendredi 8 h","2026-11-28","0","✅"],
+["cantons","Extension progressive aux autres cantons suisses (propositions hebdomadaires, coût validé chaque semaine)","2026-12-04","≈ 350 k au total","❔"]
 ].map(function(r){return{id:r[0],t:r[1],d:r[2],k:r[3],s:r[4]||"❔",b:r[5]}});
 /* Dates déplacées : si la date enregistrée est encore l'ancienne valeur par défaut, elle passe à la nouvelle ; une date modifiée à la main n'est jamais touchée. */
-var MOVED={ne:["2026-11-27","2026-12-04"],ju:["2026-11-27","2026-12-04"],ge:["2026-11-27","2026-12-04"],vs:["2026-11-27","2026-12-04"],langues:["2026-11-27","2026-12-04"],lundi:["2026-12-04","2026-12-11"],cantons:["2026-12-04","2026-12-11"]};
+var MOVED={};
 var byId={};D.forEach(function(r){byId[r.id]=r});
 function load(){
  var st=null;
