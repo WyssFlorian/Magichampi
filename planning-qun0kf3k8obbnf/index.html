@@ -11,7 +11,7 @@ select,input,button{font-size:16px;background:#222;color:#eee;border:1px solid #
 .r td{background:#3a1a1a}.qq{color:#9fd8a0;font-size:13px;margin-top:4px}.r .qq{color:#ff7b7b;font-weight:600}
 td,th{padding:6px 4px}td button{display:block;margin-bottom:3px}.m{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:4px;color:#aaa;font-size:13px}
 </style></head><body>
-<h1>Planification Magichampi (mise à jour 18 nov. 2026, v8)</h1>
+<h1>Planification Magichampi (mise à jour 18 nov. 2026, v10)</h1>
 <p class="k">✅ autorisé : Claude lance sans te demander · ❔ à valider : Claude te demande d'abord (tu vérifies le quota exact) · 🏁 terminé · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
 <div class="q">Quota restant au départ (ven. 20 nov. 8 h) : <input id="q0" type="number" min="0" max="100" step="1" onchange="qs()"> % · Taux : <input id="qr" type="number" min="1" max="100" step="0.5" onchange="qs()"> % de quota par 100 k tokens</div>
 <p class="k">Sous chaque ligne : date, tokens, coût de la tâche, cumul de la semaine et quota restant. Estimation grossière : milieu de la fourchette de tokens × taux, tâches ✅ et ❔ décomptées par date (🏁 et 🚫 ne comptent pas), remise à 100 % chaque vendredi 8 h. Rouge sous 15 %.</p>
@@ -21,7 +21,7 @@ td,th{padding:6px 4px}td button{display:block;margin-bottom:3px}.m{display:flex;
 var D=[
 ["fusion","Fusion des 3 cartes en une seule page (hors ligne par région)","2026-11-20","60-100 k","✅"],
 ["wsl","Intégration carte WSL des essences (sur les 3 régions fusionnées, dès le départ)","2026-11-20","80-125 k","❔"],
-["couleurs","Couleurs en % (sur les 3 régions fusionnées)","2026-11-21","15-25 k","✅"],
+["couleurs","Couleurs en % (sur les 3 régions fusionnées) + pic de saison par espèce, adapté à l'altitude moyenne de la carte, dans l'encadré de sélection à côté du pourcentage, avec un petit « i » : fiche technique (arbres, altitude, température, humidité, début et fin de saison, etc.) et valeur du pic calculée selon l'altitude","2026-11-21","25-45 k","✅"],
 ["modele","Étapes 2-4 du modèle + sources d'experts (sur les 3 régions fusionnées)","2026-11-21","60-100 k","✅"],
 ["bandes","Bandes boisées 50 m (sur les 3 régions fusionnées)","2026-11-21","15-25 k","❔"],
 ["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions","2026-11-22","≈ 40-70 k","✅"],
