@@ -9,18 +9,19 @@ select,input,button{font-size:16px;background:#222;color:#eee;border:1px solid #
 .k{font-size:12px;color:#aaa}
 </style></head><body>
 <h1>Planification Magichampi (mise à jour 18 nov. 2026)</h1>
-<p class="k">✅ fait · ❔ en attente · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent en bas sans toucher à tes choix.</p>
+<p class="k">✅ fait · ❔ en attente · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
 <table><thead><tr><th>Statut</th><th>↕</th><th>Action</th><th>Date</th><th>Tokens (est.)</th></tr></thead><tbody id="b"></tbody></table>
 <script>
 /* Lignes de référence : id stable, titre, date, tokens, statut. Ajouter de nouvelles lignes à la fin avec un nouvel id. */
 var D=[
 ["wsl","Carte WSL des essences (go donné 18 nov. : Riviera d'abord)","2026-11-18","80-125 k","✅"],
 ["fusion","Fusion des 3 cartes en une seule page (hors ligne par région)","2026-11-20","60-100 k","✅"],
-["modele","Étapes 2-4 du modèle + sources d'experts","2026-11-20","60-100 k","✅"],
-["couleurs","Couleurs en % sur Lausanne et Gros-de-Vaud","2026-11-20","15-25 k","✅"],
-["bandes","Bandes boisées 50 m sur Lausanne et Gros-de-Vaud","2026-11-20","15-25 k","✅"],
+["modele","Étapes 2-4 du modèle + sources d'experts (sur les 3 régions fusionnées)","2026-11-20","60-100 k","✅"],
+["couleurs","Couleurs en % (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
+["bandes","Bandes boisées 50 m (sur les 3 régions fusionnées)","2026-11-20","15-25 k","✅"],
 ["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions","2026-11-21","≈ 40-70 k","✅"],
 ["coins","Partage chiffré des coins pour améliorer la prédiction","2026-11-21","≈ 40-80 k","✅"],
+["vaud","Extension de la carte de départ à tout le canton de Vaud","2026-11-27","≈ 100-130 k","❔","ne"],
 ["ne","Extension NE (≈ 290 Mo)","2026-11-27","≈ 20 k","✅"],
 ["ju","Extension JU (≈ 300 Mo)","2026-11-27","≈ 20 k","✅"],
 ["ge","Extension GE (≈ 100 Mo)","2026-11-27","≈ 12 k","✅"],
@@ -28,7 +29,7 @@ var D=[
 ["langues","Menu multilingue FR / DE / IT","2026-11-27","30-50 k","✅"],
 ["lundi","Proposition hebdomadaire d'extension (chaque lundi 8 h)","2026-12-04","0","✅"],
 ["cantons","Extension progressive aux autres cantons suisses","2026-12-04","≈ 350 k au total"]
-].map(function(r){return{id:r[0],t:r[1],d:r[2],k:r[3],s:r[4]||"❔"}});
+].map(function(r){return{id:r[0],t:r[1],d:r[2],k:r[3],s:r[4]||"❔",b:r[5]}});
 var byId={};D.forEach(function(r){byId[r.id]=r});
 function load(){
  var st=null;
@@ -39,7 +40,7 @@ function load(){
  }
  st=(st||[]).filter(function(x){return byId[x.id]});
  var seen={};st.forEach(function(x){seen[x.id]=1});
- D.forEach(function(r){if(!seen[r.id])st.push({id:r.id,s:r.s,d:r.d})}); /* nouvelles lignes en bas */
+ D.forEach(function(r){if(seen[r.id])return;var n={id:r.id,s:r.s,d:r.d},k=-1;st.forEach(function(x,i){if(x.id==r.b)k=i});if(k<0)st.push(n);else st.splice(k,0,n)}); /* nouvelles lignes : avant leur ancre si elle existe, sinon en bas */
  return st}
 var S=load();
 function save(){try{localStorage.setItem("plan3",JSON.stringify(S))}catch(e){}draw()}
