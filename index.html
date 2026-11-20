@@ -806,6 +806,8 @@ body.lite .lite-hide{display:none!important}
 .best-pin .ring{position:absolute;inset:0;border-radius:50%;border:3px solid #ffd000;box-shadow:0 0 0 2px rgba(0,0,0,.55);animation:bestpulse 1.6s ease-out infinite}
 .best-pin .star{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#ffd000;text-shadow:0 0 2px #000,0 0 4px #000}
 @keyframes bestpulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.6);opacity:.15}}
+.lim-sw{display:inline-block;width:22px;height:0;border-top:3px solid #3b82f6;vertical-align:middle;flex:none}.lim-d{border-top:3px solid #d046f0}.lim-m{border-top:2px dashed #06b6d4}
+.lim-lab{background:none;border:0;box-shadow:none;font-weight:700;color:#8a1fa6;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;white-space:nowrap;pointer-events:none;font-size:12px}.lim-lab.m{color:#0a5c6b;font-weight:600;font-size:11px}
 .area-jump{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .area-jump .btn{padding:3px 8px;font-size:12px}
 .region-msg{background:var(--panel);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11.5px;box-shadow:0 1px 4px rgba(0,0,0,.3);text-align:right}
@@ -941,6 +943,11 @@ details.more[open]>summary{margin-bottom:4px}
 .tiers .ti:hover,.tiers .ti:focus{opacity:1}
 .tiers .ti::before{content:"";position:absolute;inset:-8px}
 .tier-info{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12.5px;background:var(--panel);max-height:55vh;overflow:auto}
+.sp{position:relative;padding-right:28px}
+.sp .sp-i{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;border:1px solid currentColor;font:italic 600 10px/13px Georgia,serif;text-align:center;opacity:.7;cursor:pointer}
+.sp .sp-i:hover,.sp .sp-i:focus{opacity:1}
+.sp .sp-i::before{content:"";position:absolute;inset:-6px}
+.sp-pk{border-collapse:collapse;font-variant-numeric:tabular-nums}.sp-pk td{padding:1px 10px 1px 0}
 .tier-info .ti-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .tier-info .ti-head b{font-size:13px}
 .tier-info .ti-x{border:0;background:none;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:0 2px}
@@ -1026,8 +1033,8 @@ details.more[open]>summary{margin-bottom:4px}
 <div class="app">
   <aside class="panel" aria-label="Commandes">
     <div id="sec-head">
-      <h1>Champignons Riviera-Chablais</h1>
-      <p class="sub">Zones de forêt favorables des Pléiades, du haut de Lavaux, de la Veveyse et du début du Chablais</p>
+      <h1>Champignons – Canton de Vaud</h1>
+      <p class="sub">Zones de forêt favorables : Riviera-Chablais, Région lausannoise et Gros-de-Vaud</p>
     </div>
     <details class="warn" id="sec-warn"><summary>À lire avant de cueillir</summary><p>Ce score indique des conditions favorables, calculées à partir de données publiques. Il ne garantit ni la présence de champignons ni leur identification. Ne consommez rien sans le contrôle d'un contrôleur officiel (VAPKO).</p><p><b>Règles de cueillette</b> (Vaud et Fribourg, vérifiées le 15 novembre 2026) : 2 kg par personne et par jour, de 7 h à 20 h, tous les jours du mois (Vaud a levé l'interdiction du 1er au 7 en janvier 2025). Cueillette interdite dans les réserves naturelles, les marais protégés et la zone centrale du Parc naturel du Jorat, où il est aussi interdit de quitter les chemins. Aucune des 52 espèces de la carte n'est protégée ou limitée, ni sur la liste rouge suisse (2007) : la Russule aurore, « potentiellement menacée », n'est pas proposée. Le Lactaire de l'épicéa et le Lactaire couleur saumon ne sont pas proposés : la VAPKO déconseille de les consommer. Certaines communes ont leurs propres règles : renseignez-vous sur place.</p><p>Avec l'option « Cueillette responsable », ces forêts ne sont pas colorées, et un bandeau « Cueillette interdite en ce moment » s'affiche entre 20 h et 7 h, sans masquer la carte. Un <span class="rg-bang">!</span> dans la fiche d'une forêt signale un milieu fragile (réserve forestière, zone alluviale, site de batraciens) : la cueillette y est permise, mais le piétinement abîme le sol et le mycélium, donc mieux vaut l'éviter.</p><p><b>Urgence ou doute après un repas de champignons</b> : Tox Info Suisse, <a href="tel:145">145</a> (24 h sur 24) ; en cas de malaise grave, le <a href="tel:144">144</a>. Gardez les restes du repas et les épluchures. N'identifiez jamais un champignon avec une application photo : faites contrôler toute la récolte par un contrôleur officiel (symbole <span class="vapko-pin" style="display:inline-grid;width:15px;height:15px;font-size:10px">✓</span> sur la carte, ou <a href="https://www.vapko.ch/index.php/fr/lieux-et-places-de-controle" target="_blank" rel="noopener">liste de la VAPKO</a>).</p><p><b>Chasse</b> : de septembre à janvier surtout, les forêts colorées peuvent être chassées. Les jours de battue ou de chasse en équipe prévus au calendrier cantonal, ces forêts sont <span class="hunt-sw" aria-hidden="true"></span> hachurées en rouge (Vaud et Fribourg, pas encore le Valais et Neuchâtel ; districts francs et réserves d'oiseaux d'eau exclus). Les dates sont celles du canton : les battues réelles sont annoncées sur place par des panneaux. Les jours de chasse individuelle seulement (affût, bécasse, renard, sanglier hors battue), elles sont <span class="hunt-sw i" aria-hidden="true"></span> hachurées en orange. Horaires : de 1 h avant le lever à 1 h après le coucher du soleil. Portez des habits voyants, restez sur les chemins et respectez les panneaux « chasse en cours ».</p><p><b>Tiques</b> : toute la région est à risque. Habits longs et clairs, répulsif, et contrôle du corps au retour.</p></details>
 
@@ -1122,7 +1129,6 @@ details.more[open]>summary{margin-bottom:4px}
     <div id="map" role="region" aria-label="Carte"></div>
     <div class="menu-pop" id="menu-pop" hidden role="dialog" aria-label="Menu">
       <div class="menu-head"><button class="mh-btn" id="menu-prev" type="button" aria-label="Page précédente">‹</button><select id="menu-toc" class="coin-sel" aria-label="Table des matières du menu"></select><button class="mh-btn" id="menu-next" type="button" aria-label="Page suivante">›</button><button class="ti-x" id="menu-x" type="button" aria-label="Fermer">×</button></div>
-      <div class="menu-page" data-t="Région" id="menu-reg"><h3>Région</h3><div class="row" style="gap:6px;margin-top:6px"><a class="btn region-link" data-z="ple" href="?r=ple">Riviera-Chablais</a><a class="btn region-link" data-z="lsn" href="?r=lsn">Région lausannoise</a><a class="btn region-link" data-z="gdv" href="?r=gdv">Gros-de-Vaud</a></div><p class="small" style="margin:6px 0 0">Chaque région se télécharge séparément pour l'utiliser hors ligne (menu « Météo et outils »).</p></div>
       <div class="menu-page" data-t="Champignons affichés" id="menu-sp"><h3>Champignons affichés</h3><p class="small" style="margin:4px 0 6px">Décochez les espèces que vous ne cherchez pas : elles disparaissent de la liste et de la forte concentration, et les seuils de concentration diminuent en proportion.</p><div id="sp-filter"></div></div>
       <div class="menu-page" data-t="Affichage et couches"><h3>Affichage, saison, fond de carte, couches</h3>
       <div class="seg" role="group" aria-label="Affichage" style="margin-top:10px">
@@ -1153,13 +1159,17 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk">Transparence <input type="range" id="o-alpha" min="20" max="130" value="130" style="max-width:140px" aria-label="Opacité du score"></label>
         <p class="small" style="margin:-4px 0 0">Le score s'éclaircit aussi automatiquement en zoomant, pour voir la forêt dessous.</p>
         <label class="chk lite-hide"><input type="checkbox" id="o-sq"> Mailles SwissFungi 5 km</label>
-        <p class="small" style="margin:-4px 0 0">Trait plein : espèce signalée dans la maille.</p>
+        <p class="small" style="margin:-4px 0 0">Tirets vert clair ; maille légèrement teintée et plus visible si l'espèce y est signalée.</p>
         <label class="chk"><input type="checkbox" id="o-res" checked> Réserves et marais protégés</label>
         <label class="chk lite-hide"><input type="checkbox" id="o-obs" checked> <span class="obs-icon" aria-hidden="true" style="display:inline-block"></span> Observations iNaturalist</label>
         <p class="small" style="margin:-4px 0 0">Observations précises ; par espèce, seulement l'espèce choisie.</p>
       </div>
       <div class="sub-h" style="margin-top:12px">Géographie</div>
       <div style="display:flex;flex-direction:column;gap:6px">
+        <label class="chk"><input type="checkbox" id="o-lim-c"> <span class="lim-sw lim-c" aria-hidden="true"></span> <span>Limites du canton de Vaud</span></label>
+        <label class="chk"><input type="checkbox" id="o-lim-d"> <span class="lim-sw lim-d" aria-hidden="true"></span> <span>Limites des régions (districts : Gros-de-Vaud, Riviera-Pays-d'Enhaut, Aigle, Lausanne…)</span></label>
+        <label class="chk"><input type="checkbox" id="o-lim-m"> <span class="lim-sw lim-m" aria-hidden="true"></span> <span>Limites des communes</span></label>
+        <p class="small" style="margin:-4px 0 0">Source : swissBOUNDARIES3D, swisstopo (simplifiées). Les noms des communes apparaissent dès le zoom 12.</p>
         <label class="chk"><input type="checkbox" id="o-relief"> <span><span class="relief-sw" aria-hidden="true"></span> Afficher la géographie</span></label>
         <p class="small" style="margin:-4px 0 0">Comme le bouton ⛰ : courbes de niveau et falaises, plus les couches cochées ci-dessous ; visibles en zoomant.</p>
         <div class="geo-sub">
@@ -1235,7 +1245,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Sentiers, routes et cours d'eau : swissTLM3D (swisstopo).</li>
         <li>Arrêts et gares : Office fédéral des transports (arrêts des transports publics). Lignes : horaire officiel suisse 2026 (GTFS, opentransportdata.swiss), sans bus de remplacement ni lignes de nuit. Les arrêts de bus situés dans les grandes agglomérations (par exemple Lausanne et sa couronne, Vevey–Montreux, Yverdon : zones bâties continues de plus de 250 ha) ne sont affichés que s’il y a, à moins de 1 km, une forêt en classe moyenne ou élevée pour l’espèce choisie (pour au moins une espèce en mode « forte concentration »). La liste change avec l’espèce, la date et les filtres. Parkings : swissTLM3D, aires de stationnement publiques.</li>
       </ul>
-      <p>Les essences sont résumées en part de résineux et en grands types de forêt modélisés : la carte ne distingue pas directement l'épicéa du sapin. Les réserves cantonales vaudoises et fribourgeoises ne sont pas toutes affichées. Règles de cueillette vérifiées le 15 novembre 2026 : Vaud, RLPrPNP art. 12 (2 kg par personne et par jour, 7 h à 20 h, tous les jours) ; Fribourg, arrêté du 9 juin 1998 et RPNat art. 26 (2 kg, 7 h à 20 h). Les règles communales ou de propriétaires privés ne sont pas prises en compte.</p>
+      <p>Les essences sont résumées en part de résineux, en grands types de forêt modélisés et, pour les espèces à hôte précis, en essence dominante de la carte WSL 10 m (Koch, Hobi, Morsdorf, Waser 2024, EnviDat, précision ≈ 76 % : hêtre et épicéa surestimés, autres essences sous-estimées, ≈ 10 à 20 % de pixels non classés traités comme neutres). Les réserves cantonales vaudoises et fribourgeoises ne sont pas toutes affichées. Règles de cueillette vérifiées le 15 novembre 2026 : Vaud, RLPrPNP art. 12 (2 kg par personne et par jour, 7 h à 20 h, tous les jours) ; Fribourg, arrêté du 9 juin 1998 et RPNat art. 26 (2 kg, 7 h à 20 h). Les règles communales ou de propriétaires privés ne sont pas prises en compte.</p>
 </div>
     </div>
     <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
@@ -1251,12 +1261,18 @@ details.more[open]>summary{margin-bottom:4px}
 <script src="leaflet.js"></script>
 <script>
 // Région : ?r=ple|lsn|gdv, sinon la dernière utilisée, sinon Riviera-Chablais
-var ZID=(new URLSearchParams(location.search).get("r"))||"";if(!/^(ple|lsn|gdv)$/.test(ZID)){try{ZID=localStorage.getItem("champi-zone")||""}catch(e){ZID=""}}
-if(!/^(ple|lsn|gdv)$/.test(ZID))ZID="ple";try{localStorage.setItem("champi-zone",ZID)}catch(e){}
+// Carte unique « Canton de Vaud » : les données sont préparées par région ; la région chargée est celle de la vue (dernière position, ou ?r=ple|lsn|gdv)
+var ZBOX={ple:[46.35,6.74,46.62,7.06],lsn:[46.45,6.45,46.63,6.75],gdv:[46.53,6.26,46.86,6.7]};
+function zoneAt(la,lo,pref){var k,c=[];for(k in ZBOX){var z=ZBOX[k];if(la>=z[0]&&la<=z[2]&&lo>=z[1]&&lo<=z[3])c.push(k)}return c.indexOf(pref)>=0?pref:(c[0]||"")}
+var ZID=(new URLSearchParams(location.search).get("r"))||"",SAVED_VIEW=null;
+try{SAVED_VIEW=JSON.parse(localStorage.getItem("champi-view-pos")||"null")}catch(e){}
+if(!/^(ple|lsn|gdv)$/.test(ZID)){var zs="";try{zs=localStorage.getItem("champi-zone")||""}catch(e){}
+  ZID=(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],zs))||(/^(ple|lsn|gdv)$/.test(zs)?zs:"ple")}
+else SAVED_VIEW=null;
+try{localStorage.setItem("champi-zone",ZID)}catch(e){}
 var ZD=ZID+"/";document.write('<script src="'+ZD+'zone.js"><\/script>');
 </script>
-<script>document.title=ZONE.title;document.querySelector("h1").textContent=ZONE.title;document.querySelector(".sub").textContent=ZONE.sub;
-document.querySelectorAll(".region-link").forEach(function(a){if(a.dataset.z===ZID){a.setAttribute("aria-current","page");a.style.cssText="font-weight:700;outline:2px solid var(--accent)"}});
+<script>document.title="Champignons – Canton de Vaud";document.querySelector("h1").textContent="Champignons – Canton de Vaud";document.querySelector(".sub").textContent="Zones de forêt favorables : Riviera-Chablais, Région lausannoise et Gros-de-Vaud (la région se charge selon la partie de la carte affichée)";
 document.querySelectorAll(".mb").forEach(function(e){e.textContent=ZONE.mb})</script>
 <script>
 "use strict";
@@ -1393,7 +1409,7 @@ let D,G,meta,meteo,fungi,sqNeighbours={};
 const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tier:1,hide:[]};
 try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if([0,1,2,3].includes(s.tier))state.tier=s.tier;{const c=SPECIES.find(x=>x.id===state.sp);if(c&&state.tier&&c.tier!==state.tier)state.tier=c.tier}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
-const LAY_IDS=["o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-hard"];
+const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-sq","o-hard"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
 function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
@@ -1432,8 +1448,8 @@ function regionF(sid,key){
   if(c)return [1,"own",[c,f[sq][1]]];
   const nb=sqNeighbours[sq]||[];let n=0,last=0;
   nb.forEach(q=>{const k=sqCount(key,q);if(k){n+=k;last=Math.max(last,f[q][1])}});
-  if(n)return [.925,"near",[n,last]];
-  return [.85,"none",null];
+  if(n)return [.914,"near",[n,last]];
+  return [.83,"none",null];
 }
 // décalage de saison : en altitude, les pousses d'automne commencent et finissent plus tôt (1 semaine par 250 m au-dessus de 600 m, au plus 4 semaines)
 const seasonShift=alt=>clamp((alt-600)/250*7,-28,28);
@@ -1513,9 +1529,26 @@ let LITE=false;
 // 17.11.2026 : type de forêt inconnu = moyenne des 8 types connus pour l'espèce (et non plus 1, valeur optimale)
 const HAB0={};
 const habF=(i,sp)=>{if(LITE)return 1;const t=HAB[sp.id];if(!t||!G.hab)return 1;const h=G.hab[i];if(h)return t[h]||1;let m=HAB0[sp.id];if(m==null){m=0;for(let k=1;k<9;k++)m+=t[k];m=HAB0[sp.id]=m/8}return m};
+// 20.11.2026 (étape 2) : poids calibrés par validation croisée sur 247 relevés précis (blocs de 5 km, fond groupe cible) : l'essence faisait double emploi avec le type de forêt (poids 0,2) et l'altitude était trop sélective (poids 0,6) ; SwissFungi x1,15 (via regionF)
+let W_HOST=.1,W_ALT=.6;
+// 20.11.2026 : essence dominante (carte WSL 10 m, Koch et al. 2024, précision ≈ 76 %, hêtre et épicéa surestimés, autres essences sous-estimées).
+// Codes de la couche « wsl » : 0 = inconnu, 1..15 = classe WSL + 1. Pour une espèce qui nomme ses arbres hôtes (WSL_HOSTS), facteur = 1 si l'essence dominante
+// est un hôte, WSL_SAME (même type, feuillu ou résineux) ou WSL_OTHER sinon ; l'écart à 1 est réduit pour le hêtre et l'épicéa (surestimés) ; inconnu = moyenne
+// de l'espèce sur la région (comme le type de forêt inconnu). Poids W_WSL calibré par validation (blocs de 5 km).
+let W_WSL=.4,WSL_SAME=.6,WSL_OTHER=.3;const WSL_REL=[.8,.8,.8,.8,.8,.8,.6,.8,.6,.8,.8,.8,.8,.8,.8];  // fiabilité par classe (hêtre = 6, épicéa = 8)
+const WSL_CONIF=[1,0,0,0,0,0,0,0,1,1,1,1,0,0,0];
+const WSL_HOSTS={edulis:[0,8,6],reticulatus:[12,13,5,6],pinophilus:[11,8,10,9],cibarius:[6,8,0],cornucopioides:[6,12,13],tubaeformis:[8,0],morelb:[7,2,3,1],repandum:[6,8,0],badia:[8,11,10],lutescens:[8,11],deliciosus:[11,10],sparassis:[11],virescens:[6,12,13],cyanoxantha:[6,12,13],erythropus:[6,8,0],glutinosus:[8,11],varius:[8],praestans:[6],vesca:[6,12,13],aurea:[6,12,13],turci:[11,10],vinosa:[8],mustelina:[8],integra:[8],imbricatus:[8],clavatus:[8,0],umbellatus:[12,13,6],bovinus:[11,10],luridus:[12,13,6],luteus:[11,10]};
+let WSL0={};const WSL_NAMES=["","sapin blanc","érable sycomore","aulne glutineux","aulne blanc","bouleau","châtaignier","hêtre","frêne","épicéa","pin cembro","pin de montagne","pin sylvestre","chêne sessile","chêne pédonculé","sorbier des oiseleurs"];
+const wslRaw=(k,H)=>H.includes(k)?1:(WSL_CONIF[k]===(WSL_CONIF[H[0]]||0)?WSL_SAME:WSL_OTHER);
+const wslVal=(k,H)=>{const r=WSL_REL[k];return 1-r*(1-wslRaw(k,H))};
+const wslF=(i,sp)=>{if(LITE||!W_WSL)return 1;const H=WSL_HOSTS[sp.id];if(!H||!G.wsl)return 1;const w=G.wsl[i];
+  if(w){return Math.pow(wslVal(w-1,H),W_WSL)}
+  let m=WSL0[sp.id];if(m==null){const h=new Float64Array(16);const n=G.wsl.length;for(let q=0;q<n;q+=7)if(G.fx[q]&&G.wsl[q])h[G.wsl[q]]++;let t=0,s=0;for(let k=1;k<16;k++){t+=h[k];s+=h[k]*wslVal(k-1,H)}m=WSL0[sp.id]=t?Math.pow(s/t,W_WSL):1}
+  return m};
+const hostW=(c,pref,soft)=>Math.pow(hostF(c,pref,soft),W_HOST),altW=(v,t)=>Math.pow(trap2(v,t),W_ALT);
 function aptAt(i,sp,r,ob){
   const c=LITE||G.conif[i]===255?NaN:G.conif[i]/100;
-  return habF(i,sp)*hostF(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*trap2(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
+  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
 }
 // confirmation par les observations précises (iNaturalist) de l'espèce : bonus de +50 % au point, décroissant (250 m), nul au-delà de 1 km
 const OB_B=.5,OB_L=250,OB_MAX=1000;
@@ -1537,11 +1570,11 @@ function staticFor(sp){
   if(!SCR||SCR.A.length<n)SCR={A:new Float32Array(n),bin:new Uint32Array(n),H:new Uint32Array((1<<18)+1)};
   const A=SCR.A,bin=SCR.bin,H=SCR.H;H.fill(0);
   const rf=new Float32Array(meta.squares.length).fill(-1),ob=obsBonus(sp),SC=new Uint8Array(n).fill(255);
-  let m=0;
+  let m=0,amax=0;
   for(let i=0;i<n;i++){
     if(!usable(i)){A[i]=-1;continue}
     const sid=G.sq[i];let r=rf[sid];if(r<0)r=rf[sid]=regionF(sid,sp.key)[0];
-    A[i]=aptAt(i,sp,r,ob);SC[i]=thrClass(A[i],sp);m++;
+    A[i]=aptAt(i,sp,r,ob);SC[i]=thrClass(A[i],sp);if(A[i]>amax)amax=A[i];m++;
   }
   // rang (percentile) de chaque cellule en temps linéaire : histogramme fin de l'aptitude (2^18 classes, aptitude entre 0 et 1),
   // puis effectifs cumulés ; les valeurs d'une même classe sont traitées comme ex aequo (rang moyen)
@@ -1562,11 +1595,21 @@ function staticFor(sp){
   zl.sort((a,b)=>zm[a]-zm[b]);
   const zP=new Float32Array(nz).fill(-1);let cum=0;
   zl.forEach(z=>{zP[z]=(cum+zc[z]/2)/tot;cum+=zc[z]});
-  e={P,rf,SC,ob,zone:{mean:zm,cls:zk,P:zP,count:zc,min:zmin,max:zmax,conif:Float32Array.from(zcf,(v,k)=>zcn[k]?v/zcn[k]:NaN)}};
+  e={P,rf,SC,ob,amax,zone:{mean:zm,cls:zk,P:zP,count:zc,min:zmin,max:zmax,conif:Float32Array.from(zcf,(v,k)=>zcn[k]?v/zcn[k]:NaN)}};
   staticCache.set(key,e);
   if(staticCache.size>STATIC_MAX)staticCache.delete(staticCache.keys().next().value);
   return e;
 }
+// couleurs en pourcentage : aptitude rapportée à la meilleure cellule forestière de l'espèce dans la région chargée (100 % = le meilleur lieu)
+const aptPct=(st,a)=>st.amax>0?Math.max(0,Math.min(100,Math.round(100*a/st.amax))):0;
+const thrPct=(st,sp)=>THR[sp.id].map(t=>t==null?null:Math.round(100*t/st.amax));
+// pic de saison : jour de l'année où la fréquence des relevés est maximale, décalé selon l'altitude
+const PEAKC={};
+function peakDay(sp,alt){const k=sp.id+"|"+alt;if(PEAKC[k]!==undefined)return PEAKC[k];
+  let best=-1,bd=[];for(let d=0;d<365;d++){const dt=new Date(Date.UTC(2026,0,1+d,12)),s=dt.toISOString().slice(0,10),v=seasonF(sp.key,s,alt);
+    if(v>best+1e-9){best=v;bd=[d]}else if(Math.abs(v-best)<=1e-9)bd.push(d)}
+  const d=bd[Math.floor(bd.length/2)];return PEAKC[k]=new Date(Date.UTC(2026,0,1+d,12)).toISOString().slice(0,10)}
+const peakTxt=(sp,alt)=>fmtDate(peakDay(sp,alt));
 const pOf=(st,i)=>{const v=st.P[i];return v===P_NONE?-1:(v-1)/P_SCALE};
 let NZ=0,zoneHa=.04;
 function trap2(v,t){return Math.max(.03,trap(v,t))}
@@ -1804,7 +1847,7 @@ function cellInfo(i,sp){
   const c=G.conif[i]===255?NaN:G.conif[i]/100,h=G.vhm[i]/5,edge=G.edge[i]*2,dem=G.dem[i],sl=G.slope[i],asp=G.aspect[i]*2,tpi=G.tpi[i];
   const [rF,rK,rD]=regionF(G.sq[i],sp.key);
   return {A,P:pOf(st,i),SC:st.SC[i],c,h,edge,dem,sl,asp,tpi,rF,rK,rD,mi:G.mi[i],ca:G.ca[i],ob:st.ob[i],
-    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostF(c,sp.host,G.hab&&G.hab[i]>0),alt:trap2(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
+    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostW(c,sp.host,G.hab&&G.hab[i]>0)*wslF(i,sp),wsl:G.wsl?G.wsl[i]:0,alt:altW(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
 }
 function rainSvg(m){
   const P=meteo.rprelimd[m],n=P.length,w=262,h=46,bw=w/n,mx=Math.max(20,...P.map(v=>v||0)),no=meteo.nobs;
@@ -1841,26 +1884,27 @@ function popupHtml(latlng){
     h+=`<p class="small" style="margin:6px 0 4px"><b>Au point cliqué :</b></p>`;
   }else h+=rgBox(i,0);
   let w=null;const ak=info.SC,top=Math.max(1,Math.round(100*(1-info.P))),T_=THR[sp.id];
-  h+=`<div class="tot"><span>Aptitude du lieu : ${info.A.toFixed(2)}<br><span class="small">seuils ${T_[0].toFixed(2)} (moyen), ${T_[1].toFixed(2)} (élevé)${T_[2]!=null?` et ${T_[2].toFixed(2)} (très élevé)`:""} ; dans les ${top} % meilleures forêts de la région chargée</span></span><span class="pill c${ak}">${CLS_LAB[ak]}</span></div>`;
+  const TP=thrPct(st,sp);h+=`<div class="tot"><span>Aptitude du lieu : <b>${aptPct(st,info.A)} %</b> du meilleur lieu de l'espèce (${info.A.toFixed(2)})<br><span class="small">seuils ${TP[0]} % (moyen), ${TP[1]} % (élevé)${TP[2]!=null?` et ${TP[2]} % (très élevé)`:""} ; dans les ${top} % meilleures forêts de la région chargée</span></span><span class="pill c${ak}">${CLS_LAB[ak]}</span></div>`;
   if(state.mode==="now"){prepWeather(sp);seasonTab(sp,meteo.dates[state.d]);w=weatherAt(i,sp,state.d);
     const k=wAdj(ak,w.W),dk=k-ak;
     h+=`<div class="tot"><span>Météo ${wLab(w.W)} (${w.W.toFixed(2)})<br><span class="small">${fcKind(state.d)==="prévision"?"prévue ":fcKind(state.d)==="estimation"?"estimée ":""}au ${fmtDate(meteo.dates[state.d])}${dk>0?", relève d'une classe":dk<0?`, abaisse d'${dk===-1?"une classe":"deux classes"}`:""}</span></span><span class="pill c${k}">${CLS_LAB[k]}</span></div>`}
   if(sp.weak)h+=`<p class="small" style="margin:0 0 6px;padding:4px 6px;background:#fff1d6;border-radius:6px;color:#6b4000"><b>Fiabilité faible.</b> ${esc(sp.weak)}</p>`;
-  h+=`<p class="small" style="margin:0 0 6px">Détail du calcul (1 = idéal) :</p>`;
-  h+=`<div class="fx">`;
+  h+=`<p class="small" style="margin:0 0 6px">Détail du calcul (1 = idéal), en trois parties : le lieu, l\'accès, le moment. Poids calibrés sur 247 relevés précis (essences : conifères ×0,1, essence dominante WSL ×0,4 ; altitude ×0,6).</p>`;
+  const GH=t=>`<b class="small" style="grid-column:1/-1;margin-top:4px">${t}</b>`;
+  h+=`<div class="fx">`+GH("Aptitude du lieu (stable)");
   const cTxt=isNaN(info.c)?"composition inconnue":`${Math.round(info.c*100)} % de résineux`;
   h+=fxRow("Type de forêt",info.f.hab,HAB_LAB[info.hab]+(info.hab?"":" (facteur neutre)"));
-  h+=fxRow("Essences",info.f.host,`${cTxt} ; hôtes : ${sp.hostTxt}`);
+  h+=fxRow("Essences",info.f.host,`${cTxt}${WSL_NAMES[info.wsl]?" ; essence dominante (carte WSL) : "+WSL_NAMES[info.wsl]:""} ; hôtes : ${sp.hostTxt}`);
   h+=fxRow("Altitude",info.f.alt,`${info.dem} m ; optimum ${sp.alt[1]}–${sp.alt[2]} m`);
   h+=fxRow("Peuplement",info.f.stand,sp.stand==="edge"?`lisière à ${Math.round(info.edge)} m, hauteur ${Math.round(info.h)} m`:`hauteur moyenne ${Math.round(info.h)} m`);
-  h+=fxRow("Pente",info.f.slope,`${info.sl}°`);
   h+=fxRow("Humidité",info.f.moist,`station ${info.mi<-33?"sèche":info.mi>33?"fraîche":"moyenne"} (${info.mi>0?"+":""}${info.mi}) : relief et bilan hydrique ; ${sp.moist>0?"l'espèce aime le frais":sp.moist<0?"l'espèce supporte le sec":"seuls les lieux secs pénalisent"}`);
   h+=fxRow("Sol",info.f.soil,`${SOIL_LAB[info.ca]||"inconnu"} (géologie GeoCover) ; ${SOIL[sp.id][0]<0?"l'espèce préfère les sols acides":SOIL[sp.id][0]>0?"l'espèce préfère les sols riches ou calcaires":"indifférent pour cette espèce"}`);
   const rTxt=info.rK==="own"?`signalée dans cette maille : ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]}, dernier en ${info.rD[1]}`:info.rK==="near"?`pas dans cette maille, mais ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]} dans les mailles voisines`:`aucun relevé ${YR_LAB[state.yr]} dans la maille ni autour`;
-  if(!LITE)h+=fxRow("SwissFungi",info.rF,rTxt);
+  if(!LITE)h+=fxRow("Présence connue",info.rF,rTxt+" (SwissFungi : reflète aussi l'effort d'observation, d'où un poids modeste)");
+  h+=GH("Accès et sécurité")+fxRow("Pente",info.f.slope,`${info.sl}° (comptée dans l'aptitude : sans elle la validation baisse ; sert aussi à juger l'effort et le risque)`);
   if(info.ob>0)h+=`<p class="small">Observation(s) iNaturalist précise(s) de l'espèce à proximité (pour information, n'entre plus dans le score).</p>`;
   if(w){
-    h+=fxRow("Saison",w.season,`fréquence de l'espèce à cette période, décalée de ${Math.round(-seasonShift(info.dem))} jours pour l'altitude`);
+    h+=GH("Conditions du moment")+fxRow("Saison",w.season,`fréquence de l'espèce à cette période, décalée de ${Math.round(-seasonShift(info.dem))} jours pour l'altitude`);
     h+=fxRow("Eau du sol",w.rainF,`réserve estimée ${Math.round(w.soil*100)} % entre J−14 et J−3 (pluie ${Math.round(w.rain)} mm de J−16 à J−3, moins l'évaporation)${w.soil<.6?" ; versants nord favorisés":""}`);
     h+=fxRow("Température",w.tempF,`${w.T.toFixed(1)} °C : température du sol estimée, corrigée de l'altitude et de l'exposition`);
     h+=fxRow("Gel",w.frostF,`${String(w.fd).replace(".",",")} nuit(s) de gel à −3 °C (somme des degrés sous 0 °C sur 7 jours, ÷ 3)`);
@@ -1870,7 +1914,7 @@ function popupHtml(latlng){
   h+=`<div class="look"><b>Sosies :</b> ${sp.look}</div>`;
   h+=`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" data-addcoin="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)}">Marquer comme mon coin</button>${z?`<button class="btn" data-alertz="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)},${z}">🔔 Alerte pour cette forêt</button>`:""}</div></div>`;
   const zk=state.view==="zone"&&z&&st.zone.P[z]>=0?zoneNow.cls[z]:(w?wAdj(ak,w.W):ak);
-  const short=S0+`<div class="fx" style="grid-template-columns:1fr auto"><span class="lab">${sp.fr}</span><span class="pill c${zk}">${CLS_LAB[zk]}</span></div>`+rgBox(i,state.view==="zone"?z:0)+huntBox(i)+DET_BTN;
+  const short=S0+`<div class="fx" style="grid-template-columns:1fr auto"><span class="lab">${sp.fr}</span><span class="pill c${zk}">${CLS_LAB[zk]} · ${aptPct(st,state.view==="zone"&&z&&st.zone.P[z]>=0?st.zone.mean[z]:info.A)} %</span></div>`+rgBox(i,state.view==="zone"?z:0)+huntBox(i)+DET_BTN;
   return {short,full:h};
 }
 const SORT_SRC=ZONE.SORT_SRC;
@@ -1880,6 +1924,8 @@ const SORT_P=ZONE.SORT_P;
 const MAP_THR_EXTRA=ZONE.MAP_THR_EXTRA;
 // 17.11.2026 (étape 1) : seuils recalculés après les corrections du type de forêt inconnu et de la lisière du cèpe (60/85/96,25 % des forêts de la carte)
 const MAP_THR_V4=ZONE.MAP_THR_V4;
+const MAP_THR_V5=ZONE.MAP_THR_V5;
+const MAP_THR_V6=ZONE.MAP_THR_V6;
 
 // zones sans chasse (districts francs fédéraux, réserves d'oiseaux d'eau ; geo.admin.ch, lues le 16.11.2026)
 // zones de tir militaires (avis de tir et zones de danger publiés, DDPS / geo.admin.ch, lues le 17.11.2026) ; [lat,lng]
@@ -1977,7 +2023,8 @@ function updateLegend(){
   const el=$("legend");
   if(state.mode==="now"&&state.sp!=="multi"){let h="";for(let k=4;k>=1;k--){const a=NOW_COLORS[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${NOW_LAB[k]}</span>`}
     el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Pas de couleur : moins de 45 % ou terrain peu favorable</span>`;return}
-  if(state.sp!=="multi"){el.innerHTML=`<span class="sw" style="background:var(--s-top)"></span><span>Très élevé : le meilleur quart de la classe élevée (4 % des forêts de la carte)</span><span class="sw" style="background:var(--s-high)"></span><span>Élevé : au-dessus du seuil de l'espèce (15 % des forêts de la carte, très élevé compris)</span><span class="sw" style="background:var(--s-mid)"></span><span>Moyen : les 25 % suivants</span><span class="sw" style="background:var(--s-low)"></span><span>Faible : le reste des forêts</span>`;return}
+  if(state.sp!=="multi"){const sp=SPECIES.find(s=>s.id===state.sp),TP=thrPct(staticFor(sp),sp),hi=TP[2]!=null;
+    el.innerHTML=`<span class="sw" style="background:var(--s-top)"></span><span>Très élevé : ${hi?"au moins "+TP[2]+" %":"le meilleur quart de la classe élevée"} de l'aptitude du meilleur lieu de l'espèce</span><span class="sw" style="background:var(--s-high)"></span><span>Élevé : ${TP[1]} % à ${hi?TP[2]:100} %</span><span class="sw" style="background:var(--s-mid)"></span><span>Moyen : ${TP[0]} % à ${TP[1]} %</span><span class="sw" style="background:var(--s-low)"></span><span>Faible : moins de ${TP[0]} %</span>`;return}
   const nw=state.mode==="now";let h="";for(let k=MULTI_MAX;k>=(nw?1:2);k--){const a=(nw?NOW_COLORS:MULTI_COLORS)[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${nw&&k===1?"Concentration faible":MULTI_LAB[k]}</span>`}
   el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Le reste des forêts</span>`;
 }
@@ -1987,8 +2034,8 @@ function renderSpeciesList(){
   const el=$("species");
   if(!el.children.length){
     SPECIES.forEach(sp=>{const b=document.createElement("button");b.className="sp";b.dataset.id=sp.id;
-      b.innerHTML=`<span><span class="fr">${sp.fr}</span>${sp.weak?`<span class="weak" title="${esc(sp.weak)}">fiabilité faible</span>`:""}<br><span class="la">${sp.la}</span></span><span class="now"></span>`;
-      b.onclick=()=>{state.sp=state.lastSp=sp.id;saveState();render()};el.appendChild(b)});
+      b.innerHTML=`<span><span class="fr">${sp.fr}</span>${sp.weak?`<span class="weak" title="${esc(sp.weak)}">fiabilité faible</span>`:""}<br><span class="la">${sp.la}</span></span><span class="now"></span><span class="sp-i" role="button" tabindex="0" aria-label="Fiche technique de ${esc(sp.fr)}">i</span>`;
+      b.onclick=e=>{if(e.target.closest(".sp-i")){e.stopPropagation();showSpInfo(sp.id);return}state.sp=state.lastSp=sp.id;saveState();render()};el.appendChild(b)});
   }
   const date=seasonDate(),multi=state.sp==="multi";
   $("sp-box").hidden=multi;$("t-multi").setAttribute("aria-pressed",multi);$("t-sp").setAttribute("aria-pressed",!multi);
@@ -2002,7 +2049,7 @@ function renderSpeciesList(){
     const sp=SPECIES.find(s=>s.id===b.dataset.id);b.setAttribute("aria-pressed",sp.id===state.sp);
     b.hidden=!inTier(sp)||(state.seasonOnly&&nIn>0&&!inSeason(sp));
     const s=seasonF(sp.key,date,REG_ALT),fs=fungi[sp.key],n=fsCount(fs);
-    b.querySelector(".now").innerHTML=`saison ${Math.round(s*100)} %`+(LITE?"":`<br><span class="rel">${n} relevés région</span>`)});
+    b.querySelector(".now").innerHTML=`saison ${Math.round(s*100)} %<br><span class="rel">pic vers le ${peakTxt(sp,REG_ALT)}</span>`+(LITE?"":`<br><span class="rel">${n} relevés région</span>`)});
   if(NARROW.matches){const sel=el.querySelector("[aria-pressed=\"true\"]");if(sel){const t=sel.offsetLeft-(el.clientWidth-sel.offsetWidth)/2;el.scrollLeft=Math.max(0,t)}}
 }
 
@@ -2016,6 +2063,26 @@ function showTierInfo(t){
   el.innerHTML=`<div class="ti-head"><b>${TIER_TXT[t]} (${list.length})</b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
     `<div class="ti-safe"><b>Prudence.</b> Utilisez toujours un guide de terrain. Ne cueillez que les champignons que vous avez identifiés avec certitude, et faites toujours contrôler toute votre récolte par un contrôleur officiel (VAPKO) avant de la consommer. En cas de doute ou de malaise : Tox Info Suisse, 145.</div><dl>`+
     list.map(sp=>`<dt>${esc(sp.fr)} <i>${esc(sp.la)}</i></dt><dd>${sp.eat?esc(sp.eat)+" ":""}${sp.taste?`<span>Goût : ${esc(sp.taste)}</span>`:""}</dd><dd><b>Confusions :</b> ${esc(sp.look)}</dd>`).join("")+`</dl>`;
+  el.querySelector(".ti-x").onclick=()=>{el.hidden=true};
+  el.hidden=false;
+}
+// fiche technique d'une espèce (« i » de la puce)
+function showSpInfo(id){
+  const sp=SPECIES.find(s=>s.id===id),el=$("tier-info");
+  if(!el.hidden&&el.dataset.sp===id){el.hidden=true;return}
+  el.dataset.sp=id;el.dataset.tier="";
+  const fs=fungi[sp.key],n=fsCount(fs),HOST={conif:"conifères",broad:"feuillus",both:"conifères et feuillus",any:"tous types de forêt"};
+  const rng=a=>`${a[1]}–${a[2]} m (tolérance ${a[0]}–${a[3]} m)`,rt=a=>`${a[1]}–${a[2]} °C (tolérance ${a[0]}–${a[3]} °C)`;
+  const pk=[400,800,1200,1600].map(a=>`<tr><td>${a} m</td><td>${peakTxt(sp,a)}</td></tr>`).join("");
+  el.innerHTML=`<div class="ti-head"><b>${esc(sp.fr)} <i>${esc(sp.la)}</i></b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
+   `<div class="ti-safe"><b>Prudence.</b> Ne consommez rien sans le contrôle d'un contrôleur officiel (VAPKO). Tox Info Suisse : 145.</div>`+
+   `<p style="margin:4px 0"><b>Catégorie :</b> ${esc(TIER_NAMES[sp.tier])}${sp.weak?` · <span class="weak">fiabilité faible</span> ${esc(sp.weak)}`:""}</p>`+
+   `<p style="margin:4px 0">${sp.eat?esc(sp.eat)+" ":""}${sp.taste?`Goût : ${esc(sp.taste)}`:""}</p>`+
+   `<p style="margin:4px 0"><b>Associé à :</b> ${esc(sp.hostTxt||HOST[sp.host]||"")}</p>`+
+   `<p style="margin:4px 0"><b>Altitude favorable :</b> ${rng(sp.alt)}<br><b>Température favorable :</b> ${rt(sp.temp)}<br><b>Gel :</b> facteur ${sp.frost} par jour de gel</p>`+
+   `<p style="margin:4px 0"><b>Pic de saison</b> (d'après les relevés SwissFungi, décalé d'une semaine par 250 m au-dessus de 600 m) :</p><table class="sp-pk">${pk}</table>`+
+   `<p style="margin:4px 0"><b>Relevés dans la région :</b> ${n}</p>`+
+   `<p style="margin:4px 0"><b>Confusions :</b> ${esc(sp.look)}</p>`;
   el.querySelector(".ti-x").onclick=()=>{el.hidden=true};
   el.hidden=false;
 }
@@ -2092,6 +2159,21 @@ let reliefLayer=null,waterLayer=null,waterP=null,roadLayer=null,roadP=null,trail
 function syncGeoLayer(l,minz,id){if(!l)return;const on=state.relief&&(!id||$(id).checked)&&map.getZoom()>=minz;if(on&&!map.hasLayer(l))l.addTo(map);else if(!on&&map.hasLayer(l))map.removeLayer(l)}
 let syncAcc=()=>{};
 function syncWater(){syncGeoLayer(roadLayer,ROAD_MINZ,"o-road");syncGeoLayer(waterLayer,WATER_MINZ,"o-water");syncTrails();syncAcc()}
+// « Géographie » : limites administratives (swissBOUNDARIES3D), chargées à la première activation
+const LIM={c:{f:"canton",st:{color:"#3b82f6",weight:3.5,opacity:.95,fill:false}},d:{f:"districts",st:{color:"#d046f0",weight:2.5,opacity:.95,fill:false}},m:{f:"communes",st:{color:"#06b6d4",weight:1.2,opacity:.95,dashArray:"5 3",fill:false}}};
+function syncLimits(){
+  if(!map)return;
+  if(!map.getPane("limites")){const pn=map.createPane("limites");pn.style.zIndex=406;pn.style.pointerEvents="none"}
+  for(const k of ["c","d","m"]){const o=LIM[k],on=$("o-lim-"+k).checked;
+    if(on&&!o.layer&&!o.p){o.p=fetch("limites/"+o.f+".geojson",NC).then(r=>r.json()).then(j=>{o.data=j;o.layer=L.geoJSON(j,{pane:"limites",interactive:false,renderer:L.canvas({pane:"limites"}),style:()=>o.st});o.lab=L.layerGroup();syncLimits()}).catch(e=>{o.p=null;console.warn(e)})}
+    if(!o.layer)continue;
+    if(on&&!map.hasLayer(o.layer))o.layer.addTo(map);else if(!on&&map.hasLayer(o.layer))map.removeLayer(o.layer);
+    if(k!=="c"){if(on&&!map.hasLayer(o.lab))o.lab.addTo(map);else if(!on&&map.hasLayer(o.lab))map.removeLayer(o.lab);if(on)limLabels(k)}}
+}
+function limLabels(k){const o=LIM[k];if(!o.data||!o.lab)return;o.lab.clearLayers();
+  const z=map.getZoom();if(k==="m"&&z<12)return;const bd=map.getBounds().pad(.1);
+  for(const f of o.data.features){const c=f.properties.c;if(!c||!bd.contains(c))continue;
+    o.lab.addLayer(L.marker(c,{interactive:false,keyboard:false,icon:L.divIcon({className:"lim-lab"+(k==="m"?" m":""),html:esc(f.properties.NAME),iconSize:[0,0]})}))}}
 function syncTrails(){if(!trailsLayer)return;const on=$("o-trail").checked;if(on&&!map.hasLayer(trailsLayer))trailsLayer.addTo(map);else if(!on&&map.hasLayer(trailsLayer))map.removeLayer(trailsLayer);$("legend-tr").hidden=!on}
 function loadWater(){
   if(!roadP)roadP=fetch(ZD+"routes.geojson",NC).then(r=>r.json()).then(j=>{const rd=L.canvas({pane:"relief",padding:.3}),F=c=>({type:"FeatureCollection",features:j.features.filter(f=>c.includes(f.properties.c))});
@@ -2212,8 +2294,7 @@ function renderSquares(){
   Object.entries(meta.polys).forEach(([k,ring])=>{
     const per=list.map(sp=>({sp,c:sqCount(sp.key,k),last:(fungi[sp.key].squares[k]||[])[1]})).filter(x=>x.c);
     const n=per.reduce((a,x)=>a+x.c,0),hit=n>0;
-    const st={color:"#0b2a6f",weight:hit?3:1.5,opacity:.95,dashArray:hit?null:"5 4",fill:hit,fillColor:"#0b2a6f",fillOpacity:hit?.08:0,interactive:true};
-    sqLayer.addLayer(L.polygon(ring,{color:"#fff",weight:st.weight+2.5,opacity:.8,fill:false,interactive:false}));
+    const st={color:"#9be08f",weight:2,opacity:hit?.95:.6,dashArray:"6 5",fill:hit,fillColor:"#9be08f",fillOpacity:hit?.07:0,interactive:true};
     const p=L.polygon(ring,st);
     p.bindTooltip(!hit?`Aucun relevé ${YR_LAB[state.yr]} dans cette maille${multi?" pour les espèces affichées":" ("+list[0].fr+")"}`
       :multi?`Relevés ${YR_LAB[state.yr]} : `+per.map(x=>`${x.sp.fr} ${x.c}`).join(", ")
@@ -2891,7 +2972,7 @@ function huntBox(i){const c=G.fx[i]?cellCanton(i):null,ds=seasonDate();if(!c||G.
   const L=huntOn(c,ds);if(!L.length)return "";const Lc=L.filter(l=>!HUNT_INDIV.test(l));
   if(!Lc.length)return `<div class="hunt-box" style="opacity:.85"><b>Chasse individuelle possible ce jour (${c==="FR"?"Fribourg":"Vaud"})</b> : ${esc(L.join(", "))}. Pas de battue prévue au calendrier : forêt hachurée en orange. Restez visible et sur les chemins.</div>`;
   return `<div class="hunt-box"><b>Chasse ce jour (${c==="FR"?"Fribourg":"Vaud"})</b> : ${esc(L.join(", "))}. ${HUNT_HOURS[0].toUpperCase()+HUNT_HOURS.slice(1)}. Portez des habits voyants, restez sur les chemins et respectez les panneaux « chasse en cours ». <a href="${HUNT_SRC[c]}" target="_blank" rel="noopener">Source</a></div>`}
-// --- contrôles officiels des champignons (lus le 16.11.2026 ; saison 2027 à confirmer) ---
+// --- contrôles officiels des champignons (lus le 16.11.2026, complétés le 20.11.2026 depuis vapko.ch ; saison 2027 à confirmer) ---
 const VAPKO=[
  {n:"Châtel-Saint-Denis",a:"Avenue de la Gare 22, salle de l'Aigle (administration communale)",h:"dimanche 18 h – 19 h 30, du 1er septembre au 31 octobre 2026 (pas le 11 octobre) ; autres moments sur rendez-vous",ll:[46.52631,6.89907],src:"https://www.fr.ch/sites/default/files/2026-10/lieux-de-controle-des-champignons-dans-le-canton-de-fribourg.pdf"},
  {n:"Bulle",a:"Bâtiment des sociétés, rue des Alpettes 4",h:"dimanche 17 h 30 – 19 h, de début août à fin octobre ; autres moments sur rendez-vous",ll:[46.61409,7.04719],src:"https://www.fr.ch/sites/default/files/2026-10/lieux-de-controle-des-champignons-dans-le-canton-de-fribourg.pdf"},
@@ -2899,11 +2980,22 @@ const VAPKO=[
  {n:"Echallens",a:"Local de la Rovina, place Emile-Gardaz 3",h:"samedi 15 h – 16 h, du 29 août au 14 novembre 2026 ; gratuit ; hors saison sur rendez-vous (Préfecture du Gros-de-Vaud, 021 557 18 45)",ll:[46.64094,6.63619],src:"https://www.mycopdj.ch/controles"},
  {n:"Yverdon-les-Bains",a:"Salle Valentin, rue du Valentin 12, 3e étage (Sécurité publique)",h:"lundi et mercredi 17 h – 18 h 30, du 17 août au 18 novembre 2026 (pas les 21 septembre, 12 et 14 octobre)",ll:[46.77737,6.64188],src:"https://www.yverdon-les-bains.ch/vie-quotidienne/pratique/controle-des-champignons"},
  {n:"Sainte-Croix",a:"Administration communale, rue Neuve 10, rez-de-chaussée",h:"lundi 17 h – 18 h 30, dès le 17 août 2026",ll:[46.82241,6.50124],src:"https://www.sainte-croix.ch/aktuellesinformationen/2955610"},
- {n:"Lausanne",a:"Service des parcs et domaines, avenue du Chablais 46",h:"fermé pour une durée indéterminée (021 315 57 15)",ll:[46.52478,6.59354],closed:true,src:"https://www.lausanne.ch/prestations/parcs-et-domaines/controle-des-champignons.html"}];
+ {n:"Lausanne",a:"Service des parcs et domaines, avenue du Chablais 46",h:"fermé pour une durée indéterminée (021 315 57 15)",ll:[46.52478,6.59354],closed:true,src:"https://www.lausanne.ch/prestations/parcs-et-domaines/controle-des-champignons.html"},
+ {n:"Le Mont-sur-Lausanne",a:"Route du Jorat 5 - 1er étage",h:"01.07 - 30.11, LU au SA : sur appel téléphonique, DI 18:00-19:00 ou sur appel téléphonique ; 01.12 au 30.06, Sur appel téléphonique préalable ; gratuit ; Parking possible dans la petite cour malgré l’interdiction , Pas de contrôle sur photo",ll:[46.56044,6.63579],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Chavannes-près-Renens",a:"Avenue de la Gare 94 - Local du feu",h:"07.09 au 09.11, DI 18.00-19.00 ; Toute l'année sur rendez-vous téléphonique, au domicile du contrôleur chemin de la Cocarde 1A à 1024 Ecublens ; gratuit ; Pas de contrôle le week-end du Jeûne Fédéral., Pas de contrôle sur photos.",ll:[46.52827,6.57188],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Lausanne",a:"Au Boscal - Route des Corbessières 4 - Service des parcs et domaines",h:"Jusqu'au 12.11.2026:, LU : 07:30-12:00, ME : 15:00-17:30, JE: 07:30-12:00 ; gratuit ; PAS DE DÉTERMINATION DE CHAMPIGNONS SUR PHOTOS., Pour toute question, contacter le contrôleur., Pas de parking sur place. Parking de Mauvernay (500m) ou Praz d'eau (300m)",ll:[46.56406,6.68286],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Bussigny",a:"Rue St-Germain 1",h:"01.04 au 30.06 / 01.11 au 01.12, LU 15:00 - 17:00, sur appel téléphonique préalable et selon disponibilité du contrôleur., ATTENTION: pas de contrôle du 10.10 au 18.10 ; 01.07 au 31.10, LU 16:00 - 17:00, sur appel téléphonique préalable et selon disponibilité du contrôleur. ; gratuit ; Also english speaking",ll:[46.5498,6.5505],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Echandens",a:"rue du Saugey 6 - Domicile de la contrôleuse",h:"Toute l'année sur rendez-vous téléphonique ; gratuit",ll:[46.53513,6.54098],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Cossonay",a:"Route d'Aubonne 5 - Domicile de la contrôleuse",h:"Toute l'année sur rendez-vous téléphonique ; gratuit",ll:[46.61336,6.50468],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Yens",a:"Grand-Rue 18 A, 1169 Yens - Salle des Sociétés à droite de l'Auberge de la Croix d'Or",h:"27.08. - 05.11, DI : 17:00 - 18:30 ; gratuit",ll:[46.51851,6.41624],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Jongny",a:"Chemin du Parc 1 - Domicile de la contrôleuse",h:"01.09. - 31.10., DI : 18.30-20.00, ou sur rendez-vous téléphonique., ATTENTION ! Pas de contrôle les lundi et vendredi. ; Hors saison sur rendez-vous téléphonique",ll:[46.47925,6.84078],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Leysin",a:"route du Vallon 13 - Chalet La Fantaisie",h:"Toute l'année sur appel téléphonique préalable au (numéro sur vapko.ch) ; gratuit",ll:[46.33913,7.00975],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Tévenon",a:"Rte de Fontanezier 2 - Ancien Collège",h:"16/08-15/11, DI: 17:00-18:30, sauf le 11/10 ; Toute l'année sur prise de RDV par écrit ; gratuit ; Pas de contrôle sur photo",ll:[46.84905,6.63785],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
+ {n:"Marsens",a:"Rte Principale 34, 1633 Vuippens - Hôtel de Ville",h:"15.07 - 31.10., DI : 17:30 - 19:00 ; Toute l'année, sur appel téléphonique ; gratuit ; Contrôle également possible rue des Alpettes 4 à Bulle.",ll:[46.65837,7.074],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"}];
 let vapkoLayer=null;
 function setupVapko(){const b=L.latLngBounds(meta.bounds||regionLL()).pad(.15);
   vapkoLayer=L.layerGroup(VAPKO.filter(p=>b.contains(p.ll)).map(p=>L.marker(p.ll,{icon:L.divIcon({className:"",html:`<span class="vapko-pin${p.closed?" off":""}" title="Contrôle des champignons">✓</span>`,iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:500})
-    .bindPopup(`<div class="pp"><h3>Contrôle des champignons · ${esc(p.n)}</h3><p style="margin:4px 0">${esc(p.a)}</p><p style="margin:4px 0"><b>${esc(p.h)}</b></p>${itinLink(p.ll[0],p.ll[1])}<p class="small" style="margin:6px 0 0">Horaires lus le 16 novembre 2026 ; ceux de 2027 ne sont pas encore publiés. <a href="${p.src}" target="_blank" rel="noopener">Source</a> · <a href="https://www.vapko.ch/index.php/fr/lieux-et-places-de-controle" target="_blank" rel="noopener">tous les lieux (VAPKO)</a></p></div>`,{maxWidth:300})));
+    .bindPopup(`<div class="pp"><h3>Contrôle des champignons · ${esc(p.n)}</h3><p style="margin:4px 0">${esc(p.a)}</p><p style="margin:4px 0"><b>${esc(p.h)}</b></p>${itinLink(p.ll[0],p.ll[1])}<p class="small" style="margin:6px 0 0">Horaires lus le ${p.lu||"16 novembre 2026"} ; ceux de 2027 ne sont pas encore publiés. <a href="${p.src}" target="_blank" rel="noopener">Source</a> · <a href="https://www.vapko.ch/index.php/fr/lieux-et-places-de-controle" target="_blank" rel="noopener">tous les lieux (VAPKO)</a></p></div>`,{maxWidth:300})));
   const sync=()=>{const v=$("o-vapko").checked;if(v&&!map.hasLayer(vapkoLayer))vapkoLayer.addTo(map);else if(!v&&map.hasLayer(vapkoLayer))map.removeLayer(vapkoLayer)};
   $("o-vapko").onchange=()=>{saveLay();sync()};sync();
   $("o-hunti").checked=$("o-hunt").checked;$("o-hunt").onchange=()=>{$("o-hunti").checked=$("o-hunt").checked;saveLay();huntUpdate()}}
@@ -3123,7 +3215,7 @@ async function loadRegion(R){
   for(let j=Math.floor(R.r0/cs);j<=Math.floor((R.r0+R.rows-1)/cs);j++)for(let i=Math.floor(R.c0/cs);i<=Math.floor((R.c0+R.cols-1)/cs);i++)if(HAVE.has(i+"_"+j))need.push([i,j]);
   const tiles=await Promise.all(need.map(([i,j])=>loadChunk(i,j).then(t=>({i,j,t}))));
   const n=R.cols*R.rows,NG={};
-  const T={dem:Int16Array,midx:Uint16Array,fx:Uint8Array,slope:Uint8Array,aspect:Uint8Array,conif:Uint8Array,vhm:Uint8Array,tpi:Int8Array,edge:Uint8Array,sq:Uint8Array,zone:Uint16Array,hab:Uint8Array,mi:Int8Array,ca:Uint8Array,rg:Uint8Array};
+  const T={dem:Int16Array,midx:Uint16Array,fx:Uint8Array,slope:Uint8Array,aspect:Uint8Array,conif:Uint8Array,vhm:Uint8Array,tpi:Int8Array,edge:Uint8Array,sq:Uint8Array,zone:Uint16Array,hab:Uint8Array,mi:Int8Array,ca:Uint8Array,rg:Uint8Array,wsl:Uint8Array};
   for(const k in T)NG[k]=new T[k](n);
   tiles.forEach(({i,j,t})=>{
     const gc0=i*cs,gr0=j*cs;
@@ -3137,7 +3229,7 @@ async function loadRegion(R){
   for(let i=0;i<n;i++){if(!G.fx[i])continue;const asp=G.aspect[i]*2*Math.PI/180,sl=G.slope[i]*Math.PI/180;SOUTH[i]=-.8*Math.cos(asp)*Math.sin(sl)}
   NZ=0;for(let i=0;i<n;i++)if(G.zone[i]>NZ)NZ=G.zone[i];
   {const H=new Uint32Array(50);let nf=0;for(let i=0;i<n;i++)if(G.fx[i]){H[Math.min(49,(G.dem[i]/100)|0)]++;nf++}let c=0;for(let b=0;b<50;b++){c+=H[b];if(c>=nf/2){REG_ALT=b*100+50;break}}}
-  STKEY="";
+  STKEY="";WSL0={};
   const lat=L.CRS.EPSG3857.unproject(L.point(meta.x0,meta.y1-R.rows*meta.res/2)).lat;
   zoneHa=Math.pow(meta.res*Math.cos(lat*Math.PI/180),2)/1e4;
   canvas.width=R.cols;canvas.height=R.rows;imgData=ctx.createImageData(R.cols,R.rows);
@@ -3180,7 +3272,7 @@ async function boot(){
   // couches secondaires : chargées en parallèle, affichées dès qu'elles arrivent (n'attendent pas la grille)
   const later={rs:fetch(ZD+"reserves.geojson",NC).then(r=>r.json()),aj:fetch(ZD+"acces.geojson",NC).then(r=>r.json()),tj:fetch(ZD+"sentiers.geojson",NC).then(r=>r.json())};
   const [dj,ti]=await Promise.all([fetch(ZD+"data.json",NC).then(r=>r.json()),fetch(ZD+"tiles_index.json",NC).then(r=>r.json())]);
-  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{});
+  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{},typeof MAP_THR_V5!=="undefined"?MAP_THR_V5:{},typeof MAP_THR_V6!=="undefined"?MAP_THR_V6:{});
   // version test « données ouvertes » : altitudes et saisons d'expert, sans SwissFungi, carte des milieux, part de résineux ni iNaturalist
   if(meta.lite){LITE=true;SPECIES.forEach(s=>{if(meta.lite.alt[s.id])s.alt=meta.lite.alt[s.id]});document.body.classList.add("lite");
     const b=document.createElement("p");b.className="lite-banner";b.textContent="Version test « données ouvertes » : sans SwissFungi, sans carte des milieux ni part de résineux (essences), sans iNaturalist. Altitudes et saisons fixées à dire d'expert.";$("sec-head").appendChild(b)}
@@ -3191,6 +3283,15 @@ async function boot(){
   loadLay();
   const b=L.latLngBounds(meta.bounds);  // emprise des données préparées
   map=L.map("map",{minZoom:8,maxZoom:18,zoomControl:false,attributionControl:true}).fitBounds(L.latLngBounds(meta.view||meta.bounds));
+  // carte unique : reprend la dernière vue, et charge une autre région quand la vue en sort
+  if(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],ZID)===ZID)map.setView([SAVED_VIEW[0],SAVED_VIEW[1]],SAVED_VIEW[2]);
+  {let swT;map.on("moveend",()=>{const c=map.getCenter(),z=map.getZoom();
+    try{localStorage.setItem("champi-view-pos",JSON.stringify([+c.lat.toFixed(5),+c.lng.toFixed(5),z]))}catch(e){}
+    clearTimeout(swT);swT=setTimeout(()=>{if(state.adding)return;const n=zoneAt(c.lat,c.lng,ZID);
+      if(n&&n!==ZID){const nm={ple:"Riviera-Chablais",lsn:"Région lausannoise",gdv:"Gros-de-Vaud"}[n];
+        const m=document.createElement("div");m.setAttribute("role","status");m.style.cssText="position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:3000;background:#2f5d3a;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;box-shadow:0 2px 8px #0005";m.textContent="Chargement de la région « "+nm+" »…";document.body.appendChild(m);
+        try{localStorage.setItem("champi-zone",n)}catch(e){}
+        setTimeout(()=>location.replace(location.pathname),150)}},700)})}
   const attr='© <a href="https://www.swisstopo.admin.ch" target="_blank" rel="noopener">swisstopo</a> · MétéoSuisse · SwissFungi/WSL · OFEV';
   // une couche pour les petits zooms (11-13, toute l'emprise) puis une par zone, agrandie par Leaflet au-delà de son zoom maximal
   // carte nationale sur écran haute résolution : tuiles du zoom suivant affichées à demi-taille,
@@ -3227,6 +3328,8 @@ async function boot(){
   const setRelief=v=>{state.relief=v;saveState();if(v){reliefLayer.addTo(map);loadWater()}else map.removeLayer(reliefLayer);syncWater();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",syncWater);
   $("o-relief").checked=!!state.relief;$("o-relief").onchange=e=>setRelief(e.target.checked);if(state.relief){reliefLayer.addTo(map);loadWater()}
   ["o-water","o-road"].forEach(id=>$(id).onchange=()=>{saveLay();syncWater()});
+  ["c","d","m"].forEach(k=>$("o-lim-"+k).onchange=()=>{saveLay();syncLimits()});syncLimits();
+  map.on("moveend",()=>{if(map.hasLayer(LIM.d.lab||L.layerGroup())||map.hasLayer(LIM.m.lab||L.layerGroup())){if($("o-lim-d").checked)limLabels("d");if($("o-lim-m").checked)limLabels("m")}});
   $("geo-btn").setAttribute("aria-pressed",!!state.relief);$("geo-btn").onclick=()=>setRelief(!state.relief);
   const setBest=v=>{state.best=v;saveState();$("best-btn").setAttribute("aria-pressed",v);updateBest()};
   $("best-btn").onclick=()=>setBest(!state.best);$("best-btn").setAttribute("aria-pressed",!!state.best);map.on("moveend",updateBest);
@@ -3335,7 +3438,7 @@ async function boot(){
   const zoomAlpha=z=>z<=13?1:z===14?.8:z===15?.6:z===16?.5:.42;
   const applyAlpha=()=>overlay.setOpacity($("o-alpha").value/130*zoomAlpha(Math.round(map.getZoom())));
   $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();
-  $("o-sq").onchange=renderSquares;
+  $("o-sq").onchange=()=>{saveLay();renderSquares()};
   setupCoinForm();setupShare();setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
   document.querySelectorAll("[data-act=tour]").forEach(b=>b.onclick=tourStart);
   {let seen=null;try{seen=localStorage.getItem("champi-tour2")}catch(e){seen="?"}if(!seen)setTimeout(tourStart,1200)}
