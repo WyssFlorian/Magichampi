@@ -34,7 +34,7 @@ var D=[
 ["mailles","Mailles SwissFungi : interrupteur du menu fonctionnel + style discret (tireté vert clair 2 px), sur les 3 régions fusionnées","2026-11-20","≈ 10-15 k · réel : estimé 10-15 k (PR 33)","🏁","opensource"],
 ["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions, explication dans l'app de la présence de Leaflet (crédits / à propos), cartes générées sans rendre publiques les données (WSL, etc.) · reste en attente : purge de l'historique git, jusqu'à l'officialisation de la diffusion","2026-11-20","≈ 40-70 k · réel : estimé 40-70 k (PR 51 et 53)","🏁"],
 ["coins","Partage chiffré des coins pour améliorer la prédiction : code livré (chiffrement côté navigateur, Worker Cloudflare, dépôt privé, consentement, suppression, docs/partage-chiffre.md). Reste à Florian : clé, dépôt privé, jeton, déploiement (≈ 15 min)","2026-11-20","≈ 40-80 k · réel : ≈ 45 k estimés","🏁"],
-["vaud","Extension au canton de Vaud, socle : affichage par région, téléchargeable séparément hors ligne, bande de 1 km de chevauchement autour de chaque zone, fiche docs/extension-vaud.md (PR 52, 🏁 une fois fusionnée) · lancée le 20 nov. à la demande de Florian","2026-11-20","≈ 100-130 k","✅"],
+["vaud","Extension au canton de Vaud, socle (lot 1) : registre des 8 régions, bande de 1 km de chevauchement, hors ligne téléchargeable par région, fiche docs/extension-vaud.md","2026-11-20","≈ 100-130 k · réel : estimé 100-130 k (PR 52)","🏁"],
 ["vd-cote","Région Vaud : La Côte / Nyon / Jura (à générer, après réponse à la carte de décision)","2026-11-21","≈ 250 k","❔","ne"],
 ["vd-broye","Région Vaud : Broye (à générer, après réponse à la carte de décision)","2026-11-21","≈ 100 k","❔","ne"],
 ["vd-vully","Région Vaud : Vully / Avenches (à générer, après réponse à la carte de décision)","2026-11-21","≈ 100 k","❔","ne"],
@@ -49,7 +49,7 @@ var D=[
 ["cantons","Extension progressive aux autres cantons suisses (propositions hebdomadaires, coût validé chaque semaine)","2026-12-04","≈ 350 k au total","❔"]
 ].map(function(r){return{id:r[0],t:r[1],d:r[2],k:r[3],s:r[4]||"❔",b:r[5]}});
 /* Dates déplacées : si la date enregistrée est encore l'ancienne valeur par défaut, elle passe à la nouvelle ; une date modifiée à la main n'est jamais touchée. */
-var MOVED={couleurs:["2026-11-21","2026-11-20"],modele:["2026-11-21","2026-11-20"],difficile:["2026-11-21","2026-11-20"],opensource:["2026-11-22","2026-11-20"],vaud:["2026-11-27","2026-11-20"]};
+var MOVED={couleurs:["2026-11-21","2026-11-20"],modele:["2026-11-21","2026-11-20"],difficile:["2026-11-21","2026-11-20"],opensource:["2026-11-22","2026-11-20"],vaud:["2026-11-27","2026-11-20"],coins:["2026-11-22","2026-11-20"]};
 var byId={};D.forEach(function(r){byId[r.id]=r});
 function load(){
  var st=null;
@@ -60,8 +60,8 @@ function load(){
  }
  st=(st||[]).filter(function(x){return byId[x.id]});
  st.forEach(function(x){var m=MOVED[x.id];if(m&&x.d==m[0])x.d=m[1]});
- var DONE={fusion:1,wsl:1,couleurs:1,modele:1,mailles:1,vapko:1,pente:1,unecarte:1,bandes:1,difficile:1,niveau:1,visibilite:1,opensource:1,coins:1};st.forEach(function(x){if(DONE[x.id]&&x.s!="🚫")x.s="🏁"}); /* terminé le 20 nov. */
- var GO={vaud:1};st.forEach(function(x){if(GO[x.id]&&x.s=="❔")x.s="✅"}); /* lancé par Florian le 20 nov. */
+ var DONE={fusion:1,wsl:1,couleurs:1,modele:1,mailles:1,vapko:1,pente:1,unecarte:1,bandes:1,difficile:1,niveau:1,visibilite:1,opensource:1,vaud:1,coins:1};st.forEach(function(x){if(DONE[x.id]&&x.s!="🚫")x.s="🏁"}); /* terminé le 20 nov. */
+ var GO={};st.forEach(function(x){if(GO[x.id]&&x.s=="❔")x.s="✅"}); /* lancé par Florian le 20 nov. */
  var seen={};st.forEach(function(x){seen[x.id]=1});
  D.forEach(function(r){if(seen[r.id])return;var n={id:r.id,s:r.s,d:r.d},k=-1;st.forEach(function(x,i){if(x.id==r.b)k=i});if(k<0)st.push(n);else st.splice(k,0,n)}); /* nouvelles lignes : avant leur ancre si elle existe, sinon en bas */
  return st}
