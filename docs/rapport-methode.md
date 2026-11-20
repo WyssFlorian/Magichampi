@@ -33,7 +33,7 @@ Points à retenir (détail aux sections 9 à 13) :
 | Chasse, contrôles VAPKO | calendriers cantonaux VD et FR, liste VAPKO | — | couches d'information, **hors score** | `index.html:2880-3105` |
 | Coins de l'utilisateur, points iNaturalist importés | saisie locale ; fichier d'import | point | bonus +50 % autour des coins de l'espèce, **invisible du public** | `index.html:1594` |
 
-Les relevés précis iNaturalist ne servent qu'à la validation (section 10), jamais au score public. Leurs licences (CC BY, CC BY-NC) sont conservées dans le projet.
+Depuis le 20 novembre 2026 une trace **agrégée** des 62 coins iNaturalist du fichier d'import relève aussi le score public (section 7.1) ; les relevés précis iNaturalist/GBIF servent à la validation (section 10), jamais à la fois dans le score et dans la validation. (Texte antérieur : « ne servent qu'à la validation, jamais au score public ».) Leurs licences (CC BY, CC BY-NC) sont conservées dans le projet.
 
 ## 3. Prétraitement et grille de 25 m
 
@@ -148,6 +148,13 @@ Mode « conditions du moment » (météo pour la date choisie, mesures puis pré
 
 - **Forte concentration** : chaque espèce affichée rapporte 3 (très élevé), 2 (élevé), 1 (moyen) points. Les seuils sont les maxima de : seuils fixes (2/4/6 points pour un palier, 4/6/8 pour toutes, réduits au prorata des espèces décochées) et quantiles 60/85/96 % des points sur les forêts chargées (`index.html:1781-1830`).
 - **Meilleur lieu** (`findBest`, `index.html:2271`) : score de zone `(classe + qualité) × taille × part de bonne classe`, avec `sizeW(a) = 0,2 + 0,8 · clamp(ln(a/0,5)/ln(40), 0, 1)` (a = surface du massif continu en ha) et un facteur `0,6 + 0,4 · min(1, ha en classe max / 3)`. Ne modifie pas le score.
+
+### 7.1 Bonus iNaturalist du score public et anti-doublons
+
+- **Forme.** 62 coins iNaturalist (observations « research grade », Vaud) → 47 cases par espèce de 0,005° × 0,0075° (≈ 556 m × 574 m), 7 espèces ; 5 coins sans espèce de l'application et 10 observations tombant dans une case déjà occupée sont fusionnés. Chaque case devient un point au centre de la case (bloc `PUB_OBS` d'`index.html`, produit par `tools/inat_bonus_public.py`). Aucun point exact, aucune photo, aucun auteur n'est publié.
+- **Effet.** Le même bonus que pour les coins de l'utilisateur : `× (1 + 0,5 · exp(−d / 250 m))`, nul au-delà de 1 km, combiné **par maximum** avec les coins de l'utilisateur.
+- **Sans fuite.** `aptAt` reçoit un bonus nul dans la validation (`rerun.js`) et dans le calcul des seuils (`tools/seuils.js`) : les classes sont celles du modèle sans le bonus, et les observations iNaturalist de la validation (qui sont les mêmes observations) ne se valident pas elles-mêmes. Rejoué : résultats identiques à ceux d'avant le bonus (ple, lsn, gdv, 247 paires, rang moyen 0,663). Le bonus n'est donc **pas** une amélioration mesurée : il n'est pas validable avec ces données.
+- **Contrôle contre le double compte (à respecter pour tout futur ajout).** Une observation n'entre qu'une fois : (1) clé = identifiant d'observation (iNat/GBIF) ; (2) à défaut, (espèce, position arrondie à 1e-4°, date) ; (3) après agrégation, une case par espèce n'est écrite qu'une fois (`tools/inat_bonus_public.py` imprime le nombre d'entrées fusionnées) ; (4) dans l'application, public et coins de l'utilisateur sont combinés par maximum, jamais additionnés, et l'import d'un fichier de coins refuse un coin de même espèce, même date et même position (±11 m) ; (5) un point qui sert déjà au bonus ne doit jamais non plus servir à la calibration ou à la validation de ce même score ; (6) SwissFungi (mailles de 5 km) peut contenir des observations d'iNaturalist : ne pas ajouter ces relevés une seconde fois au bonus.
 
 ## 8. Ce qui n'entre pas dans le score
 
