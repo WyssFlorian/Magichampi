@@ -1242,7 +1242,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Sentiers, routes et cours d'eau : swissTLM3D (swisstopo).</li>
         <li>Arrêts et gares : Office fédéral des transports (arrêts des transports publics). Lignes : horaire officiel suisse 2026 (GTFS, opentransportdata.swiss), sans bus de remplacement ni lignes de nuit. Les arrêts de bus situés dans les grandes agglomérations (par exemple Lausanne et sa couronne, Vevey–Montreux, Yverdon : zones bâties continues de plus de 250 ha) ne sont affichés que s’il y a, à moins de 1 km, une forêt en classe moyenne ou élevée pour l’espèce choisie (pour au moins une espèce en mode « forte concentration »). La liste change avec l’espèce, la date et les filtres. Parkings : swissTLM3D, aires de stationnement publiques.</li>
       </ul>
-      <p>Les essences sont résumées en part de résineux et en grands types de forêt modélisés : la carte ne distingue pas directement l'épicéa du sapin. Les réserves cantonales vaudoises et fribourgeoises ne sont pas toutes affichées. Règles de cueillette vérifiées le 15 novembre 2026 : Vaud, RLPrPNP art. 12 (2 kg par personne et par jour, 7 h à 20 h, tous les jours) ; Fribourg, arrêté du 9 juin 1998 et RPNat art. 26 (2 kg, 7 h à 20 h). Les règles communales ou de propriétaires privés ne sont pas prises en compte.</p>
+      <p>Les essences sont résumées en part de résineux, en grands types de forêt modélisés et, pour les espèces à hôte précis, en essence dominante de la carte WSL 10 m (Koch, Hobi, Morsdorf, Waser 2024, EnviDat, précision ≈ 76 % : hêtre et épicéa surestimés, autres essences sous-estimées, ≈ 10 à 20 % de pixels non classés traités comme neutres). Les réserves cantonales vaudoises et fribourgeoises ne sont pas toutes affichées. Règles de cueillette vérifiées le 15 novembre 2026 : Vaud, RLPrPNP art. 12 (2 kg par personne et par jour, 7 h à 20 h, tous les jours) ; Fribourg, arrêté du 9 juin 1998 et RPNat art. 26 (2 kg, 7 h à 20 h). Les règles communales ou de propriétaires privés ne sont pas prises en compte.</p>
 </div>
     </div>
     <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
@@ -1526,11 +1526,25 @@ let LITE=false;
 const HAB0={};
 const habF=(i,sp)=>{if(LITE)return 1;const t=HAB[sp.id];if(!t||!G.hab)return 1;const h=G.hab[i];if(h)return t[h]||1;let m=HAB0[sp.id];if(m==null){m=0;for(let k=1;k<9;k++)m+=t[k];m=HAB0[sp.id]=m/8}return m};
 // 20.11.2026 (étape 2) : poids calibrés par validation croisée sur 247 relevés précis (blocs de 5 km, fond groupe cible) : l'essence faisait double emploi avec le type de forêt (poids 0,2) et l'altitude était trop sélective (poids 0,6) ; SwissFungi x1,15 (via regionF)
-const W_HOST=.2,W_ALT=.6;
+let W_HOST=.1,W_ALT=.6;
+// 20.11.2026 : essence dominante (carte WSL 10 m, Koch et al. 2024, précision ≈ 76 %, hêtre et épicéa surestimés, autres essences sous-estimées).
+// Codes de la couche « wsl » : 0 = inconnu, 1..15 = classe WSL + 1. Pour une espèce qui nomme ses arbres hôtes (WSL_HOSTS), facteur = 1 si l'essence dominante
+// est un hôte, WSL_SAME (même type, feuillu ou résineux) ou WSL_OTHER sinon ; l'écart à 1 est réduit pour le hêtre et l'épicéa (surestimés) ; inconnu = moyenne
+// de l'espèce sur la région (comme le type de forêt inconnu). Poids W_WSL calibré par validation (blocs de 5 km).
+let W_WSL=.4,WSL_SAME=.6,WSL_OTHER=.3;const WSL_REL=[.8,.8,.8,.8,.8,.8,.6,.8,.6,.8,.8,.8,.8,.8,.8];  // fiabilité par classe (hêtre = 6, épicéa = 8)
+const WSL_CONIF=[1,0,0,0,0,0,0,0,1,1,1,1,0,0,0];
+const WSL_HOSTS={edulis:[0,8,6],reticulatus:[12,13,5,6],pinophilus:[11,8,10,9],cibarius:[6,8,0],cornucopioides:[6,12,13],tubaeformis:[8,0],morelb:[7,2,3,1],repandum:[6,8,0],badia:[8,11,10],lutescens:[8,11],deliciosus:[11,10],sparassis:[11],virescens:[6,12,13],cyanoxantha:[6,12,13],erythropus:[6,8,0],glutinosus:[8,11],varius:[8],praestans:[6],vesca:[6,12,13],aurea:[6,12,13],turci:[11,10],vinosa:[8],mustelina:[8],integra:[8],imbricatus:[8],clavatus:[8,0],umbellatus:[12,13,6],bovinus:[11,10],luridus:[12,13,6],luteus:[11,10]};
+let WSL0={};const WSL_NAMES=["","sapin blanc","érable sycomore","aulne glutineux","aulne blanc","bouleau","châtaignier","hêtre","frêne","épicéa","pin cembro","pin de montagne","pin sylvestre","chêne sessile","chêne pédonculé","sorbier des oiseleurs"];
+const wslRaw=(k,H)=>H.includes(k)?1:(WSL_CONIF[k]===(WSL_CONIF[H[0]]||0)?WSL_SAME:WSL_OTHER);
+const wslVal=(k,H)=>{const r=WSL_REL[k];return 1-r*(1-wslRaw(k,H))};
+const wslF=(i,sp)=>{if(LITE||!W_WSL)return 1;const H=WSL_HOSTS[sp.id];if(!H||!G.wsl)return 1;const w=G.wsl[i];
+  if(w){return Math.pow(wslVal(w-1,H),W_WSL)}
+  let m=WSL0[sp.id];if(m==null){const h=new Float64Array(16);const n=G.wsl.length;for(let q=0;q<n;q+=7)if(G.fx[q]&&G.wsl[q])h[G.wsl[q]]++;let t=0,s=0;for(let k=1;k<16;k++){t+=h[k];s+=h[k]*wslVal(k-1,H)}m=WSL0[sp.id]=t?Math.pow(s/t,W_WSL):1}
+  return m};
 const hostW=(c,pref,soft)=>Math.pow(hostF(c,pref,soft),W_HOST),altW=(v,t)=>Math.pow(trap2(v,t),W_ALT);
 function aptAt(i,sp,r,ob){
   const c=LITE||G.conif[i]===255?NaN:G.conif[i]/100;
-  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
+  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
 }
 // confirmation par les observations précises (iNaturalist) de l'espèce : bonus de +50 % au point, décroissant (250 m), nul au-delà de 1 km
 const OB_B=.5,OB_L=250,OB_MAX=1000;
@@ -1829,7 +1843,7 @@ function cellInfo(i,sp){
   const c=G.conif[i]===255?NaN:G.conif[i]/100,h=G.vhm[i]/5,edge=G.edge[i]*2,dem=G.dem[i],sl=G.slope[i],asp=G.aspect[i]*2,tpi=G.tpi[i];
   const [rF,rK,rD]=regionF(G.sq[i],sp.key);
   return {A,P:pOf(st,i),SC:st.SC[i],c,h,edge,dem,sl,asp,tpi,rF,rK,rD,mi:G.mi[i],ca:G.ca[i],ob:st.ob[i],
-    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostW(c,sp.host,G.hab&&G.hab[i]>0),alt:altW(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
+    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostW(c,sp.host,G.hab&&G.hab[i]>0)*wslF(i,sp),wsl:G.wsl?G.wsl[i]:0,alt:altW(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
 }
 function rainSvg(m){
   const P=meteo.rprelimd[m],n=P.length,w=262,h=46,bw=w/n,mx=Math.max(20,...P.map(v=>v||0)),no=meteo.nobs;
@@ -1871,12 +1885,12 @@ function popupHtml(latlng){
     const k=wAdj(ak,w.W),dk=k-ak;
     h+=`<div class="tot"><span>Météo ${wLab(w.W)} (${w.W.toFixed(2)})<br><span class="small">${fcKind(state.d)==="prévision"?"prévue ":fcKind(state.d)==="estimation"?"estimée ":""}au ${fmtDate(meteo.dates[state.d])}${dk>0?", relève d'une classe":dk<0?`, abaisse d'${dk===-1?"une classe":"deux classes"}`:""}</span></span><span class="pill c${k}">${CLS_LAB[k]}</span></div>`}
   if(sp.weak)h+=`<p class="small" style="margin:0 0 6px;padding:4px 6px;background:#fff1d6;border-radius:6px;color:#6b4000"><b>Fiabilité faible.</b> ${esc(sp.weak)}</p>`;
-  h+=`<p class="small" style="margin:0 0 6px">Détail du calcul (1 = idéal), en trois parties : le lieu, l\'accès, le moment. Poids calibrés sur 247 relevés précis (essences ×0,2, altitude ×0,6).</p>`;
+  h+=`<p class="small" style="margin:0 0 6px">Détail du calcul (1 = idéal), en trois parties : le lieu, l\'accès, le moment. Poids calibrés sur 247 relevés précis (essences : conifères ×0,1, essence dominante WSL ×0,4 ; altitude ×0,6).</p>`;
   const GH=t=>`<b class="small" style="grid-column:1/-1;margin-top:4px">${t}</b>`;
   h+=`<div class="fx">`+GH("Aptitude du lieu (stable)");
   const cTxt=isNaN(info.c)?"composition inconnue":`${Math.round(info.c*100)} % de résineux`;
   h+=fxRow("Type de forêt",info.f.hab,HAB_LAB[info.hab]+(info.hab?"":" (facteur neutre)"));
-  h+=fxRow("Essences",info.f.host,`${cTxt} ; hôtes : ${sp.hostTxt}`);
+  h+=fxRow("Essences",info.f.host,`${cTxt}${WSL_NAMES[info.wsl]?" ; essence dominante (carte WSL) : "+WSL_NAMES[info.wsl]:""} ; hôtes : ${sp.hostTxt}`);
   h+=fxRow("Altitude",info.f.alt,`${info.dem} m ; optimum ${sp.alt[1]}–${sp.alt[2]} m`);
   h+=fxRow("Peuplement",info.f.stand,sp.stand==="edge"?`lisière à ${Math.round(info.edge)} m, hauteur ${Math.round(info.h)} m`:`hauteur moyenne ${Math.round(info.h)} m`);
   h+=fxRow("Humidité",info.f.moist,`station ${info.mi<-33?"sèche":info.mi>33?"fraîche":"moyenne"} (${info.mi>0?"+":""}${info.mi}) : relief et bilan hydrique ; ${sp.moist>0?"l'espèce aime le frais":sp.moist<0?"l'espèce supporte le sec":"seuls les lieux secs pénalisent"}`);
@@ -1907,6 +1921,7 @@ const MAP_THR_EXTRA=ZONE.MAP_THR_EXTRA;
 // 17.11.2026 (étape 1) : seuils recalculés après les corrections du type de forêt inconnu et de la lisière du cèpe (60/85/96,25 % des forêts de la carte)
 const MAP_THR_V4=ZONE.MAP_THR_V4;
 const MAP_THR_V5=ZONE.MAP_THR_V5;
+const MAP_THR_V6=ZONE.MAP_THR_V6;
 
 // zones sans chasse (districts francs fédéraux, réserves d'oiseaux d'eau ; geo.admin.ch, lues le 16.11.2026)
 // zones de tir militaires (avis de tir et zones de danger publiés, DDPS / geo.admin.ch, lues le 17.11.2026) ; [lat,lng]
@@ -3162,7 +3177,7 @@ async function loadRegion(R){
   for(let j=Math.floor(R.r0/cs);j<=Math.floor((R.r0+R.rows-1)/cs);j++)for(let i=Math.floor(R.c0/cs);i<=Math.floor((R.c0+R.cols-1)/cs);i++)if(HAVE.has(i+"_"+j))need.push([i,j]);
   const tiles=await Promise.all(need.map(([i,j])=>loadChunk(i,j).then(t=>({i,j,t}))));
   const n=R.cols*R.rows,NG={};
-  const T={dem:Int16Array,midx:Uint16Array,fx:Uint8Array,slope:Uint8Array,aspect:Uint8Array,conif:Uint8Array,vhm:Uint8Array,tpi:Int8Array,edge:Uint8Array,sq:Uint8Array,zone:Uint16Array,hab:Uint8Array,mi:Int8Array,ca:Uint8Array,rg:Uint8Array};
+  const T={dem:Int16Array,midx:Uint16Array,fx:Uint8Array,slope:Uint8Array,aspect:Uint8Array,conif:Uint8Array,vhm:Uint8Array,tpi:Int8Array,edge:Uint8Array,sq:Uint8Array,zone:Uint16Array,hab:Uint8Array,mi:Int8Array,ca:Uint8Array,rg:Uint8Array,wsl:Uint8Array};
   for(const k in T)NG[k]=new T[k](n);
   tiles.forEach(({i,j,t})=>{
     const gc0=i*cs,gr0=j*cs;
@@ -3176,7 +3191,7 @@ async function loadRegion(R){
   for(let i=0;i<n;i++){if(!G.fx[i])continue;const asp=G.aspect[i]*2*Math.PI/180,sl=G.slope[i]*Math.PI/180;SOUTH[i]=-.8*Math.cos(asp)*Math.sin(sl)}
   NZ=0;for(let i=0;i<n;i++)if(G.zone[i]>NZ)NZ=G.zone[i];
   {const H=new Uint32Array(50);let nf=0;for(let i=0;i<n;i++)if(G.fx[i]){H[Math.min(49,(G.dem[i]/100)|0)]++;nf++}let c=0;for(let b=0;b<50;b++){c+=H[b];if(c>=nf/2){REG_ALT=b*100+50;break}}}
-  STKEY="";
+  STKEY="";WSL0={};
   const lat=L.CRS.EPSG3857.unproject(L.point(meta.x0,meta.y1-R.rows*meta.res/2)).lat;
   zoneHa=Math.pow(meta.res*Math.cos(lat*Math.PI/180),2)/1e4;
   canvas.width=R.cols;canvas.height=R.rows;imgData=ctx.createImageData(R.cols,R.rows);
@@ -3219,7 +3234,7 @@ async function boot(){
   // couches secondaires : chargées en parallèle, affichées dès qu'elles arrivent (n'attendent pas la grille)
   const later={rs:fetch(ZD+"reserves.geojson",NC).then(r=>r.json()),aj:fetch(ZD+"acces.geojson",NC).then(r=>r.json()),tj:fetch(ZD+"sentiers.geojson",NC).then(r=>r.json())};
   const [dj,ti]=await Promise.all([fetch(ZD+"data.json",NC).then(r=>r.json()),fetch(ZD+"tiles_index.json",NC).then(r=>r.json())]);
-  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{},typeof MAP_THR_V5!=="undefined"?MAP_THR_V5:{});
+  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{},typeof MAP_THR_V5!=="undefined"?MAP_THR_V5:{},typeof MAP_THR_V6!=="undefined"?MAP_THR_V6:{});
   // version test « données ouvertes » : altitudes et saisons d'expert, sans SwissFungi, carte des milieux, part de résineux ni iNaturalist
   if(meta.lite){LITE=true;SPECIES.forEach(s=>{if(meta.lite.alt[s.id])s.alt=meta.lite.alt[s.id]});document.body.classList.add("lite");
     const b=document.createElement("p");b.className="lite-banner";b.textContent="Version test « données ouvertes » : sans SwissFungi, sans carte des milieux ni part de résineux (essences), sans iNaturalist. Altitudes et saisons fixées à dire d'expert.";$("sec-head").appendChild(b)}
