@@ -9,7 +9,7 @@ Demande de Florian (20 nov. 2026) : couvrir tout le canton, affichage découpé 
 | lsn | Région lausannoise | publiée | 6,45 – 46,45 – 6,75 – 46,63 |
 | gdv | Gros-de-Vaud | publiée | 6,26 – 46,53 – 6,70 – 46,86 |
 | nyn | La Côte, Nyon, Jura vaudois (Vallée de Joux ouest) | **publiée (lot 2)** | 6,06 – 46,28 – 6,52 – 46,70 |
-| bro | Broye (Moudon, Lucens, Payerne) | à faire | 6,68 – 46,60 – 7,00 – 46,99 |
+| bro | Broye (Moudon, Lucens, Payerne) | **publiée (lot 3)** | 6,68 – 46,60 – 7,00 – 46,99 |
 | vul | Vully et Avenches | à faire | 6,98 – 46,78 – 7,26 – 46,99 |
 | chb | Chablais alpin (Bex, Ormonts, Gryon) | à faire | 6,74 – 46,18 – 7,26 – 46,37 |
 | pde | Pays-d'Enhaut et Diablerets | à faire | 7,04 – 46,35 – 7,26 – 46,62 |
@@ -57,3 +57,6 @@ Générée par `pipeline/vd/` du dépôt privé app-champignons (`zones.py`, `dl
 - La partie genevoise de l'emprise est traitée comme le reste (pas de chasse à Genève, non modélisé).
 - Fond de carte : 404 mosaïques (87 Mo), tuiles à moins de 2 km d'une forêt au-delà du zoom 12.
 - Météo : `nyn/data.json` ajouté au workflow Météo.
+
+## Lot 3 : Broye (`bro/`)
+Même chaîne que le lot 2 (`pipeline/vd/run_zone.sh bro` puis `finish_zone.sh bro`). Couche WSL : 85,2 % de la forêt classée ; 21 zones sans chasse (districts francs, réserves d'oiseaux). Mêmes limites que le lot 2 (pas de sorties de sociétés, d'iNaturalist ni de zones de tir). `zones.js` : une région par ligne (le fichier est régénéré par `tools/zones_vaud.py`, qui conserve désormais l'état des régions déjà publiées).
