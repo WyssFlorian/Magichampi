@@ -1129,7 +1129,15 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk" style="margin:6px 0"><input type="checkbox" id="se-consent"> <span>J'accepte que mes coins sélectionnés soient envoyés chiffrés à l'auteur, uniquement pour améliorer le modèle. Ils ne seront ni publiés, ni transmis, ni utilisés autrement. Je peux les faire effacer à tout moment.</span></label>
         <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn primary" id="se-send" type="button">Envoyer mes coins</button><button class="btn" id="se-del" type="button">Effacer mes envois</button><span class="small" id="se-msg" role="status"></span></div>
         <details style="margin-top:6px"><summary class="small">Code de suppression (à garder)</summary><p class="small" style="margin:4px 0">Ce code prouve que les envois sont les vôtres. Gardez-le : si vous videz votre navigateur, il permet d'effacer vos envois plus tard.</p><textarea id="se-code" rows="2" aria-label="Code de suppression"></textarea><div class="row" style="gap:6px;margin-top:4px"><button class="btn" id="se-del-code" type="button">Effacer avec ce code</button></div></details>
-        <p class="small" style="margin:6px 0 0">Conformément à la loi suisse sur la protection des données (LPD), l'envoi est volontaire ; la finalité est limitée à l'amélioration du modèle ; les données sont conservées dans un dépôt privé et effacées sur demande. Responsable du traitement : Florian Wyss. Une position exacte dans un endroit privé peut identifier un lieu : préférez « floutée » si vous hésitez.</p>
+        <details style="margin-top:6px"><summary class="small">Contacter l'auteur (accès, suppression, question)</summary>
+          <p class="small" style="margin:4px 0">Votre message arrive chez l'auteur sans que son adresse soit affichée. Indiquez une adresse e-mail seulement si vous voulez une réponse : elle ne sert qu'à vous répondre.</p>
+          <label class="cf-l">Sujet<select id="ct-topic" class="coin-sel"><option value="question">Question</option><option value="suppression">Suppression de mes données</option><option value="acces">Accès à mes données</option><option value="autre">Autre</option></select></label>
+          <textarea id="ct-msg" rows="4" maxlength="2000" aria-label="Votre message"></textarea>
+          <input id="ct-reply" type="email" maxlength="200" placeholder="Votre e-mail (facultatif)" aria-label="Votre e-mail (facultatif)" style="width:100%;margin-top:4px;font:inherit;padding:6px">
+          <input id="ct-web" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
+          <div class="row" style="gap:6px;margin-top:4px"><button class="btn" id="ct-send" type="button">Envoyer le message</button><span class="small" id="ct-msgout" role="status"></span></div>
+        </details>
+        <p class="small" style="margin:6px 0 0">Conformément à la loi suisse sur la protection des données (LPD), l'envoi est volontaire ; la finalité est limitée à l'amélioration du modèle ; les données sont conservées dans un dépôt privé et effacées sur demande. Responsable du traitement : Florian Wyss (contact : formulaire ci-dessus). Une position exacte dans un endroit privé peut identifier un lieu : préférez « floutée » si vous hésitez.</p>
         </div>
       </details>
       <p class="small coin-privacy">🔒 <b>Confidentialité</b> : vos coins sont enregistrés dans ce navigateur, sur cet appareil. Si vous êtes connecté à claude.ai, une copie privée (sans les photos) est aussi gardée en ligne dans votre espace personnel de cette carte, pour les recharger automatiquement après un vidage du navigateur ou sur un autre appareil : ni l'auteur de la carte ni les autres personnes qui l'ouvrent ne peuvent la lire. Les coins ne sont partagés que si vous le faites vous-même (« Partager mes coins »), et la personne qui les reçoit peut alors les transmettre. Les photos restent sur l'appareil : gardez une sauvegarde (💾) pour les conserver.</p>
@@ -2810,6 +2818,11 @@ function seSetup(){
     let ok=0;try{for(const u of subs){const r=await post("/delete",{id:u.i,secret,months:[u.m]});ok++}}catch(e){msg("Échec : réessayez plus tard.");return}
     after();msg(`${ok} envoi${ok>1?"s":""} effacé${ok>1?"s":""}.`)};
   $("se-del").onclick=()=>{const o=seState();erase(o.secret,o.subs,()=>{seSave({secret:o.secret,sent:{},subs:[]});showCode()})};
+  $("ct-send").onclick=async()=>{const m=$("ct-msg").value.trim(),o=$("ct-msgout");
+    if(m.length<5){o.textContent="Écrivez votre message.";return}
+    o.textContent="Envoi…";
+    try{await post("/contact",{msg:m,reply:$("ct-reply").value.trim(),topic:$("ct-topic").value,website:$("ct-web").value});$("ct-msg").value="";o.textContent="Message envoyé. Merci !"}
+    catch(e){o.textContent="Échec de l'envoi : réessayez plus tard."}};
   $("se-del-code").onclick=()=>{try{const c=JSON.parse(unb64u($("se-code").value.trim()));if(!c.s||!Array.isArray(c.u))throw 0;erase(c.s,c.u,()=>{const o=seState();if(o.secret===c.s){seSave({secret:o.secret,sent:{},subs:[]})}showCode()})}catch(e){msg("Code illisible.")}}}
 function addCoin(lat,lng){openCoinForm(-1,L.latLng(lat,lng))}
 

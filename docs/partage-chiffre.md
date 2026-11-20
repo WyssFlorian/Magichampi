@@ -23,7 +23,7 @@ Origine obligatoire (`ALLOWED_ORIGIN`), JSON strict, taille maximale 64 Ko (≈ 
 - Minimisation : pas de nom, pas de photo, flou par défaut, mois seulement.
 - Suppression à la demande : bouton « Effacer mes envois » ou « code de suppression » (valable depuis un autre appareil). Le Worker vérifie le secret avant d'effacer. La suppression se fait dans le dépôt privé ; l'historique git peut conserver une version chiffrée : réécrire l'historique (ou recréer le dépôt) si demandé, après avoir extrait ce qui doit rester.
 - Les positions exactes de lieux privés peuvent être sensibles : avertissement affiché dans l'app. Sauvegardez la clé privée (sans elle, tout est perdu, c'est voulu) ; elle ne va jamais dans un dépôt.
-- Responsable du traitement : Florian Wyss (affiché dans la section d'envoi de l'app). Reste à ajouter une adresse de contact pour les demandes d'accès/suppression.
+- Responsable du traitement : Florian Wyss (affiché dans la section d'envoi de l'app). Contact : formulaire de l'app (route `/contact` du Worker), qui crée une issue dans le dépôt privé ; GitHub prévient le propriétaire par e-mail, sans afficher son adresse. Le jeton doit avoir les droits Contents et Issues.
 
 ## Mise en service (à faire par Florian, ≈ 15 min)
 1. `node partage/keygen.mjs` : crée `cle-privee.jwk` (à sauvegarder hors ligne) et affiche la clé publique.
