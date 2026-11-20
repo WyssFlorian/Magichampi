@@ -1,5 +1,5 @@
-// version fusion2011
-const SHELL="cartes-shell-fusion2011",DATA="cartes-donnees";
+// version v2-20nov-b
+const SHELL="cartes-shell-v2-20nov-b",DATA="cartes-donnees";
 self.addEventListener("install",e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(["./","leaflet.js","manifest.webmanifest","icon.svg"])).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("cartes-shell-")&&k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 function fresh(u){return /\/$|\.html$|data\.json$|zone\.js$|files\.json$|sw\.js$/.test(u.pathname)}
@@ -11,7 +11,7 @@ self.addEventListener("fetch",e=>{
     return}
   const key=u.origin+u.pathname;
   if(fresh(u)){
-    e.respondWith(fetch(r).then(x=>{if(x.ok){const y=x.clone();caches.open(u.pathname.endsWith("/")||u.pathname.endsWith(".html")?SHELL:DATA).then(c=>c.put(key,y))}return x})
+    e.respondWith(fetch(r.url,{cache:"no-cache"}).then(x=>{if(x.ok){const y=x.clone();caches.open(u.pathname.endsWith("/")||u.pathname.endsWith(".html")?SHELL:DATA).then(c=>c.put(key,y))}return x})
       .catch(()=>caches.match(key).then(m=>m||caches.match(r))));return}
   e.respondWith(caches.match(key).then(m=>m||fetch(r).then(x=>{if(x.ok){const y=x.clone();caches.open(DATA).then(c=>c.put(key,y))}return x})));
 });
