@@ -8,7 +8,7 @@ donc la bande de 1 km des nouvelles régions déborde au-delà (≥ 2,5 km de re
 import json,math,sys
 BAND_M=1000
 # (id, nom, (ouest,sud,est,nord) nominal, mb, ok = données publiées)
-EXIST=[("ple","Riviera-Chablais",(6.74,46.35,7.06,46.62),"≈ 125 Mo"),("lsn","Région lausannoise",(6.45,46.45,6.75,46.63),"≈ 45 Mo"),("gdv","Gros-de-Vaud",(6.26,46.53,6.70,46.86),"≈ 125 Mo")]
+EXIST=[("ple","Riviera-Chablais et Veveyse (FR)",(6.74,46.35,7.06,46.62),"≈ 125 Mo"),("lsn","Région lausannoise",(6.45,46.45,6.75,46.63),"≈ 45 Mo"),("gdv","Gros-de-Vaud",(6.26,46.53,6.70,46.86),"≈ 125 Mo")]
 NEW=[("nyn","La Côte, Nyon et Jura vaudois",(6.06,46.28,6.52,46.70)),
      ("bro","Broye (Moudon, Payerne)",(6.68,46.60,7.00,46.99)),
      ("vul","Vully et Avenches",(6.98,46.78,7.26,46.99)),
