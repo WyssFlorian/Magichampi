@@ -1,0 +1,249 @@
+{
+ "note": "Résultats agrégés du 20.11.2026 (code Magichampi main 3143ba4). pct = rang moyen parmi les forêts (0,5 = hasard) ; pctBg = rang parmi le fond groupe cible.",
+ "validation": {
+  "couche_conif_corrigee_W_HOST_0.1": {
+   "ple": {
+    "n": 35,
+    "pct": 0.734,
+    "pctBg": 0.685,
+    "eleve_ou_plus": 0.429
+   },
+   "lsn": {
+    "n": 92,
+    "pct": 0.615,
+    "pctBg": 0.657,
+    "eleve_ou_plus": 0.326
+   },
+   "gdv": {
+    "n": 120,
+    "pct": 0.679,
+    "pctBg": 0.656,
+    "eleve_ou_plus": 0.325
+   },
+   "total": {
+    "n": 247,
+    "pct": 0.663,
+    "pctBg": 0.66,
+    "eleve_ou_plus": 0.34
+   }
+  },
+  "couche_conif_inversee": {
+   "ple": {
+    "n": 35,
+    "pct": 0.729,
+    "pctBg": 0.683,
+    "eleve_ou_plus": 0.4
+   },
+   "lsn": {
+    "n": 92,
+    "pct": 0.603,
+    "pctBg": 0.653,
+    "eleve_ou_plus": 0.283
+   },
+   "gdv": {
+    "n": 120,
+    "pct": 0.674,
+    "pctBg": 0.653,
+    "eleve_ou_plus": 0.242
+   },
+   "total": {
+    "n": 247,
+    "pct": 0.656,
+    "pctBg": 0.657,
+    "eleve_ou_plus": 0.279
+   }
+  },
+  "W_HOST_0": {
+   "ple": {
+    "n": 35,
+    "pct": 0.729,
+    "pctBg": 0.677,
+    "eleve_ou_plus": 0.429
+   },
+   "lsn": {
+    "n": 92,
+    "pct": 0.617,
+    "pctBg": 0.661,
+    "eleve_ou_plus": 0.348
+   },
+   "gdv": {
+    "n": 120,
+    "pct": 0.678,
+    "pctBg": 0.655,
+    "eleve_ou_plus": 0.358
+   },
+   "total": {
+    "n": 247,
+    "pct": 0.662,
+    "pctBg": 0.66,
+    "eleve_ou_plus": 0.364
+   }
+  },
+  "W_HOST_0.2": {
+   "ple": {
+    "n": 35,
+    "pct": 0.733,
+    "pctBg": 0.684,
+    "eleve_ou_plus": 0.429
+   },
+   "lsn": {
+    "n": 92,
+    "pct": 0.61,
+    "pctBg": 0.653,
+    "eleve_ou_plus": 0.272
+   },
+   "gdv": {
+    "n": 120,
+    "pct": 0.677,
+    "pctBg": 0.654,
+    "eleve_ou_plus": 0.3
+   },
+   "total": {
+    "n": 247,
+    "pct": 0.66,
+    "pctBg": 0.658,
+    "eleve_ou_plus": 0.308
+   }
+  },
+  "W_HOST_0.4": {
+   "ple": {
+    "n": 35,
+    "pct": 0.732,
+    "pctBg": 0.687,
+    "eleve_ou_plus": 0.429
+   },
+   "lsn": {
+    "n": 92,
+    "pct": 0.602,
+    "pctBg": 0.647,
+    "eleve_ou_plus": 0.25
+   },
+   "gdv": {
+    "n": 120,
+    "pct": 0.673,
+    "pctBg": 0.65,
+    "eleve_ou_plus": 0.283
+   },
+   "total": {
+    "n": 247,
+    "pct": 0.655,
+    "pctBg": 0.654,
+    "eleve_ou_plus": 0.291
+   }
+  }
+ },
+ "parts_classes_pct": {
+  "ple": {
+   "toutes_forets_fx>0": {
+    "faible": 60,
+    "moyen": 25,
+    "eleve": 11.2,
+    "tres_eleve": 3.9
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 60.3,
+    "moyen": 24.9,
+    "eleve": 11.1,
+    "tres_eleve": 3.7
+   }
+  },
+  "lsn": {
+   "toutes_forets_fx>0": {
+    "faible": 60,
+    "moyen": 25,
+    "eleve": 11.2,
+    "tres_eleve": 3.8
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 56.8,
+    "moyen": 27.1,
+    "eleve": 12.2,
+    "tres_eleve": 4
+   }
+  },
+  "gdv": {
+   "toutes_forets_fx>0": {
+    "faible": 60,
+    "moyen": 24.9,
+    "eleve": 11.3,
+    "tres_eleve": 3.8
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 59.6,
+    "moyen": 25.2,
+    "eleve": 11.4,
+    "tres_eleve": 3.8
+   }
+  },
+  "nyn": {
+   "toutes_forets_fx>0": {
+    "faible": 59.9,
+    "moyen": 24.7,
+    "eleve": 11,
+    "tres_eleve": 4.3
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 58.1,
+    "moyen": 26,
+    "eleve": 11.3,
+    "tres_eleve": 4.6
+   }
+  },
+  "bro": {
+   "toutes_forets_fx>0": {
+    "faible": 60,
+    "moyen": 25.1,
+    "eleve": 10.6,
+    "tres_eleve": 4.3
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 57.7,
+    "moyen": 27.2,
+    "eleve": 11,
+    "tres_eleve": 4
+   }
+  },
+  "vul": {
+   "toutes_forets_fx>0": {
+    "faible": 59.9,
+    "moyen": 24.9,
+    "eleve": 10.7,
+    "tres_eleve": 4.4
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 55.5,
+    "moyen": 29.2,
+    "eleve": 11.3,
+    "tres_eleve": 4
+   }
+  },
+  "chb": {
+   "toutes_forets_fx>0": {
+    "faible": 60,
+    "moyen": 25,
+    "eleve": 11,
+    "tres_eleve": 4
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 57.9,
+    "moyen": 26.7,
+    "eleve": 11.7,
+    "tres_eleve": 3.8
+   }
+  },
+  "pde": {
+   "toutes_forets_fx>0": {
+    "faible": 60,
+    "moyen": 25,
+    "eleve": 11.1,
+    "tres_eleve": 3.9
+   },
+   "cellules_affichees_fx=1": {
+    "faible": 58.6,
+    "moyen": 26.1,
+    "eleve": 11.5,
+    "tres_eleve": 3.8
+   }
+  }
+ }
+}
