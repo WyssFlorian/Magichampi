@@ -26,13 +26,13 @@ if __name__=="__main__":
     ready=set(a for a in sys.argv[1:] if not a.startswith("--"))
     import os
     old=os.path.join(os.path.dirname(__file__),"..","zones.js")
-    if os.path.exists(old) and not ready:   # conserve l'état « données publiées » et les tailles
-        t=open(old).read(); j=json.loads(t[t.index("var ZONES=")+10:t.rindex(";")]); ready={z["id"] for z in j if z.get("ok") and z["id"] in {i for i,_,_ in NEW}}; mbs={z["id"]:z["mb"] for z in j}
+    if os.path.exists(old):   # conserve l'état « données publiées » et les tailles
+        t=open(old).read(); j=json.loads(t[t.index("var ZONES=")+10:t.rindex(";")]); ready=set(ready)|{z["id"] for z in j if z.get("ok") and z["id"] in {i for i,_,_ in NEW}}; mbs={z["id"]:z["mb"] for z in j}
     else: mbs={}
     z=zones(ready)
     for q in z:
         if mbs.get(q["id"]): q["mb"]=mbs[q["id"]]
-    open("zones.js","w").write("// Régions du canton de Vaud (généré par tools/zones_vaud.py). bbox = [sud, ouest, nord, est] des données (bande de 1 km comprise) ; ok=1 : données publiées dans <id>/\nvar ZONES="+json.dumps(z,ensure_ascii=False,separators=(",",":"))+";\n")
+    open("zones.js","w").write("// Régions du canton de Vaud (généré par tools/zones_vaud.py). bbox = [sud, ouest, nord, est] des données (bande de 1 km comprise) ; ok=1 : données publiées dans <id>/\nvar ZONES=[\n"+",\n".join(json.dumps(q,ensure_ascii=False,separators=(",",":")) for q in z)+"\n];\n")
     if "--check" in sys.argv:
         from shapely.geometry import shape,box; from shapely.ops import unary_union
         vd=unary_union([shape(f["geometry"]) for f in json.load(open("limites/canton.geojson"))["features"]])
