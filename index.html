@@ -806,6 +806,8 @@ body.lite .lite-hide{display:none!important}
 .best-pin .ring{position:absolute;inset:0;border-radius:50%;border:3px solid #ffd000;box-shadow:0 0 0 2px rgba(0,0,0,.55);animation:bestpulse 1.6s ease-out infinite}
 .best-pin .star{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#ffd000;text-shadow:0 0 2px #000,0 0 4px #000}
 @keyframes bestpulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.6);opacity:.15}}
+.lim-sw{display:inline-block;width:22px;height:0;border-top:3px solid #3b82f6;vertical-align:middle;flex:none}.lim-d{border-top:3px solid #d046f0}.lim-m{border-top:2px dashed #06b6d4}
+.lim-lab{background:none;border:0;box-shadow:none;font-weight:700;color:#8a1fa6;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;white-space:nowrap;pointer-events:none;font-size:12px}.lim-lab.m{color:#0a5c6b;font-weight:600;font-size:11px}
 .area-jump{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .area-jump .btn{padding:3px 8px;font-size:12px}
 .region-msg{background:var(--panel);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11.5px;box-shadow:0 1px 4px rgba(0,0,0,.3);text-align:right}
@@ -1030,8 +1032,8 @@ details.more[open]>summary{margin-bottom:4px}
 <div class="app">
   <aside class="panel" aria-label="Commandes">
     <div id="sec-head">
-      <h1>Champignons Riviera-Chablais</h1>
-      <p class="sub">Zones de forêt favorables des Pléiades, du haut de Lavaux, de la Veveyse et du début du Chablais</p>
+      <h1>Champignons – Canton de Vaud</h1>
+      <p class="sub">Zones de forêt favorables : Riviera-Chablais, Région lausannoise et Gros-de-Vaud</p>
     </div>
     <details class="warn" id="sec-warn"><summary>À lire avant de cueillir</summary><p>Ce score indique des conditions favorables, calculées à partir de données publiques. Il ne garantit ni la présence de champignons ni leur identification. Ne consommez rien sans le contrôle d'un contrôleur officiel (VAPKO).</p><p><b>Règles de cueillette</b> (Vaud et Fribourg, vérifiées le 15 novembre 2026) : 2 kg par personne et par jour, de 7 h à 20 h, tous les jours du mois (Vaud a levé l'interdiction du 1er au 7 en janvier 2025). Cueillette interdite dans les réserves naturelles, les marais protégés et la zone centrale du Parc naturel du Jorat, où il est aussi interdit de quitter les chemins. Aucune des 52 espèces de la carte n'est protégée ou limitée, ni sur la liste rouge suisse (2007) : la Russule aurore, « potentiellement menacée », n'est pas proposée. Le Lactaire de l'épicéa et le Lactaire couleur saumon ne sont pas proposés : la VAPKO déconseille de les consommer. Certaines communes ont leurs propres règles : renseignez-vous sur place.</p><p>Avec l'option « Cueillette responsable », ces forêts ne sont pas colorées, et un bandeau « Cueillette interdite en ce moment » s'affiche entre 20 h et 7 h, sans masquer la carte. Un <span class="rg-bang">!</span> dans la fiche d'une forêt signale un milieu fragile (réserve forestière, zone alluviale, site de batraciens) : la cueillette y est permise, mais le piétinement abîme le sol et le mycélium, donc mieux vaut l'éviter.</p><p><b>Urgence ou doute après un repas de champignons</b> : Tox Info Suisse, <a href="tel:145">145</a> (24 h sur 24) ; en cas de malaise grave, le <a href="tel:144">144</a>. Gardez les restes du repas et les épluchures. N'identifiez jamais un champignon avec une application photo : faites contrôler toute la récolte par un contrôleur officiel (symbole <span class="vapko-pin" style="display:inline-grid;width:15px;height:15px;font-size:10px">✓</span> sur la carte, ou <a href="https://www.vapko.ch/index.php/fr/lieux-et-places-de-controle" target="_blank" rel="noopener">liste de la VAPKO</a>).</p><p><b>Chasse</b> : de septembre à janvier surtout, les forêts colorées peuvent être chassées. Les jours de battue ou de chasse en équipe prévus au calendrier cantonal, ces forêts sont <span class="hunt-sw" aria-hidden="true"></span> hachurées en rouge (Vaud et Fribourg, pas encore le Valais et Neuchâtel ; districts francs et réserves d'oiseaux d'eau exclus). Les dates sont celles du canton : les battues réelles sont annoncées sur place par des panneaux. Les jours de chasse individuelle seulement (affût, bécasse, renard, sanglier hors battue), elles sont <span class="hunt-sw i" aria-hidden="true"></span> hachurées en orange. Horaires : de 1 h avant le lever à 1 h après le coucher du soleil. Portez des habits voyants, restez sur les chemins et respectez les panneaux « chasse en cours ».</p><p><b>Tiques</b> : toute la région est à risque. Habits longs et clairs, répulsif, et contrôle du corps au retour.</p></details>
 
@@ -1126,7 +1128,6 @@ details.more[open]>summary{margin-bottom:4px}
     <div id="map" role="region" aria-label="Carte"></div>
     <div class="menu-pop" id="menu-pop" hidden role="dialog" aria-label="Menu">
       <div class="menu-head"><button class="mh-btn" id="menu-prev" type="button" aria-label="Page précédente">‹</button><select id="menu-toc" class="coin-sel" aria-label="Table des matières du menu"></select><button class="mh-btn" id="menu-next" type="button" aria-label="Page suivante">›</button><button class="ti-x" id="menu-x" type="button" aria-label="Fermer">×</button></div>
-      <div class="menu-page" data-t="Région" id="menu-reg"><h3>Région</h3><div class="row" style="gap:6px;margin-top:6px"><a class="btn region-link" data-z="ple" href="?r=ple">Riviera-Chablais</a><a class="btn region-link" data-z="lsn" href="?r=lsn">Région lausannoise</a><a class="btn region-link" data-z="gdv" href="?r=gdv">Gros-de-Vaud</a></div><p class="small" style="margin:6px 0 0">Chaque région se télécharge séparément pour l'utiliser hors ligne (menu « Météo et outils »).</p></div>
       <div class="menu-page" data-t="Champignons affichés" id="menu-sp"><h3>Champignons affichés</h3><p class="small" style="margin:4px 0 6px">Décochez les espèces que vous ne cherchez pas : elles disparaissent de la liste et de la forte concentration, et les seuils de concentration diminuent en proportion.</p><div id="sp-filter"></div></div>
       <div class="menu-page" data-t="Affichage et couches"><h3>Affichage, saison, fond de carte, couches</h3>
       <div class="seg" role="group" aria-label="Affichage" style="margin-top:10px">
@@ -1164,6 +1165,10 @@ details.more[open]>summary{margin-bottom:4px}
       </div>
       <div class="sub-h" style="margin-top:12px">Géographie</div>
       <div style="display:flex;flex-direction:column;gap:6px">
+        <label class="chk"><input type="checkbox" id="o-lim-c"> <span class="lim-sw lim-c" aria-hidden="true"></span> <span>Limites du canton de Vaud</span></label>
+        <label class="chk"><input type="checkbox" id="o-lim-d"> <span class="lim-sw lim-d" aria-hidden="true"></span> <span>Limites des régions (districts : Gros-de-Vaud, Riviera-Pays-d'Enhaut, Aigle, Lausanne…)</span></label>
+        <label class="chk"><input type="checkbox" id="o-lim-m"> <span class="lim-sw lim-m" aria-hidden="true"></span> <span>Limites des communes</span></label>
+        <p class="small" style="margin:-4px 0 0">Source : swissBOUNDARIES3D, swisstopo (simplifiées). Les noms des communes apparaissent dès le zoom 12.</p>
         <label class="chk"><input type="checkbox" id="o-relief"> <span><span class="relief-sw" aria-hidden="true"></span> Afficher la géographie</span></label>
         <p class="small" style="margin:-4px 0 0">Comme le bouton ⛰ : courbes de niveau et falaises, plus les couches cochées ci-dessous ; visibles en zoomant.</p>
         <div class="geo-sub">
@@ -1252,12 +1257,18 @@ details.more[open]>summary{margin-bottom:4px}
 <script src="leaflet.js"></script>
 <script>
 // Région : ?r=ple|lsn|gdv, sinon la dernière utilisée, sinon Riviera-Chablais
-var ZID=(new URLSearchParams(location.search).get("r"))||"";if(!/^(ple|lsn|gdv)$/.test(ZID)){try{ZID=localStorage.getItem("champi-zone")||""}catch(e){ZID=""}}
-if(!/^(ple|lsn|gdv)$/.test(ZID))ZID="ple";try{localStorage.setItem("champi-zone",ZID)}catch(e){}
+// Carte unique « Canton de Vaud » : les données sont préparées par région ; la région chargée est celle de la vue (dernière position, ou ?r=ple|lsn|gdv)
+var ZBOX={ple:[46.35,6.74,46.62,7.06],lsn:[46.45,6.45,46.63,6.75],gdv:[46.53,6.26,46.86,6.7]};
+function zoneAt(la,lo,pref){var k,c=[];for(k in ZBOX){var z=ZBOX[k];if(la>=z[0]&&la<=z[2]&&lo>=z[1]&&lo<=z[3])c.push(k)}return c.indexOf(pref)>=0?pref:(c[0]||"")}
+var ZID=(new URLSearchParams(location.search).get("r"))||"",SAVED_VIEW=null;
+try{SAVED_VIEW=JSON.parse(localStorage.getItem("champi-view-pos")||"null")}catch(e){}
+if(!/^(ple|lsn|gdv)$/.test(ZID)){var zs="";try{zs=localStorage.getItem("champi-zone")||""}catch(e){}
+  ZID=(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],zs))||(/^(ple|lsn|gdv)$/.test(zs)?zs:"ple")}
+else SAVED_VIEW=null;
+try{localStorage.setItem("champi-zone",ZID)}catch(e){}
 var ZD=ZID+"/";document.write('<script src="'+ZD+'zone.js"><\/script>');
 </script>
-<script>document.title=ZONE.title;document.querySelector("h1").textContent=ZONE.title;document.querySelector(".sub").textContent=ZONE.sub;
-document.querySelectorAll(".region-link").forEach(function(a){if(a.dataset.z===ZID){a.setAttribute("aria-current","page");a.style.cssText="font-weight:700;outline:2px solid var(--accent)"}});
+<script>document.title="Champignons – Canton de Vaud";document.querySelector("h1").textContent="Champignons – Canton de Vaud";document.querySelector(".sub").textContent="Zones de forêt favorables : Riviera-Chablais, Région lausannoise et Gros-de-Vaud (la région se charge selon la partie de la carte affichée)";
 document.querySelectorAll(".mb").forEach(function(e){e.textContent=ZONE.mb})</script>
 <script>
 "use strict";
@@ -1394,7 +1405,7 @@ let D,G,meta,meteo,fungi,sqNeighbours={};
 const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tier:1,hide:[]};
 try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if([0,1,2,3].includes(s.tier))state.tier=s.tier;{const c=SPECIES.find(x=>x.id===state.sp);if(c&&state.tier&&c.tier!==state.tier)state.tier=c.tier}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
-const LAY_IDS=["o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-sq"];
+const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-sq"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
 function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
@@ -2129,6 +2140,21 @@ let reliefLayer=null,waterLayer=null,waterP=null,roadLayer=null,roadP=null,trail
 function syncGeoLayer(l,minz,id){if(!l)return;const on=state.relief&&(!id||$(id).checked)&&map.getZoom()>=minz;if(on&&!map.hasLayer(l))l.addTo(map);else if(!on&&map.hasLayer(l))map.removeLayer(l)}
 let syncAcc=()=>{};
 function syncWater(){syncGeoLayer(roadLayer,ROAD_MINZ,"o-road");syncGeoLayer(waterLayer,WATER_MINZ,"o-water");syncTrails();syncAcc()}
+// « Géographie » : limites administratives (swissBOUNDARIES3D), chargées à la première activation
+const LIM={c:{f:"canton",st:{color:"#3b82f6",weight:3.5,opacity:.95,fill:false}},d:{f:"districts",st:{color:"#d046f0",weight:2.5,opacity:.95,fill:false}},m:{f:"communes",st:{color:"#06b6d4",weight:1.2,opacity:.95,dashArray:"5 3",fill:false}}};
+function syncLimits(){
+  if(!map)return;
+  if(!map.getPane("limites")){const pn=map.createPane("limites");pn.style.zIndex=406;pn.style.pointerEvents="none"}
+  for(const k of ["c","d","m"]){const o=LIM[k],on=$("o-lim-"+k).checked;
+    if(on&&!o.layer&&!o.p){o.p=fetch("limites/"+o.f+".geojson",NC).then(r=>r.json()).then(j=>{o.data=j;o.layer=L.geoJSON(j,{pane:"limites",interactive:false,renderer:L.canvas({pane:"limites"}),style:()=>o.st});o.lab=L.layerGroup();syncLimits()}).catch(e=>{o.p=null;console.warn(e)})}
+    if(!o.layer)continue;
+    if(on&&!map.hasLayer(o.layer))o.layer.addTo(map);else if(!on&&map.hasLayer(o.layer))map.removeLayer(o.layer);
+    if(k!=="c"){if(on&&!map.hasLayer(o.lab))o.lab.addTo(map);else if(!on&&map.hasLayer(o.lab))map.removeLayer(o.lab);if(on)limLabels(k)}}
+}
+function limLabels(k){const o=LIM[k];if(!o.data||!o.lab)return;o.lab.clearLayers();
+  const z=map.getZoom();if(k==="m"&&z<12)return;const bd=map.getBounds().pad(.1);
+  for(const f of o.data.features){const c=f.properties.c;if(!c||!bd.contains(c))continue;
+    o.lab.addLayer(L.marker(c,{interactive:false,keyboard:false,icon:L.divIcon({className:"lim-lab"+(k==="m"?" m":""),html:esc(f.properties.NAME),iconSize:[0,0]})}))}}
 function syncTrails(){if(!trailsLayer)return;const on=$("o-trail").checked;if(on&&!map.hasLayer(trailsLayer))trailsLayer.addTo(map);else if(!on&&map.hasLayer(trailsLayer))map.removeLayer(trailsLayer);$("legend-tr").hidden=!on}
 function loadWater(){
   if(!roadP)roadP=fetch(ZD+"routes.geojson",NC).then(r=>r.json()).then(j=>{const rd=L.canvas({pane:"relief",padding:.3}),F=c=>({type:"FeatureCollection",features:j.features.filter(f=>c.includes(f.properties.c))});
@@ -3204,6 +3230,15 @@ async function boot(){
   loadLay();
   const b=L.latLngBounds(meta.bounds);  // emprise des données préparées
   map=L.map("map",{minZoom:8,maxZoom:18,zoomControl:false,attributionControl:true}).fitBounds(L.latLngBounds(meta.view||meta.bounds));
+  // carte unique : reprend la dernière vue, et charge une autre région quand la vue en sort
+  if(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],ZID)===ZID)map.setView([SAVED_VIEW[0],SAVED_VIEW[1]],SAVED_VIEW[2]);
+  {let swT;map.on("moveend",()=>{const c=map.getCenter(),z=map.getZoom();
+    try{localStorage.setItem("champi-view-pos",JSON.stringify([+c.lat.toFixed(5),+c.lng.toFixed(5),z]))}catch(e){}
+    clearTimeout(swT);swT=setTimeout(()=>{if(state.adding)return;const n=zoneAt(c.lat,c.lng,ZID);
+      if(n&&n!==ZID){const nm={ple:"Riviera-Chablais",lsn:"Région lausannoise",gdv:"Gros-de-Vaud"}[n];
+        const m=document.createElement("div");m.setAttribute("role","status");m.style.cssText="position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:3000;background:#2f5d3a;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;box-shadow:0 2px 8px #0005";m.textContent="Chargement de la région « "+nm+" »…";document.body.appendChild(m);
+        try{localStorage.setItem("champi-zone",n)}catch(e){}
+        setTimeout(()=>location.replace(location.pathname),150)}},700)})}
   const attr='© <a href="https://www.swisstopo.admin.ch" target="_blank" rel="noopener">swisstopo</a> · MétéoSuisse · SwissFungi/WSL · OFEV';
   // une couche pour les petits zooms (11-13, toute l'emprise) puis une par zone, agrandie par Leaflet au-delà de son zoom maximal
   // carte nationale sur écran haute résolution : tuiles du zoom suivant affichées à demi-taille,
@@ -3240,6 +3275,8 @@ async function boot(){
   const setRelief=v=>{state.relief=v;saveState();if(v){reliefLayer.addTo(map);loadWater()}else map.removeLayer(reliefLayer);syncWater();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",syncWater);
   $("o-relief").checked=!!state.relief;$("o-relief").onchange=e=>setRelief(e.target.checked);if(state.relief){reliefLayer.addTo(map);loadWater()}
   ["o-water","o-road"].forEach(id=>$(id).onchange=()=>{saveLay();syncWater()});
+  ["c","d","m"].forEach(k=>$("o-lim-"+k).onchange=()=>{saveLay();syncLimits()});syncLimits();
+  map.on("moveend",()=>{if(map.hasLayer(LIM.d.lab||L.layerGroup())||map.hasLayer(LIM.m.lab||L.layerGroup())){if($("o-lim-d").checked)limLabels("d");if($("o-lim-m").checked)limLabels("m")}});
   $("geo-btn").setAttribute("aria-pressed",!!state.relief);$("geo-btn").onclick=()=>setRelief(!state.relief);
   const setBest=v=>{state.best=v;saveState();$("best-btn").setAttribute("aria-pressed",v);updateBest()};
   $("best-btn").onclick=()=>setBest(!state.best);$("best-btn").setAttribute("aria-pressed",!!state.best);map.on("moveend",updateBest);
