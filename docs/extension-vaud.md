@@ -25,7 +25,14 @@ Le chargement suit la vue : on ne change de région que lorsque le centre de la 
 
 ## Lots suivants : une région par PR
 Chaîne par région : MNT swissALTI3D, forêt et mélange LFI, hauteur de végétation, pentes/TPI, GeoCover (sol), routes, cours d'eau, arrêts TP, parkings, sentiers, réserves, SwissFungi, grille 25 m en tuiles, fond de carte (carte nationale + orthophoto), puis modèle calibré par région, seuils recalculés (`tools/seuils.js`), zones interdites, chasse (calendrier VD), VAPKO.
-**Pas de couche d'essences WSL dans les nouvelles régions** tant que Florian n'a pas décidé (PR 51).
+**Couche d'essences WSL dans les nouvelles régions : oui** (décision de Florian du 20 nov. ; le point légal avec le WSL reste à régler avant la diffusion officielle). Étape à lancer pour chaque région une fois ses tuiles `<id>/grid/` et son `<id>/zone.js` générés, avant la publication :
+```
+bash tools/ajouter_wsl_region.sh <id> <raster WSL .tif>
+```
+Elle ajoute la couche `wsl` aux tuiles (`tools/wsl_vers_tuiles.py`, idempotent), recalcule les seuils de classes de la région (`tools/seuils.js`, aussi pour une région `ok:0`) et les écrit dans `<id>/zone.js` (`ZONE.MAP_THR_V6`, `tools/ecrire_seuils.py`). Le modèle (poids calibrés de la PR 40 : essence WSL ×0,4, résineux ×0,1 ; pixels non classés = moyenne de l'espèce sur la région) est déjà dans `index.html` : rien d'autre à brancher. Testé sur `lsn` : tuiles et seuils identiques à ceux du dépôt.
+Raster : `cat tree_species_map_aoa_raster.tif.part* > r.tif` dans `data-wsl-essences/` du dépôt privé `app-champignons` (branche `claude/project-thread-if9cgw`, voir `LIRE_MOI.md`) ; ne jamais le versionner ici (`tools/verifier_depot_public.py`).
+Couverture vérifiée le 20 nov. sur l'emprise des 8 régions : le raster (toute la Suisse, 10 m) les couvre entièrement ; part des pixels de forêt classés en essence : ple 89 %, lsn 97 %, gdv 96 %, nyn 98 %, bro 87 %, vul 90 %, chb 83 %, pde 81 % (le reste : hors zone d'applicabilité ou série Sentinel-2 incomplète, traité comme neutre). Les Alpes (chb, pde) sont les moins bien classées, et les espèces d'altitude (mélèze, pin cembro rare) sont mal couvertes : le facteur y est moins fiable, à garder en tête pour la validation de ces régions.
+Rappel de la validation (PR 40) : elle porte sur 247 relevés des trois premières régions ; à refaire avec les relevés des régions nouvelles quand elle seront prêtes (`ev1`-type, blocs de 5 km).
 
 Estimation (taux réel ≈ 2,5 % de la semaine par 100 k tokens, +10 % de marge = 2,7 %) :
 | lot | contenu | tokens estimés | part de la semaine |

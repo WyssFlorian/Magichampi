@@ -4,6 +4,8 @@ Valeur : 0 = inconnu (hors forêt, hors zone d'applicabilité, série incomplèt
 (1 Abies alba, 2 Acer pseudoplatanus, 3 Alnus glutinosa, 4 Alnus incana, 5 Betula pendula, 6 Castanea sativa, 7 Fagus sylvatica,
 8 Fraxinus excelsior, 9 Picea abies, 10 Pinus cembra, 11 Pinus mugo arborea, 12 Pinus sylvestris, 13 Quercus petraea,
 14 Quercus robur, 15 Sorbus aucuparia). Par cellule de 25 m : classe majoritaire de 3 x 3 points (≥ 2 votes valides).
+Réutilisable pour toute région : lit <zone>/data.json (meta.grid : x0, y1, res, cols, rows, cs) et réécrit <zone>/grid/*.json.
+Idempotent (une couche « wsl » existante, forcément la dernière, est remplacée). Sans zone en argument : toutes les régions de zones.js dont data.json existe.
 usage : python3 -I wsl_vers_tuiles.py <raster.tif> <dossier Magichampi> [zone ...]
 Le raster (non versionné, accès sur demande auprès du WSL) se reconstruit depuis le dépôt privé app-champignons (data-wsl-essences/LIRE_MOI.md)."""
 import sys, os, json, gzip, base64
@@ -12,7 +14,10 @@ from pyproj import Transformer
 from rasterio.windows import Window
 
 tif, root = sys.argv[1], sys.argv[2]
-zones = sys.argv[3:] or ['ple', 'lsn', 'gdv']
+def _toutes():
+    t = open(f'{root}/zones.js').read(); t = t[t.index('var ZONES='):]
+    return [q['id'] for q in json.loads(t[t.index('=') + 1:t.rindex(';')]) if os.path.exists(f"{root}/{q['id']}/data.json")]
+zones = sys.argv[3:] or _toutes()
 src = rasterio.open(tif)
 T = Transformer.from_crs(3857, 3035, always_xy=True)
 OFF = (-25 / 3, 0, 25 / 3)
@@ -48,7 +53,8 @@ for z in zones:
         raw = bytearray(gzip.decompress(base64.b64decode(d['b64'])))
         w, h = d['w'], d['h']
         if any(l['k'] == 'wsl' for l in d['layers']):
-            raise SystemExit('couche wsl déjà présente : repartir des tuiles d\'origine')
+            assert d['layers'][-1]['k'] == 'wsl', 'wsl doit être la dernière couche'
+            d['layers'].pop(); raw = raw[:-w * h]
         sub = W[j * cs:j * cs + h, i * cs:i * cs + w]
         sub = np.pad(sub, ((0, h - sub.shape[0]), (0, w - sub.shape[1])))
         raw += sub.astype(np.uint8).tobytes()
