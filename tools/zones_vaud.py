@@ -27,7 +27,7 @@ if __name__=="__main__":
     import os
     old=os.path.join(os.path.dirname(__file__),"..","zones.js")
     if os.path.exists(old) and not ready:   # conserve l'état « données publiées » et les tailles
-        t=open(old).read(); j=json.loads(t[t.index("=")+1:t.rindex(";")]); ready={z["id"] for z in j if z.get("ok") and z["id"] in {i for i,_,_ in NEW}}; mbs={z["id"]:z["mb"] for z in j}
+        t=open(old).read(); j=json.loads(t[t.index("var ZONES=")+10:t.rindex(";")]); ready={z["id"] for z in j if z.get("ok") and z["id"] in {i for i,_,_ in NEW}}; mbs={z["id"]:z["mb"] for z in j}
     else: mbs={}
     z=zones(ready)
     for q in z:
