@@ -6,7 +6,8 @@ Un paramètre = une valeur, d'où elle vient, son type et la confiance qu'on peu
 | Facteur | Poids | Origine | Confiance |
 |---|---|---|---|
 | Type de forêt (HAB) | 1 | valeurs à dire d'expert ; poids inchangé (la validation baisse de .64 à .55 sans lui) | moyenne |
-| Essences (conifères / feuillus) | 0,2 | ajusté par validation croisée par blocs de 5 km (optimum 0 à 0,3) : double emploi avec le type de forêt | moyenne |
+| Essences (part de conifères) | 0,1 (0,05 quand le type de forêt est connu) | ajusté à 0,2 par validation croisée (blocs de 5 km), ramené à 0,1 à l'arrivée de la carte WSL ; sans effet mesurable entre 0 et 0,2 (rapport de méthode, 10.3) | faible |
+| Essence dominante WSL | ×1,6 (hôtes étroits), ×1,2 (feuillus précis), ×0,4 (généralistes) | voir plus bas ; la russule des épicéas (integra) est volontairement dans le groupe des généralistes : elle accompagne aussi les pins | moyenne |
 | Altitude | 0,6 | ajusté (optimum .5 à .6) : les trapèzes issus de SwissFungi sont trop sélectifs | moyenne |
 | Peuplement, pente, humidité, sol | 1 | inchangés ; la pente reste (sans elle .639 → .617) | moyenne |
 | SwissFungi (maille 5 km) | ×0,914 / ×0,83 (voisin / aucune) | exposant 1,15 sur 0,925 / 0,85 ; reflète aussi l'effort d'observation | moyenne |
@@ -92,3 +93,5 @@ Trouvées le 20.11.2026 par recherche web ; seuls les titres ont été vus, pas 
 - **Affinage (20.11.2026, 2)** : trois groupes de puissance (N hôtes étroits pins/épicéa/sapin : 1,6 ; B feuillus précis : 1,2 ; généralistes : 0,4), hôte à moins de 50 m (anneaux de 25 et 50 m) compté 0,9 au lieu de la seule cellule, hôtes ajoutés pour Russule des marais, Russule orangée grisonnante et Laccaire à deux couleurs. Pas d'exclusion dure : la pire cellule perd au plus ≈ 70 % pour un hôte étroit (0,44^1,6), jamais 100 %. Les mélèzes ne sont pas dans la carte WSL : Bolet élégant et Bolet gris des mélèzes restent sans facteur essence.
   Validation (247 relevés, rang moyen) : 0,654 → 0,656 ; ple 0,721 → 0,729, lsn 0,602 → 0,603, gdv 0,674 → 0,674 ; Boyce 0,993 → 0,990. Essais en grille (puissance N 0,4 à 2,4, B 0,4 à 1,6, voisinage 0,7 à 0,9) : tous entre 0,653 et 0,656, plateau. **Gain statistiquement négligeable** : trop peu de relevés par espèce (< 30) pour trancher ; la pénalité plus forte est cohérente avec l'écologie mais n'est pas prouvée par les relevés. Seuils V6 recalculés pour les 8 régions.
 - Droit d'usage commercial de la carte WSL : pas encore demandé.
+
+Note (20.11.2026) : le malus de sol maximal est k·|p| (k = 0,15 ou 0,3, p = préférence de l'espèce entre −1 et 1), donc 7,5 % pour p = ±0,5 et k = 0,15, et non k. Pour les hôtes, la valeur « même type » de l'essence WSL est définie par rapport au premier hôte de la liste de l'espèce.
