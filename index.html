@@ -1845,21 +1845,22 @@ function popupHtml(latlng){
     const k=wAdj(ak,w.W),dk=k-ak;
     h+=`<div class="tot"><span>Météo ${wLab(w.W)} (${w.W.toFixed(2)})<br><span class="small">${fcKind(state.d)==="prévision"?"prévue ":fcKind(state.d)==="estimation"?"estimée ":""}au ${fmtDate(meteo.dates[state.d])}${dk>0?", relève d'une classe":dk<0?`, abaisse d'${dk===-1?"une classe":"deux classes"}`:""}</span></span><span class="pill c${k}">${CLS_LAB[k]}</span></div>`}
   if(sp.weak)h+=`<p class="small" style="margin:0 0 6px;padding:4px 6px;background:#fff1d6;border-radius:6px;color:#6b4000"><b>Fiabilité faible.</b> ${esc(sp.weak)}</p>`;
-  h+=`<p class="small" style="margin:0 0 6px">Détail du calcul (1 = idéal) :</p>`;
-  h+=`<div class="fx">`;
+  h+=`<p class="small" style="margin:0 0 6px">Détail du calcul (1 = idéal), en trois parties : le lieu, l\'accès, le moment. Poids calibrés sur 247 relevés précis (essences ×0,2, altitude ×0,6).</p>`;
+  const GH=t=>`<b class="small" style="grid-column:1/-1;margin-top:4px">${t}</b>`;
+  h+=`<div class="fx">`+GH("Aptitude du lieu (stable)");
   const cTxt=isNaN(info.c)?"composition inconnue":`${Math.round(info.c*100)} % de résineux`;
   h+=fxRow("Type de forêt",info.f.hab,HAB_LAB[info.hab]+(info.hab?"":" (facteur neutre)"));
   h+=fxRow("Essences",info.f.host,`${cTxt} ; hôtes : ${sp.hostTxt}`);
   h+=fxRow("Altitude",info.f.alt,`${info.dem} m ; optimum ${sp.alt[1]}–${sp.alt[2]} m`);
   h+=fxRow("Peuplement",info.f.stand,sp.stand==="edge"?`lisière à ${Math.round(info.edge)} m, hauteur ${Math.round(info.h)} m`:`hauteur moyenne ${Math.round(info.h)} m`);
-  h+=fxRow("Pente",info.f.slope,`${info.sl}°`);
   h+=fxRow("Humidité",info.f.moist,`station ${info.mi<-33?"sèche":info.mi>33?"fraîche":"moyenne"} (${info.mi>0?"+":""}${info.mi}) : relief et bilan hydrique ; ${sp.moist>0?"l'espèce aime le frais":sp.moist<0?"l'espèce supporte le sec":"seuls les lieux secs pénalisent"}`);
   h+=fxRow("Sol",info.f.soil,`${SOIL_LAB[info.ca]||"inconnu"} (géologie GeoCover) ; ${SOIL[sp.id][0]<0?"l'espèce préfère les sols acides":SOIL[sp.id][0]>0?"l'espèce préfère les sols riches ou calcaires":"indifférent pour cette espèce"}`);
   const rTxt=info.rK==="own"?`signalée dans cette maille : ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]}, dernier en ${info.rD[1]}`:info.rK==="near"?`pas dans cette maille, mais ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]} dans les mailles voisines`:`aucun relevé ${YR_LAB[state.yr]} dans la maille ni autour`;
-  if(!LITE)h+=fxRow("SwissFungi",info.rF,rTxt);
+  if(!LITE)h+=fxRow("Présence connue",info.rF,rTxt+" (SwissFungi : reflète aussi l'effort d'observation, d'où un poids modeste)");
+  h+=GH("Accès et sécurité")+fxRow("Pente",info.f.slope,`${info.sl}° (comptée dans l'aptitude : sans elle la validation baisse ; sert aussi à juger l'effort et le risque)`);
   if(info.ob>0)h+=`<p class="small">Observation(s) iNaturalist précise(s) de l'espèce à proximité (pour information, n'entre plus dans le score).</p>`;
   if(w){
-    h+=fxRow("Saison",w.season,`fréquence de l'espèce à cette période, décalée de ${Math.round(-seasonShift(info.dem))} jours pour l'altitude`);
+    h+=GH("Conditions du moment")+fxRow("Saison",w.season,`fréquence de l'espèce à cette période, décalée de ${Math.round(-seasonShift(info.dem))} jours pour l'altitude`);
     h+=fxRow("Eau du sol",w.rainF,`réserve estimée ${Math.round(w.soil*100)} % entre J−14 et J−3 (pluie ${Math.round(w.rain)} mm de J−16 à J−3, moins l'évaporation)${w.soil<.6?" ; versants nord favorisés":""}`);
     h+=fxRow("Température",w.tempF,`${w.T.toFixed(1)} °C : température du sol estimée, corrigée de l'altitude et de l'exposition`);
     h+=fxRow("Gel",w.frostF,`${String(w.fd).replace(".",",")} nuit(s) de gel à −3 °C (somme des degrés sous 0 °C sur 7 jours, ÷ 3)`);
