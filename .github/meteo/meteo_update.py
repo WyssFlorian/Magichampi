@@ -79,7 +79,7 @@ for fn in FILES:
             obs_vals[(ds_,v)]=dict(zip(live,a))
     # 2. prévisions
     lo,hi=min(me['E'])-8000,max(me['E'])+8000; lo2,hi2=min(me['N'])-8000,max(me['N'])+8000
-    pts=P0[P0.point_coordinates_lv95_east.between(lo,hi)&P0.point_coordinates_lv95_north.between(lo2,hi2)&P0.point_type_id.isin([1,2])]
+    pts=P0[P0.point_coordinates_lv95_east.between(lo,hi)&P0.point_coordinates_lv95_north.between(lo2,hi2)&P0.point_type_id.isin([1,2])].drop_duplicates('point_id')  # un point_id peut figurer 2x (types 1 et 2) : sinon poids (n+1) ≠ valeurs (n)
     R=fc_daily(pts,'rka150p0','direct'); TN=fc_daily(pts,'tre200pn','direct'); TM=fc_daily(pts,'tre200h0','mean')
     last_obs=new_obs[-1][0] if new_obs else dates[nobs-1]
     fdays=[d for d in sorted(R.columns) if d>last_obs and d in TN.columns and d in TM.columns and TM[d].notna().mean()>0.9][:8]
