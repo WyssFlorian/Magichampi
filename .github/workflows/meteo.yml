@@ -1,4 +1,4 @@
-# Met à jour la météo des 3 cartes (mesures et prévisions MétéoSuisse), deux fois par jour.
+# Met à jour la météo des cartes (une data.json par région) (mesures et prévisions MétéoSuisse), deux fois par jour.
 # Gratuit : les Actions sont illimitées sur un dépôt public. Lancement manuel : onglet Actions → Météo → Run workflow.
 name: Météo
 on:
@@ -26,13 +26,13 @@ jobs:
           path: .cache-meteo
           key: meteo-${{ github.run_id }}
           restore-keys: meteo-
-      - run: python .github/meteo/meteo_update.py .cache-meteo ple/data.json lsn/data.json gdv/data.json
+      - run: python .github/meteo/meteo_update.py .cache-meteo $(ls */data.json | grep -v planning)
       - run: find .cache-meteo -type f -mtime +10 -delete
       - name: Enregistrer
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ple/data.json lsn/data.json gdv/data.json
+          git add */data.json
           git diff --cached --quiet && exit 0
           git commit -m "Météo du $(date -u +%F)"
           git push
