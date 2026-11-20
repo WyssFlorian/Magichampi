@@ -245,5 +245,60 @@
     "tres_eleve": 3.8
    }
   }
+ },
+ "seconde_relecture": {
+  "note": "20.11.2026, code Magichampi main dcb7f7c : validation rejouée (identique), 8 régions : 312 paires, pct 0,666, pctBg 0,647 ; IC 95 % par blocs (graine 1) : pct [0,609 ; 0,713] (247), [0,606 ; 0,725] (185 distincts) ; pctBg [0,616 ; 0,704] et [0,620 ; 0,721]; sans coprin chevelu (159 distincts) 0,683 / 0,690.",
+  "couverture_fx1": {
+   "ple": [
+    83.1,
+    90.6,
+    99.9
+   ],
+   "lsn": [
+    89.2,
+    93.2,
+    99.9
+   ],
+   "gdv": [
+    91.9,
+    95.2,
+    100
+   ],
+   "nyn": [
+    92.2,
+    96.2,
+    90.7
+   ],
+   "bro": [
+    66.0,
+    87.9,
+    95.0
+   ],
+   "vul": [
+    87.5,
+    89.2,
+    99.8
+   ],
+   "chb": [
+    90.3,
+    88.0,
+    91.7
+   ],
+   "pde": [
+    88.1,
+    85.4,
+    81.4
+   ]
+  },
+  "couverture_cles": "[type de forêt %, essence WSL %, sol %]",
+  "parts_fx_gt0_eleve_ou_plus": "15,0 à 15,4 % ; très élevé 3,8 à 4,5 %",
+  "parts_fx1_eleve_ou_plus": "14,8 à 16,2 %",
+  "parts_fx1_moyen_ou_plus": "39,7 à 44,3 %",
+  "bonus_public": {
+   "cellules_touchees_max_pct": 4.2,
+   "delta_eleve_ou_plus_max_pt": 0.3,
+   "amax_max": 1.58,
+   "amax_sans_bonus_max": 1.15
+  }
  }
 }
