@@ -13,7 +13,7 @@ Ce que le modèle est : un classement relatif des forêts d'une région, utile p
 Points à retenir (détail aux sections 9 à 13) :
 - L'aptitude classe mieux les relevés précis que le hasard : rang moyen 0,66 (0,5 = hasard), intervalle à 95 % par blocs de 5 km [0,61 ; 0,72], indice de Boyce 0,98. Les trois cartes d'origine se recouvrent : les « 247 relevés » de la documentation sont **247 paires (relevé, carte), soit 185 relevés distincts**. Aucune espèce n'a 30 relevés distincts ; le coprin chevelu en a 26 (14 % de l'échantillon).
 - Les poids calibrés (hôte, altitude, SwissFungi) l'ont été **avant** la correction de la couche « part de conifères » (PR 75, 20 novembre à 14 h 24), qui était inversée. Je l'ai mesuré en rejouant la validation : le résultat publié (0,656) est reproduit exactement avec la couche inversée, et vaut 0,663 avec la couche corrigée. Le poids de l'hôte est sans effet mesurable entre 0 et 0,2. Les conclusions tiennent, mais l'explication « double emploi avec le type de forêt » n'est pas démontrée.
-- Quinze écarts entre code et descriptions sont listés en section 13, dont deux à examiner en priorité : le type de forêt est connu pour seulement 5 % des forêts de Vully/Avenches et 37 à 43 % de trois autres régions (contre 84 à 92 % ailleurs), et la carte « conditions du moment » ne se comporte pas comme son aide le décrit.
+- Quinze écarts entre code et descriptions avaient été listés (section 13). Le 20 novembre 2026 (PR « Corriger les écarts »), tous ceux qui relevaient d'une erreur ont été corrigés : le type de forêt, connu pour seulement 5 % des forêts de Vully/Avenches et 37 à 43 % de trois autres régions, l'est maintenant pour 66 à 90 % (cause : la carte des milieux n'était lue que pour le canton de Vaud) ; la fiche et l'aide décrivent désormais la carte « conditions du moment » telle qu'elle colore ; les textes périmés et les constantes inutilisées sont retirés. La colonne « État » de la section 13 donne le détail, y compris ce qui est volontairement laissé.
 
 ## 2. Données
 
@@ -56,10 +56,12 @@ Couverture mesurée sur les tuiles publiées (cellules `fx = 1`, échantillon d'
 |---|---|---|---|
 | ple, lsn, gdv (anciennes) | 84 à 92 % | 90 à 95 % | 100 % (repli atlas) |
 | nyn (La Côte, Jura) | 93 % | 96 % | 89 % |
-| bro (Broye) | **41 %** | 88 % | 94 % |
-| vul (Vully, Avenches) | **5 %** | 88 % | 99,7 % |
-| chb (Chablais alpin) | **43 %** | 89 % | 96 % |
-| pde (Pays-d'Enhaut) | **37 %** | 85 % | 81 % |
+| bro (Broye) | 41 % → **66 %** | 88 % | 94 % |
+| vul (Vully, Avenches) | 5 % → **88 %** | 88 % | 99,7 % |
+| chb (Chablais alpin) | 43 % → **90 %** | 89 % | 96 % |
+| pde (Pays-d'Enhaut) | 37 % → **88 %** | 85 % | 81 % |
+
+(Flèche : avant → après la correction du 20 novembre 2026, `tools/refaire_hab.py`, qui relit la carte des milieux pour tous les cantons touchés par la région : VD + FR + BE pour vul, VD + FR pour bro, VD + VS + BE pour chb, VD + FR + BE pour pde.) Le reste de Broye, déjà mesuré par sondage de 18 000 cellules, correspond à des cellules de forêt (fraction LFI ≥ 0,4) où la carte des milieux ne porte aucun polygone de forêt : petits bois, rideaux d'arbres et haies d'un paysage agricole ; ce n'est pas une erreur d'extraction.
 
 ## 4. Aptitude du lieu : modèle statique
 
@@ -139,7 +141,7 @@ Mode « conditions du moment » (météo pour la date choisie, mesures puis pré
 - **Température du sol à 10 cm** : récurrence `ts ← ts + 0,128 · (T_air + 1,77 − ts)` depuis le début de la série ; calée sur la station d'Aigle 2016-2026 (erreur 0,8 °C contre 2,23 °C). Température utilisée : `T = ts − 1,77 + SOUTH · (0,4 + 1,2 · ensoleillement 10 jours) − 0,0055 · (altitude − altitude de la maille)`. Facteur `tempF = max(0,05, trapèze(T))` ; trapèzes de température d'expert par espèce.
 - **Gel** : `fd = Σ max(0, −(Tmin + gradient)) / 3` sur les 7 derniers jours ; facteur `frost^fd` (frost entre 0,6 et 1 par espèce, d'expert).
 - **Indice** : `W = seasonW × soilW × tempF × frostF`.
-- **Classes de la carte** (`nowCls`, `index.html:1740`) : coloré seulement si la classe statique est ≥ 2 ; classe selon `W` : ≥ 0,45 jaune, ≥ 0,6 rose, ≥ 0,75 orange, ≥ 0,9 bleu. L'aptitude ne module donc pas W (D1).
+- **Classes de la carte** (`nowCls`) : coloré seulement si la classe statique est ≥ 2 ; classe selon `W`, exprimé en % de l'aptitude maximale du lieu : ≥ 0,45 jaune, ≥ 0,6 rose, ≥ 0,75 orange, ≥ 0,9 bleu. L'aptitude ne module donc pas W : elle ne sert que de filtre. **Depuis le 20 novembre 2026** (D1) l'aide et la fiche décrivent exactement ce comportement, et la fiche affiche la classe `nowCls`, celle de la couleur de la carte (l'ancienne fonction `wAdj`, décalage d'un ou deux crans, est supprimée).
 - **Prévisions** : points de prévision locaux dans un rayon de 8 km, pondérés par `1/max(d, 500 m)²`, température corrigée de l'altitude (−0,0055 °C/m), pluie non corrigée.
 
 ## 7. Agrégations
@@ -263,6 +265,24 @@ Gravité : **A** à examiner en priorité, **B** à corriger dans les textes ou 
 | D12 | C | Dans `wslRaw`, « même type » est défini par rapport au **premier hôte** de la liste (cèpe de Bordeaux : le sapin, donc un conifère non hôte compte 0,6 et un feuillu 0,3, alors que l'espèce est « both »). Choix d'expert non documenté. | `index.html:1575` |
 | D13 | C | La russule des épicéas (`integra`, hôte épicéa unique) est dans le groupe généraliste (exposant 0,4) alors que les autres espèces à épicéa seul (`varius`, `vinosa`, `mustelina`, `imbricatus`) sont dans le groupe étroit (1,6). | `index.html:1570-1571` |
 | D15 | C | L'étiquette de modèle `meta.model` des tuiles de ple, lsn, gdv indique « v2 2026-11-15 » ; elle n'est pas utilisée par le code. Le calcul de `weatherCell` produit aussi une température moyenne `t` jamais lue. | `*/data.json`, `index.html:1666-1673` |
+
+### 13.1 État des correctifs (20 novembre 2026)
+
+| # | État | Ce qui a été fait ou décidé |
+|---|---|---|
+| D9 | **Corrigé** | La carte des milieux n'était lue que pour le canton de Vaud (`pipeline/vd/grid.py`) : Vully, Broye, Chablais alpin et Pays-d'Enhaut touchent FR, VS ou BE. Le script lit désormais tous les cantons ; les tuiles des 4 régions sont recalculées (`tools/refaire_hab.py`), seuils V6 recalculés. Type de forêt connu : 5 → 88 %, 41 → 66 %, 43 → 90 %, 37 → 88 %. Validation sur les 12 relevés précis de ces régions : 0,664 → 0,666 (312 paires sur les 7 régions qui contiennent des relevés ; rien ne bouge pour ple, lsn, gdv). |
+| D1 | **Corrigé (texte et fiche, pas la carte)** | La couleur de la carte et sa légende (« % de l'aptitude maximale ») étaient déjà d'accord ; l'aide et la fiche décrivaient autre chose. On a aligné l'aide et la fiche sur la carte : la fiche donne la classe de la couleur de la carte et le % de l'aptitude maximale ; `wAdj`, `wPen` n'est plus utilisée que pour le libellé « météo favorable… ». |
+| D4, D5 | **Corrigé** | Textes de la fiche et de l'aide : exposants réels (hôte ×0,05 / ×0,1, WSL ×1,6 / ×1,2 / ×0,4), validation du 20 novembre (247 paires, 185 relevés). |
+| D6 | **Corrigé** | « 247 paires pour 185 relevés distincts » dans l'aide et la fiche. |
+| D10 | **Texte corrigé** | L'aide dit que le repli sur l'atlas géochimique n'existe que dans les trois premières régions ; dans les cinq autres, sol neutre. Ajouter le repli demande de relancer la génération de ces régions : non fait. |
+| D2 | **Corrigé** | `AP`, `aClass`, `SEASON_CAP` supprimés. |
+| D3 | **Corrigé (texte)** | L'aide mentionne le retard de saison en dessous de 600 m. |
+| D11, D12 | **Documenté** | Voir `docs/provenance-parametres.md` ; aucun changement de calcul. |
+| D13 | **Laissé volontairement** | Russula integra reste « généraliste » : elle accompagne aussi les pins, et un seul relevé précis la concerne (changer son groupe obligerait à recalculer les seuils des 8 régions sans pouvoir le valider). |
+| D15 | **Corrigé en partie** | La température moyenne `t` inutilisée est retirée de `weatherCell` ; l'étiquette `meta.model` des anciennes tuiles reste (sans effet). |
+| D8 | **Non traité** | Mettre les couches des forêts exclues (`fx` 2 et 3) au lieu de zéro demande de régénérer 5 régions ; l'effet (jusqu'à 44,5 % des forêts affichées en « moyen ou mieux » au lieu de 40 %) est signalé en section 5. |
+| D7 | **Expliqué** | Section 10.3. |
+| D14 | **Corrigé** | `docs/rapport-methode-verif/rerun.js` rejoue la validation sur les huit régions. |
 
 Vérifié sans écart : paramètres du tableau `docs/provenance-parametres.md` (altitude, température, gel, sol, hôte pour les 52 espèces, comparés au code) ; seuils V6 présents et croissants pour les 52 espèces des 8 régions ; correspondance des codes de type de forêt entre le script et `HAB_LAB` ; indices des essences WSL entre `WSL_HOSTS`, `WSL_NAMES` et `WSL_REL` ; 0,914 et 0,83 = 0,925 et 0,85 à la puissance 1,15 ; surfaces de `sizeW` annoncées dans l'aide (0,7 pour 5 ha).
 
