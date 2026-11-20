@@ -1,7 +1,7 @@
 # Magichampi
 
-Cartes des forêts favorables aux champignons comestibles (Riviera-Chablais, Région lausannoise, Gros-de-Vaud).
-Une seule page (`index.html`) pour les trois régions : `?r=ple`, `?r=lsn` ou `?r=gdv` (sinon la dernière région utilisée). Les paramètres propres à chaque région (titre, sorties, seuils, chasse) sont dans `<région>/zone.js`, les données dans `<région>/`. Ouvrir le site, choisir une région dans le menu, toucher ◎ pour suivre sa position, « Hors ligne » pour la télécharger.
+Carte « Canton de Vaud » des forêts favorables aux champignons comestibles (données Riviera-Chablais, Région lausannoise, Gros-de-Vaud).
+Une seule page (`index.html`) : la région chargée suit la partie de la carte affichée (dernière position mémorisée ; `?r=ple`, `?r=lsn` ou `?r=gdv` force une région). Limites du canton, des districts et des communes : `limites/*.geojson` (swissBOUNDARIES3D, swisstopo, simplifiées), cases dans Menu › Géographie. Les paramètres propres à chaque région (titre, sorties, seuils, chasse) sont dans `<région>/zone.js`, les données dans `<région>/`. Ouvrir le site, toucher ◎ pour suivre sa position, « Hors ligne » pour la télécharger.
 
 Ne consommez aucun champignon sans le contrôle d'un contrôleur officiel (VAPKO).
 
