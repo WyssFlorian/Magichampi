@@ -773,6 +773,7 @@ a{color:var(--accent)}
 .region-ctl .btn.pulse{outline:3px solid #ffd000}
 .region-ctl .btn[aria-pressed="true"]{background:#ffd000;color:#3a2a00;border-color:#b38f00}
 .geo-sub{display:flex;flex-direction:column;gap:6px;padding-left:22px;border-left:2px solid rgba(127,127,127,.25);margin-left:8px}
+.contour-sw{display:inline-block;width:18px;height:9px;vertical-align:middle;background:repeating-linear-gradient(180deg,#8a6a45 0 1px,transparent 1px 4px);border-radius:2px;box-shadow:inset 0 0 0 1px rgba(127,127,127,.25)}
 .water-sw,.road-sw{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;background:#1e88e5}
 .road-sw{background:#fff;box-shadow:0 0 0 1px #2e7d32}
 /* ---------- guide animé ---------- */
@@ -806,8 +807,8 @@ body.lite .lite-hide{display:none!important}
 .best-pin .ring{position:absolute;inset:0;border-radius:50%;border:3px solid #ffd000;box-shadow:0 0 0 2px rgba(0,0,0,.55);animation:bestpulse 1.6s ease-out infinite}
 .best-pin .star{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#ffd000;text-shadow:0 0 2px #000,0 0 4px #000}
 @keyframes bestpulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.6);opacity:.15}}
-.lim-sw{display:inline-block;width:22px;height:0;border-top:3px solid #3b82f6;vertical-align:middle;flex:none}.lim-d{border-top:3px solid #d046f0}.lim-m{border-top:2px dashed #06b6d4}
-.lim-lab{background:none;border:0;box-shadow:none;font-weight:700;color:#8a1fa6;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;white-space:nowrap;pointer-events:none;font-size:12px}.lim-lab.m{color:#0a5c6b;font-weight:600;font-size:11px}
+.lim-sw{display:inline-block;width:22px;height:0;border-top:3px solid #3b82f6;vertical-align:middle;flex:none}.lim-d{border-top:3px solid #ff9500}.lim-m{border-top:2px dashed #06b6d4}
+.lim-lab{background:none;border:0;box-shadow:none;font-weight:700;color:#9a5200;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;white-space:nowrap;pointer-events:none;font-size:12px}.lim-lab.m{color:#0a5c6b;font-weight:600;font-size:11px}
 .area-jump{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .area-jump .btn{padding:3px 8px;font-size:12px}
 .region-msg{background:var(--panel);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11.5px;box-shadow:0 1px 4px rgba(0,0,0,.3);text-align:right}
@@ -1171,8 +1172,9 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk"><input type="checkbox" id="o-lim-m"> <span class="lim-sw lim-m" aria-hidden="true"></span> <span>Limites des communes</span></label>
         <p class="small" style="margin:-4px 0 0">Source : swissBOUNDARIES3D, swisstopo (simplifiées). Les noms des communes apparaissent dès le zoom 12.</p>
         <label class="chk"><input type="checkbox" id="o-relief"> <span><span class="relief-sw" aria-hidden="true"></span> Afficher la géographie</span></label>
-        <p class="small" style="margin:-4px 0 0">Comme le bouton ⛰ : courbes de niveau et falaises, plus les couches cochées ci-dessous ; visibles en zoomant.</p>
+        <p class="small" style="margin:-4px 0 0">Comme le bouton ⛰ : falaises, lignes de niveau et les couches cochées ci-dessous, visibles en zoomant (lignes de niveau dès le zoom 13, cours d'eau dès 11, ruisseaux dès 13, routes dès 12, chemins dès 14-15). Les lignes de niveau se cochent aussi seules.</p>
         <div class="geo-sub">
+        <label class="chk"><input type="checkbox" id="o-contour"> <span class="contour-sw" aria-hidden="true"></span> Lignes de niveau</label>
         <label class="chk"><input type="checkbox" id="o-water" checked> <span class="water-sw" aria-hidden="true"></span> Cours d'eau</label>
         <label class="chk"><input type="checkbox" id="o-road" checked> <span class="road-sw" aria-hidden="true"></span> Routes et chemins</label>
         <label class="chk"><input type="checkbox" id="o-acc" checked> <span>Accès libre seulement</span></label>
@@ -1229,7 +1231,7 @@ details.more[open]>summary{margin-bottom:4px}
       </ul>
       <p><b>Zones de forêt</b> : la forêt est découpée par les routes et chemins (swissTLM3D) et par paliers d'altitude de 150 m ; les grandes zones sont recoupées en carrés d'environ 600 m. Une zone prend la valeur de ses 20 % meilleures cellules, pour ne pas noyer un bon coin dans une grande zone moyenne.</p>
       <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte.</p>
-      <p><b>Géographie</b> (bouton ⛰ ou option) : tracées à partir du relief swissALTI3D ramené à 25 m, tous les 20 m en traits blancs (plus marqués tous les 100 m) dès le zoom 14, tous les 50 m au zoom 13. En brun foncé, les pentes d'au moins 45° sur 25 m (falaises, barres rocheuses) ; en brun clair, les pentes de 38 à 45° (très raides, prudence). En bleu, les cours d'eau à ciel ouvert (swissTLM3D 2026), plus épais pour les rivières et ruisseaux nommés ; les tronçons canalisés sous terre ne sont pas tracés. En vert, les routes et chemins dès le zoom 12, comme sur la carte nationale : double trait pour les routes de 1re et 2e classe, trait de 2 px pour la 3e classe, trait fin pour les chemins de 4e et 5e classe. Les sentiers balisés restent en jaune. Le bouton affiche aussi les arrêts de transports publics et les parkings. Dans Plus d'options, section Géographie, une case par couche permet de masquer séparément les cours d'eau, les routes, les arrêts, les parkings ou les sentiers. Une petite barre de quelques mètres peut ne pas apparaître : la carte nationale reste la référence.</p>
+      <p><b>Géographie</b> (bouton ⛰ ou option) : Lignes de niveau (case « Lignes de niveau », utilisable seule) : tracées à partir du relief swissALTI3D ramené à 25 m, tous les 20 m (plus marquées tous les 100 m) dès le zoom 14, tous les 50 m au zoom 13 ; blanches sur la photo, brunes sur la carte nationale. En brun foncé, les pentes d'au moins 45° sur 25 m (falaises, barres rocheuses) ; en brun clair, les pentes de 38 à 45° (très raides, prudence). En bleu, les cours d'eau à ciel ouvert (swissTLM3D 2026), les rivières dès le zoom 11, les ruisseaux dès le zoom 13, plus fins ; les tronçons canalisés sous terre ne sont pas tracés. En vert, les routes dès le zoom 12, comme sur la carte nationale : double trait pour les routes de 1re et 2e classe, trait simple pour la 3e classe, puis les chemins de 4e classe dès le zoom 14 et de 5e classe dès le zoom 15 ; tous les traits s'épaississent avec le zoom. Les sentiers balisés restent en jaune. Le bouton affiche aussi les arrêts de transports publics (dès le zoom 13) et les parkings (dès le zoom 14). Dans Plus d'options, section Géographie, une case par couche permet de masquer séparément les cours d'eau, les routes, les arrêts, les parkings ou les sentiers. Une petite barre de quelques mètres peut ne pas apparaître : la carte nationale reste la référence.</p>
       <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
       <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
       <p><b>Validation</b> (15.11.2026) : sur 51 observations iNaturalist indépendantes, le modèle les place en moyenne au 52ᵉ-54ᵉ rang sur 100 (50 = hasard). C'est mieux qu'avant (48), mais encore faible : vos coins permettront de le caler.</p>
@@ -1409,7 +1411,7 @@ let D,G,meta,meteo,fungi,sqNeighbours={};
 const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tier:1,hide:[]};
 try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if([0,1,2,3].includes(s.tier))state.tier=s.tier;{const c=SPECIES.find(x=>x.id===state.sp);if(c&&state.tier&&c.tier!==state.tier)state.tier=c.tier}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
-const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-sq","o-hard"];
+const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-sq","o-hard","o-contour"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
 function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
@@ -1688,7 +1690,7 @@ async function refreshData(){
   }catch(e){console.warn(e);bt.textContent="Échec, réessayer";bt.disabled=false}
 }
 /* ---------- rendering ---------- */
-const COLORS=[null,[242,170,215,120],[198,61,143,215],[90,12,94,240],[38,30,190,250]];
+const COLORS=[null,[246,190,225,125],[214,58,152,218],[128,26,160,240],[40,70,235,252]];
 let canvas,ctx,imgData,overlay,map,currentClass,stats=[0,0,0,0,0];
 function classAt(i,sp,st,season){
   const a=st.SC[i];if(a===255)return 255;
@@ -2130,13 +2132,14 @@ const ReliefLayer=L.GridLayer.extend({
     if(c1<=c0||r1<=r0)return t;
     const ctx=t.getContext("2d"),cpx=res*sc; // taille d'une cellule en pixels
     const PX=c=>(meta.x0+(c+.5)*res+EARTH)*sc-px0,PY=r=>(EARTH-(meta.y1-(r+.5)*res))*sc-py0;
+    const wantC=$("o-contour").checked,wantF=!!state.relief;
     // falaises et pentes très raides
-    for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const i=r*cols+c,sl=G.slope[i];if(sl<38||G.dem[i]<=0)continue;
+    if(wantF)for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const i=r*cols+c,sl=G.slope[i];if(sl<38||G.dem[i]<=0)continue;
       ctx.fillStyle=sl>=45?"rgba(45,35,30,.62)":"rgba(160,82,45,.28)";ctx.fillRect(PX(c)-cpx/2,PY(r)-cpx/2,cpx+.5,cpx+.5)}
     // courbes de niveau (carrés de marche entre centres de cellules)
     const step=z>=14?20:50,major=z>=14?100:250,D=G.dem;
     const minor=new Path2D(),maj=new Path2D();
-    for(let r=r0;r<r1;r++)for(let c=c0;c<c1;c++){const i=r*cols+c,a=D[i],b=D[i+1],d=D[i+cols],e=D[i+cols+1];
+    if(wantC)for(let r=r0;r<r1;r++)for(let c=c0;c<c1;c++){const i=r*cols+c,a=D[i],b=D[i+1],d=D[i+cols],e=D[i+cols+1];
       if(a<=0||b<=0||d<=0||e<=0)continue;
       const lo=Math.min(a,b,d,e),hi=Math.max(a,b,d,e);let L0=Math.ceil(lo/step)*step;if(L0===lo)L0+=0;
       for(let lv=L0;lv<hi;lv+=step){if(lv<lo)continue;
@@ -2149,18 +2152,22 @@ const ReliefLayer=L.GridLayer.extend({
         if(pts.length<2)continue;const P=lv%major===0?maj:minor;
         P.moveTo(pts[0][0],pts[0][1]);P.lineTo(pts[1][0],pts[1][1]);
         if(pts.length===4){P.moveTo(pts[2][0],pts[2][1]);P.lineTo(pts[3][0],pts[3][1])}}}
-    ctx.lineCap="round";ctx.lineWidth=1;ctx.strokeStyle="rgba(255,255,255,.7)";ctx.stroke(minor);
-    ctx.strokeStyle="rgba(255,255,255,1)";ctx.stroke(maj);
+    // épaisseur selon le zoom ; blanc sur la photo, brun sur la carte nationale (le blanc y serait invisible)
+    const ph=state.base==="ortho",w=z>=17?1.3:z>=16?1.1:z>=15?.9:.7;
+    ctx.lineCap="round";ctx.lineJoin="round";
+    if(ph){ctx.lineWidth=w+1.2;ctx.strokeStyle="rgba(0,0,0,.18)";ctx.stroke(minor);ctx.stroke(maj)} // léger liseré sombre : lisible sur les prés clairs
+    ctx.lineWidth=w;ctx.strokeStyle=ph?"rgba(255,255,255,.72)":"rgba(140,95,50,.6)";ctx.stroke(minor);
+    ctx.lineWidth=w+.7;ctx.strokeStyle=ph?"rgba(255,255,255,1)":"rgba(120,70,25,.95)";ctx.stroke(maj);
     return t;
   }
 });
 // « Géographie » : courbes de niveau et falaises, cours d'eau, routes et chemins (swissTLM3D), sentiers balisés
-let reliefLayer=null,waterLayer=null,waterP=null,roadLayer=null,roadP=null,trailsLayer=null;const WATER_MINZ=12,ROAD_MINZ=12,ROAD_C="#2e7d32";
+let reliefLayer=null,waterLayer=null,waterP=null,roadLayer=null,roadP=null,trailsLayer=null;const WATER_MINZ=11,ROAD_MINZ=12,ROAD_C="#2e7d32";
 function syncGeoLayer(l,minz,id){if(!l)return;const on=state.relief&&(!id||$(id).checked)&&map.getZoom()>=minz;if(on&&!map.hasLayer(l))l.addTo(map);else if(!on&&map.hasLayer(l))map.removeLayer(l)}
 let syncAcc=()=>{};
 function syncWater(){syncGeoLayer(roadLayer,ROAD_MINZ,"o-road");syncGeoLayer(waterLayer,WATER_MINZ,"o-water");syncTrails();syncAcc()}
 // « Géographie » : limites administratives (swissBOUNDARIES3D), chargées à la première activation
-const LIM={c:{f:"canton",st:{color:"#3b82f6",weight:3.5,opacity:.95,fill:false}},d:{f:"districts",st:{color:"#d046f0",weight:2.5,opacity:.95,fill:false}},m:{f:"communes",st:{color:"#06b6d4",weight:1.2,opacity:.95,dashArray:"5 3",fill:false}}};
+const LIM={c:{f:"canton",st:{color:"#3b82f6",weight:3.5,opacity:.95,fill:false}},d:{f:"districts",st:{color:"#ff9500",weight:2.5,opacity:.95,fill:false}},m:{f:"communes",st:{color:"#06b6d4",weight:1.2,opacity:.95,dashArray:"5 3",fill:false}}};
 function syncLimits(){
   if(!map)return;
   if(!map.getPane("limites")){const pn=map.createPane("limites");pn.style.zIndex=406;pn.style.pointerEvents="none"}
@@ -2177,14 +2184,23 @@ function limLabels(k){const o=LIM[k];if(!o.data||!o.lab)return;o.lab.clearLayers
 function syncTrails(){if(!trailsLayer)return;const on=$("o-trail").checked;if(on&&!map.hasLayer(trailsLayer))trailsLayer.addTo(map);else if(!on&&map.hasLayer(trailsLayer))map.removeLayer(trailsLayer);$("legend-tr").hidden=!on}
 function loadWater(){
   if(!roadP)roadP=fetch(ZD+"routes.geojson",NC).then(r=>r.json()).then(j=>{const rd=L.canvas({pane:"relief",padding:.3}),F=c=>({type:"FeatureCollection",features:j.features.filter(f=>c.includes(f.properties.c))});
-    // 4e et 5e classe : trait de 1 px ; 3e classe : 2 px ; 1re et 2e classe : double trait
-    const one=L.geoJSON(F([5,4]),{pane:"relief",renderer:rd,interactive:false,style:{color:ROAD_C,weight:1,opacity:.95}}),
-      two=L.geoJSON(F([3]),{pane:"relief",renderer:rd,interactive:false,style:{color:ROAD_C,weight:2,opacity:1}}),
-      cas=L.geoJSON(F([2,1]),{pane:"relief",renderer:rd,interactive:false,style:{color:ROAD_C,weight:4.5,opacity:1}}),
-      core=L.geoJSON(F([2,1]),{pane:"relief",renderer:rd,interactive:false,style:{color:"#fff",weight:1.6,opacity:1}});
-    roadLayer=L.layerGroup([one,two,cas,core]);syncWater()}).catch(e=>{console.warn(e);roadP=null});
+    // un calque par classe, restylé à chaque zoom (voir geoStyle) : grandes routes d'abord, petits chemins seulement de près
+    const mk=(cl,st)=>L.geoJSON(F(cl),{pane:"relief",renderer:rd,interactive:false,style:st});
+    ROADL={c5:mk([5],{color:ROAD_C}),c4:mk([4],{color:ROAD_C}),c3:mk([3],{color:ROAD_C}),cas:mk([2,1],{color:ROAD_C}),core:mk([2,1],{color:"#fff"})};
+    roadLayer=L.layerGroup(Object.values(ROADL));geoStyle();syncWater()}).catch(e=>{console.warn(e);roadP=null});
   if(waterP)return waterP;waterP=fetch(ZD+"cours_eau.geojson",NC).then(r=>r.json()).then(j=>{const rd=L.canvas({pane:"relief",padding:.3});
-  waterLayer=L.geoJSON(j,{pane:"relief",renderer:rd,interactive:false,style:f=>f.properties.t==="r"?{color:"#1e88e5",weight:2.2,opacity:.95}:{color:"#42a5f5",weight:1.3,opacity:.9}});syncWater()}).catch(e=>{console.warn(e);waterP=null});return waterP}
+  waterLayer=L.geoJSON(j,{pane:"relief",renderer:rd,interactive:false,style:f=>({color:f.properties.t==="r"?"#1e88e5":"#4aa8f5"})});geoStyle();syncWater()}).catch(e=>{console.warn(e);waterP=null});return waterP}
+// épaisseurs (px) selon le zoom z : [z12, 13, 14, 15, 16, 17+] ; 0 = masqué
+const GS={w_r:[1.4,1.8,2.4,3,3.8,4.6],w_s:[0,.8,1.1,1.5,2,2.6],r5:[0,0,0,.8,1.3,2],r4:[0,0,.9,1.3,2,2.8],r3:[.9,1.2,1.5,1.9,2.4,3],r12:[2.2,2.6,3.2,3.8,4.6,5.4],tr:[1,1.3,1.6,1.9,2.3,2.7]};
+let ROADL=null;
+const gw=(k,z)=>GS[k][clamp(z-12,0,5)];
+function geoStyle(){if(!map)return;const z=map.getZoom(),ph=state.base==="ortho";
+  const st=(l,w,o)=>{if(l)l.setStyle(w>0?{weight:w,opacity:o==null?1:o}:{weight:0,opacity:0})};
+  if(waterLayer)waterLayer.eachLayer(l=>{const sub=l.feature&&l.feature.properties.t!=="r";st(l,sub?gw("w_s",z):Math.max(gw("w_r",z),z<12?1.1:0),sub?.9:.95)});
+  if(ROADL){st(ROADL.c5,gw("r5",z),.85);st(ROADL.c4,gw("r4",z),.9);st(ROADL.c3,gw("r3",z));
+    st(ROADL.cas,gw("r12",z));st(ROADL.core,Math.max(0,gw("r12",z)-1.7))}
+  if(trailsLayer)trailsLayer.eachLayer(g=>g.eachLayer&&g.eachLayer(l=>l.setStyle(z<11?{weight:0,opacity:0}:{weight:gw("tr",z),opacity:1})))}
+let syncRelief=()=>{};
 function refreshRelief(){if(reliefLayer&&map.hasLayer(reliefLayer))reliefLayer.redraw()}
 /* ---------- meilleur lieu de la vue ---------- */
 // classe affichée d'abord (météo comprise), puis à classe égale : aptitude de la zone (vue par zone) ou rang de la cellule,
@@ -2904,8 +2920,10 @@ const HuntLayer=L.Layer.extend({
     // hachures à 45°, écart fixe en pixels quel que soit le zoom : rouge = battues, orange = chasse individuelle
     const hatch=(mask,col)=>{const o=document.createElement("canvas");o.width=c.width;o.height=c.height;const y=o.getContext("2d");y.setTransform(dpr,0,0,dpr,0,0);
       y.imageSmoothingEnabled=false;y.drawImage(mask,p0.x,p0.y,p1.x-p0.x,p1.y-p0.y);
-      const t=document.createElement("canvas");const S=14;t.width=t.height=S*dpr;const tx=t.getContext("2d");tx.scale(dpr,dpr);
-      tx.strokeStyle=col;tx.lineWidth=1.1;tx.beginPath();tx.moveTo(-2,S+2);tx.lineTo(S+2,-2);tx.moveTo(-2,2);tx.lineTo(2,-2);tx.moveTo(S-2,S+2);tx.lineTo(S+2,S-2);tx.stroke();
+      const z=m.getZoom(),t=document.createElement("canvas");const S=z<=12?18:z<=14?14:12;t.width=t.height=S*dpr;const tx=t.getContext("2d");tx.scale(dpr,dpr);
+      // trait coloré cerné d'un liseré clair : lisible sur la forêt sombre comme sur le score violet
+      tx.beginPath();tx.moveTo(-2,S+2);tx.lineTo(S+2,-2);tx.moveTo(-2,2);tx.lineTo(2,-2);tx.moveTo(S-2,S+2);tx.lineTo(S+2,S-2);
+      tx.strokeStyle="rgba(255,255,255,.4)";tx.lineWidth=z<=13?2.2:3;tx.stroke();tx.strokeStyle=col;tx.lineWidth=z<=12?1.1:1.4;tx.stroke();
       const pat=y.createPattern(t,"repeat");if(pat.setTransform)pat.setTransform(new DOMMatrix([1/dpr,0,0,1/dpr,0,0]));
       y.globalCompositeOperation="source-in";y.fillStyle=pat;y.fillRect(0,0,s.x,s.y);x.setTransform(1,0,0,1,0,0);x.drawImage(o,0,0);x.setTransform(dpr,0,0,dpr,0,0)};
     const shR=$("o-hunt")&&$("o-hunt").checked,shI=$("o-hunti")&&$("o-hunti").checked;
@@ -2936,8 +2954,10 @@ const HardLayer=L.Layer.extend({
     const b=regionLL(),p0=m.latLngToContainerPoint(b.getNorthWest()),p1=m.latLngToContainerPoint(b.getSouthEast());
     const o=document.createElement("canvas");o.width=c.width;o.height=c.height;const y=o.getContext("2d");y.setTransform(dpr,0,0,dpr,0,0);
     y.imageSmoothingEnabled=false;y.drawImage(hardMask,p0.x,p0.y,p1.x-p0.x,p1.y-p0.y);
-    const t=document.createElement("canvas");const S=12;t.width=t.height=S*dpr;const tx=t.getContext("2d");tx.scale(dpr,dpr);
-    tx.strokeStyle="rgba(190,190,190,.95)";tx.lineWidth=1.3;tx.beginPath();tx.moveTo(-2,-2);tx.lineTo(S+2,S+2);tx.moveTo(S-2,-2);tx.lineTo(S+2,2);tx.moveTo(-2,S-2);tx.lineTo(2,S+2);tx.stroke();
+    const z=m.getZoom(),t=document.createElement("canvas");const S=z<=12?16:z<=14?12:10;t.width=t.height=S*dpr;const tx=t.getContext("2d");tx.scale(dpr,dpr);
+    // hachures « \ » gris clair cernées d'un liseré sombre (visibles aussi sur la carte claire)
+    tx.beginPath();tx.moveTo(-2,-2);tx.lineTo(S+2,S+2);tx.moveTo(S-2,-2);tx.lineTo(S+2,2);tx.moveTo(-2,S-2);tx.lineTo(2,S+2);
+    tx.strokeStyle="rgba(30,30,30,.4)";tx.lineWidth=2.8;tx.stroke();tx.strokeStyle="rgba(215,215,215,.97)";tx.lineWidth=1.2;tx.stroke();
     const pat=y.createPattern(t,"repeat");if(pat.setTransform)pat.setTransform(new DOMMatrix([1/dpr,0,0,1/dpr,0,0]));
     y.globalCompositeOperation="source-in";y.fillStyle=pat;y.fillRect(0,0,s.x,s.y);x.setTransform(1,0,0,1,0,0);x.drawImage(o,0,0)}});
 function hardUpdate(){if(!map||!G)return;const cb=$("o-hard");if(!cb)return;
@@ -3325,8 +3345,11 @@ async function boot(){
   setupVapko();setupGeoloc();
   map.createPane("relief");map.getPane("relief").style.zIndex=405;map.getPane("relief").style.pointerEvents="none";
   reliefLayer=new ReliefLayer({pane:"relief",minZoom:RELIEF_MINZ,maxZoom:18,updateWhenZooming:false,keepBuffer:1});
-  const setRelief=v=>{state.relief=v;saveState();if(v){reliefLayer.addTo(map);loadWater()}else map.removeLayer(reliefLayer);syncWater();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",syncWater);
-  $("o-relief").checked=!!state.relief;$("o-relief").onchange=e=>setRelief(e.target.checked);if(state.relief){reliefLayer.addTo(map);loadWater()}
+  // la couche de relief (falaises + lignes de niveau) est présente si « géographie » ou « lignes de niveau » est coché
+  syncRelief=()=>{const on=state.relief||$("o-contour").checked;if(on&&!map.hasLayer(reliefLayer))reliefLayer.addTo(map);else if(!on&&map.hasLayer(reliefLayer))map.removeLayer(reliefLayer);else if(on)reliefLayer.redraw()};
+  const setRelief=v=>{state.relief=v;saveState();if(v){$("o-contour").checked=true;saveLay();loadWater()}syncRelief();syncWater();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",()=>{geoStyle();syncWater()});
+  $("o-contour").onchange=()=>{saveLay();syncRelief()};
+  $("o-relief").checked=!!state.relief;$("o-relief").onchange=e=>setRelief(e.target.checked);if(state.relief)loadWater();syncRelief();
   ["o-water","o-road"].forEach(id=>$(id).onchange=()=>{saveLay();syncWater()});
   ["c","d","m"].forEach(k=>$("o-lim-"+k).onchange=()=>{saveLay();syncLimits()});syncLimits();
   map.on("moveend",()=>{if(map.hasLayer(LIM.d.lab||L.layerGroup())||map.hasLayer(LIM.m.lab||L.layerGroup())){if($("o-lim-d").checked)limLabels("d");if($("o-lim-m").checked)limLabels("m")}});
@@ -3342,11 +3365,11 @@ async function boot(){
   L.control.scale({imperial:false}).addTo(map);
   // couches secondaires, branchées à leur arrivée
   $("o-hard").onchange=()=>{saveLay();hardUpdate()};
-  later.rs.then(rs=>{hardRs=rs;hardKey="";hardUpdate();const res=L.geoJSON(rs,{renderer:VEC,style:{color:"#0f6e5a",weight:1.5,dashArray:"5 3",fillColor:"#0f6e5a",fillOpacity:.18},onEachFeature:(f,l)=>l.bindTooltip(`${esc(f.properties.nom||"")} · ${esc(f.properties.src)}`,{sticky:true})});
+  later.rs.then(rs=>{hardRs=rs;hardKey="";hardUpdate();const res=L.geoJSON(rs,{renderer:VEC,style:{color:"#19b58e",weight:1.6,dashArray:"5 3",fillColor:"#19b58e",fillOpacity:.14},onEachFeature:(f,l)=>l.bindTooltip(`${esc(f.properties.nom||"")} · ${esc(f.properties.src)}`,{sticky:true})});
   if($("o-res").checked)res.addTo(map);$("o-res").onchange=e=>e.target.checked?res.addTo(map):map.removeLayer(res)}).catch(e=>console.warn(e));
-  later.tj.then(tj=>{const trLine=L.geoJSON(tj,{renderer:VEC,style:f=>({color:"#ffd000",weight:1,opacity:1,dashArray:f.properties.t==="w"?null:"3 3"}),
+  later.tj.then(tj=>{const trLine=L.geoJSON(tj,{renderer:VEC,style:f=>({color:"#ffd000",weight:1.2,opacity:1,dashArray:f.properties.t==="w"?null:"3 3"}),
     onEachFeature:(f,l)=>l.bindTooltip(f.properties.t==="w"?"Chemin de randonnée (balisage jaune)":"Chemin de randonnée de montagne (balisage blanc-rouge-blanc)",{sticky:true})});
-  trailsLayer=L.layerGroup([trLine]);
+  trailsLayer=L.layerGroup([trLine]);geoStyle();
   $("o-trail").onchange=()=>{saveLay();syncTrails()};syncTrails()}).catch(e=>console.warn(e));
 
   map.on("click",e=>{if(state.adding){CF.lat=e.latlng.lat;CF.lng=e.latlng.lng;CF.acc=null;cfPos();cfPick(false);if(NARROW.matches)$("coin-form").scrollIntoView({behavior:"smooth",block:"center"});return}
@@ -3381,7 +3404,7 @@ async function boot(){
   fetch(ZD+"places.json",NC).then(r=>r.ok?r.json():null).then(p=>{if(p){PLACES=PLACES_G=p;syncClab();try{huntUpdate()}catch(e){}}else{PLACES=(meta.clab||[]).map(([n,la,lo])=>[n,la,lo,1]);syncClab()}}).catch(()=>{});
   map.on("moveend",syncClab);
   map.on("zoomend",syncClab);
-  const setBase=k=>{state.base=k;saveState();setTimeout(syncClab,0);Object.entries(bases).forEach(([n,l])=>{if(n===k)l.addTo(map);else map.removeLayer(l)});$("b-carte").setAttribute("aria-pressed",k==="carte");$("b-ortho").setAttribute("aria-pressed",k==="ortho");const bb=$("base-btn");if(bb)bb.textContent=k==="ortho"?"🗺 Carte":"📷 Photo"};
+  const setBase=k=>{state.base=k;saveState();setTimeout(syncClab,0);Object.entries(bases).forEach(([n,l])=>{if(n===k)l.addTo(map);else map.removeLayer(l)});$("b-carte").setAttribute("aria-pressed",k==="carte");$("b-ortho").setAttribute("aria-pressed",k==="ortho");const bb=$("base-btn");if(bb)bb.textContent=k==="ortho"?"🗺 Carte":"📷 Photo";syncRelief()};
   $("base-btn").onclick=()=>setBase(state.base==="ortho"?"carte":"ortho");
   $("b-carte").onclick=()=>setBase("carte");$("b-ortho").onclick=()=>setBase("ortho");setBase(state.base);
   const dateLab=()=>{const k=fcKind(state.d);$("date-lab").textContent=fmtDate(meteo.dates[state.d])+(state.d===todayIdx()?" · aujourd'hui":"")+(k?" · "+k:"")};
@@ -3417,7 +3440,7 @@ async function boot(){
     const m=tpMarker(f,ll).bindTooltip(tpTip(f)+" · arrêt urbain, forêt propice à moins de 1 km").bindPopup(()=>stopPopup(f),{maxWidth:300});
     const p=L.CRS.EPSG3857.project(ll);return {m,x:p.x,y:p.y}});
   busUrban=L.layerGroup();accLayers.tp=L.layerGroup([accLayers.tp,busUrban]);updateUrbanBus();
-  syncAcc=()=>[["o-tp","tp"],["o-park","parking"]].forEach(([id,k])=>{const on=$(id).checked&&state.relief&&map.getZoom()>=ACC_MINZ;
+  syncAcc=()=>[["o-tp","tp"],["o-park","parking"]].forEach(([id,k])=>{const on=$(id).checked&&state.relief&&map.getZoom()>=(k==="parking"?ACC_MINZ+2:ACC_MINZ+1);
     if(on&&!map.hasLayer(accLayers[k]))accLayers[k].addTo(map);else if(!on&&map.hasLayer(accLayers[k]))map.removeLayer(accLayers[k])});
   $("o-tp").onchange=()=>{saveLay();syncAcc()};$("o-park").onchange=()=>{saveLay();syncAcc()};map.on("zoomend",syncAcc);syncAcc();
   }).catch(e=>console.warn(e));
