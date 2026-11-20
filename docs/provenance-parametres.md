@@ -27,7 +27,7 @@ Type : **donnée** = tiré de relevés SwissFungi, **expert** = estimation à di
 | Chanterelle en tube | 1 | 12 | 0.62 | résineux | 590–1256 | 0/4/13/19 | 0.88 | acide (k 0.3) | faible |
 | Morille conique | 1 | 0 | – | indifférent | 568–1339 | 4/8/15/20 | 0.85 | calcaire (k 0.15) | faible |
 | Morille blonde | 1 | 1 | 0.91 | feuillus | 432–880 | 5/9/16/21 | 0.85 | calcaire (k 0.3) | faible |
-| Tricholome de la Saint-Georges | 1 | 1 | 0.91 | indifférent | 400–1078 | 5/9/15/20 | 0.85 | calcaire (k 0.3) | faible |
+| Tricholome de la Saint-Georges | 2 | 1 | 0.91 | indifférent | 400–1078 | 5/9/15/20 | 0.85 | calcaire (k 0.3) | faible |
 | Pied-de-mouton | 2 | 1 | 0.90 | feuillus et résineux | 530–1213 | 2/7/16/22 | 0.8 | calcaire (k 0.15) | faible |
 | Bolet bai | 2 | 17 | 0.78 | résineux | 590–1109 | 3/8/16/22 | 0.75 | acide (k 0.3) | faible |
 | Pied bleu | 2 | 0 | – | feuillus et résineux | 430–953 | 0/4/12/18 | 0.9 | indiff. (k 0) | faible |

@@ -194,6 +194,8 @@ Rejoué avec `docs/rapport-methode-verif/rerun.js` (même protocole, code et seu
 | Palier 1 (stars) | 53 | 0,745 | 0,728 | 0,88 | 43 % |
 | Palier 2 | 97 | 0,641 | 0,627 | 0,87 | 31 % |
 | Palier 3 | 97 | 0,639 | 0,657 | 0,92 | 32 % |
+
+Note (20 novembre 2026) : ces trois lignes par palier datent d'avant le reclassement du Tricholome de la Saint-Georges de « stars » vers « bons comestibles » (palier 2), à la demande de Florian. Le palier ne sert qu'à l'étiquette et au menu : le score, les seuils par carte et les lignes « Total », « ple », « lsn », « gdv » ne changent pas. Les lignes par palier n'ont pas été recalculées (les fichiers intermédiaires de `summ2.py` ne sont pas dans le dépôt) ; elles se recalculent avec `summ2.py`.
 | Sans le coprin chevelu (relevés distincts) | 159 | 0,683 | 0,690 | — | — |
 | Les 8 régions (312 paires, dont 65 hors ple, lsn, gdv) | 312 | 0,666 | 0,647 | — | — |
 
