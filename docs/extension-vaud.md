@@ -49,7 +49,7 @@ Une région publiée pèse environ 45 à 125 Mo (fond de carte ≈ 85 %). Les ci
 ## Lot 2 : La Côte, Nyon et Jura vaudois (`nyn/`)
 Générée par `pipeline/vd/` du dépôt privé app-champignons (`zones.py`, `dl_zone.py`, `dl_rules.py`, `grid.py`, `extras.py`, `tiles.py`, `mkzone.py`), puis `tools/ajouter_wsl_region.sh nyn` (couche WSL et seuils V6).
 - Grille 25 m alignée sur celle du pilote : 2165 × 2834 cellules, 69 tuiles de données, 464 000 cellules de forêt dans la fenêtre de test ; couche WSL : 93,5 % de la forêt classée.
-- Sol : GeoCover sur 90,9 % de la forêt (le reste : sol neutre, sans l'atlas géochimique de l'ancienne chaîne, non disponible en données ouvertes). Humidité : TWI du MNT + bilan hydrique OFEV + terrain GeoCover.
+- Sol : GeoCover sur 90,9 % de la forêt (le reste : sol neutre, l'atlas géochimique OFEV, bien disponible en données ouvertes, sert de repli depuis la correction D10 du 20 nov. 2026). Humidité : TWI du MNT + bilan hydrique OFEV + terrain GeoCover.
 - Accès : arrêts TP (OFT) et parkings (swissTLM3D) ; lignes de bus non renseignées dans les fenêtres d'arrêts (la table des lignes ne couvre que les trois premières régions).
 - Chasse : calendrier vaudois ; zones sans chasse = districts francs fédéraux et réserves d'oiseaux d'eau ; pas de zones de tir militaires (à compléter si besoin).
 - SwissFungi : mailles de 5 km (GBIF) ; les deux morilles n'ont aucune maille avec le nom GBIF utilisé (même cas à vérifier dans les autres régions).
