@@ -31,7 +31,7 @@ Points à retenir (détail aux sections 9 à 13) :
 | Prévisions | MétéoSuisse, prévisions locales (points), interpolées | points | jours à venir | `alertes/meteo_update.py:91-140` |
 | Zones bâties, routes, réserves, marais | ARE 2025, swissTLM3D, Pro Natura, OFEV | vecteur | exclusions et zones de forêt (pas de score) | `pipeline/vd/grid.py:98-135, 176-212` |
 | Chasse, contrôles VAPKO | calendriers cantonaux VD et FR, liste VAPKO | — | couches d'information, **hors score** | `index.html:2880-3105` |
-| Coins de l'utilisateur, points iNaturalist importés | saisie locale ; fichier d'import | point | bonus +50 % autour des coins de l'espèce, **invisible du public** | `index.html:1594` |
+| Coins de l'utilisateur, points iNaturalist importés | saisie locale ; fichier d'import | point | bonus +50 % autour des coins de l'espèce ; les points iNaturalist publics n'existent que sous forme agrégée (section 7.1) | `index.html:1594` |
 
 Depuis le 20 novembre 2026 une trace **agrégée** des 62 coins iNaturalist du fichier d'import relève aussi le score public (section 7.1) ; les relevés précis iNaturalist/GBIF servent à la validation (section 10), jamais à la fois dans le score et dans la validation. (Texte antérieur : « ne servent qu'à la validation, jamais au score public ».) Leurs licences (CC BY, CC BY-NC) sont conservées dans le projet.
 
