@@ -8,7 +8,7 @@ Demande de Florian (20 nov. 2026) : couvrir tout le canton, affichage découpé 
 | ple | Riviera-Chablais | publiée | 6,74 – 46,35 – 7,06 – 46,62 |
 | lsn | Région lausannoise | publiée | 6,45 – 46,45 – 6,75 – 46,63 |
 | gdv | Gros-de-Vaud | publiée | 6,26 – 46,53 – 6,70 – 46,86 |
-| nyn | La Côte, Nyon, Jura vaudois (Vallée de Joux ouest) | à faire | 6,06 – 46,28 – 6,52 – 46,70 |
+| nyn | La Côte, Nyon, Jura vaudois (Vallée de Joux ouest) | **publiée (lot 2)** | 6,06 – 46,28 – 6,52 – 46,70 |
 | bro | Broye (Moudon, Lucens, Payerne) | à faire | 6,68 – 46,60 – 7,00 – 46,99 |
 | vul | Vully et Avenches | à faire | 6,98 – 46,78 – 7,26 – 46,99 |
 | chb | Chablais alpin (Bex, Ormonts, Gryon) | à faire | 6,74 – 46,18 – 7,26 – 46,37 |
@@ -45,3 +45,15 @@ Hypothèses : chaque lot nécessite de télécharger 1 à 4 Go de MNT et plusieu
 
 ## Poids du dépôt
 Une région publiée pèse environ 45 à 125 Mo (fond de carte ≈ 85 %). Les cinq nouvelles régions ajouteraient ≈ 400 à 500 Mo au site (≈ 285 Mo aujourd'hui), proche de la limite recommandée de 1 Go pour GitHub Pages. Parade prévue : fond de carte des nouvelles régions limité aux emprises de forêt (les Alpes sont surtout hors forêt), orthophoto jusqu'au zoom 15 seulement.
+
+## Lot 2 : La Côte, Nyon et Jura vaudois (`nyn/`)
+Générée par `pipeline/vd/` du dépôt privé app-champignons (`zones.py`, `dl_zone.py`, `dl_rules.py`, `grid.py`, `extras.py`, `tiles.py`, `mkzone.py`), puis `tools/ajouter_wsl_region.sh nyn` (couche WSL et seuils V6).
+- Grille 25 m alignée sur celle du pilote : 2165 × 2834 cellules, 69 tuiles de données, 464 000 cellules de forêt dans la fenêtre de test ; couche WSL : 93,5 % de la forêt classée.
+- Sol : GeoCover sur 90,9 % de la forêt (le reste : sol neutre, sans l'atlas géochimique de l'ancienne chaîne, non disponible en données ouvertes). Humidité : TWI du MNT + bilan hydrique OFEV + terrain GeoCover.
+- Accès : arrêts TP (OFT) et parkings (swissTLM3D) ; lignes de bus non renseignées dans les fenêtres d'arrêts (la table des lignes ne couvre que les trois premières régions).
+- Chasse : calendrier vaudois ; zones sans chasse = districts francs fédéraux et réserves d'oiseaux d'eau ; pas de zones de tir militaires (à compléter si besoin).
+- SwissFungi : mailles de 5 km (GBIF) ; les deux morilles n'ont aucune maille avec le nom GBIF utilisé (même cas à vérifier dans les autres régions).
+- Pas de sorties de sociétés de mycologie ni de points iNaturalist dans cette région (`SORT_P` vide, `obs` vide) : décision iNaturalist en cours dans un autre fil.
+- La partie genevoise de l'emprise est traitée comme le reste (pas de chasse à Genève, non modélisé).
+- Fond de carte : 404 mosaïques (87 Mo), tuiles à moins de 2 km d'une forêt au-delà du zoom 12.
+- Météo : `nyn/data.json` ajouté au workflow Météo.
