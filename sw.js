@@ -1,8 +1,8 @@
-// version 48f6184481
-const SHELL="cartes-shell-48f6184481",DATA="cartes-donnees";
-self.addEventListener("install",e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(["./","leaflet.js","manifest.webmanifest","icon.svg","ple/","lsn/","gdv/"])).then(()=>self.skipWaiting()))});
+// version fusion2011
+const SHELL="cartes-shell-fusion2011",DATA="cartes-donnees";
+self.addEventListener("install",e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(["./","leaflet.js","manifest.webmanifest","icon.svg"])).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("cartes-shell-")&&k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
-function fresh(u){return /\/$|\.html$|data\.json$|files\.json$|sw\.js$/.test(u.pathname)}
+function fresh(u){return /\/$|\.html$|data\.json$|zone\.js$|files\.json$|sw\.js$/.test(u.pathname)}
 self.addEventListener("fetch",e=>{
   const r=e.request;if(r.method!=="GET")return;
   const u=new URL(r.url);
