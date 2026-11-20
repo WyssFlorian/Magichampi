@@ -81,6 +81,12 @@ Trouvées le 20.11.2026 par recherche web ; seuls les titres ont été vus, pas 
 
 ## Ce qui reste (étape 3 et suite)
 - Réserve en eau du sol OFAG (remplace les 60 mm fixes) : jeu de données à télécharger, pas encore intégré.
-- Carte WSL 10 m des essences : tâche séparée à valider par Florian ; devrait réduire le double emploi essences / type de forêt constaté ici.
 - Calibration par espèce : impossible avec moins de 30 relevés (une seule espèce, le coprin chevelu, en a davantage). À refaire quand les relevés « coins partagés » seront disponibles.
 - Décalage de saison et plages de température : à caler avec les dates des relevés et les grilles MétéoSuisse (non fait ici).
+
+## Carte WSL 10 m des essences (20.11.2026)
+- Source : Koch, Hobi, Morsdorf, Waser (2024), EnviDat, DOI 10.16904/envidat.506 (accès sur demande, ≈ 76 % de précision, validée seulement sur ses données d'entraînement). Couche `wsl` des tuiles : classe majoritaire par cellule de 25 m (`tools/wsl_vers_tuiles.py`), 0 = inconnu.
+- Usage : 30 espèces à hôtes nommés (`WSL_HOSTS`) ; facteur 1 si l'essence dominante est un hôte, 0,6 si même type (feuillu/résineux), 0,3 sinon, écart réduit pour hêtre et épicéa (×0,6 au lieu de ×0,8) ; inconnu = moyenne de l'espèce sur la région ; puissance W_WSL = 0,4, part de résineux W_HOST 0,2 → 0,1.
+- Validation sur les 247 relevés précis (rang moyen, 0,5 = hasard) : 0,639 → 0,654 (+0,015, IC 95 % par blocs de 5 km [+0,005 ; +0,025]) ; Boyce 0,99 → 0,99. Par carte : ple 0,708 → 0,720 ; lsn 0,586 → 0,603 ; gdv 0,660 → 0,67. W_WSL seul (sans baisser W_HOST) : +0,008, IC [0 ; +0,015]. W_HOST 0 : +0,022 mais Boyce 0,96, non retenu.
+- Seuils de classes recalculés (`MAP_THR_V6`, `tools/seuils.js`).
+- Droit d'usage commercial de la carte WSL : pas encore demandé.
