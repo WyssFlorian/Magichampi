@@ -940,6 +940,11 @@ details.more[open]>summary{margin-bottom:4px}
 .tiers .ti:hover,.tiers .ti:focus{opacity:1}
 .tiers .ti::before{content:"";position:absolute;inset:-8px}
 .tier-info{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12.5px;background:var(--panel);max-height:55vh;overflow:auto}
+.sp{position:relative;padding-right:28px}
+.sp .sp-i{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;border:1px solid currentColor;font:italic 600 10px/13px Georgia,serif;text-align:center;opacity:.7;cursor:pointer}
+.sp .sp-i:hover,.sp .sp-i:focus{opacity:1}
+.sp .sp-i::before{content:"";position:absolute;inset:-6px}
+.sp-pk{border-collapse:collapse;font-variant-numeric:tabular-nums}.sp-pk td{padding:1px 10px 1px 0}
 .tier-info .ti-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .tier-info .ti-head b{font-size:13px}
 .tier-info .ti-x{border:0;background:none;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:0 2px}
@@ -1536,11 +1541,11 @@ function staticFor(sp){
   if(!SCR||SCR.A.length<n)SCR={A:new Float32Array(n),bin:new Uint32Array(n),H:new Uint32Array((1<<18)+1)};
   const A=SCR.A,bin=SCR.bin,H=SCR.H;H.fill(0);
   const rf=new Float32Array(meta.squares.length).fill(-1),ob=obsBonus(sp),SC=new Uint8Array(n).fill(255);
-  let m=0;
+  let m=0,amax=0;
   for(let i=0;i<n;i++){
     if(!usable(i)){A[i]=-1;continue}
     const sid=G.sq[i];let r=rf[sid];if(r<0)r=rf[sid]=regionF(sid,sp.key)[0];
-    A[i]=aptAt(i,sp,r,ob);SC[i]=thrClass(A[i],sp);m++;
+    A[i]=aptAt(i,sp,r,ob);SC[i]=thrClass(A[i],sp);if(A[i]>amax)amax=A[i];m++;
   }
   // rang (percentile) de chaque cellule en temps linéaire : histogramme fin de l'aptitude (2^18 classes, aptitude entre 0 et 1),
   // puis effectifs cumulés ; les valeurs d'une même classe sont traitées comme ex aequo (rang moyen)
@@ -1561,11 +1566,21 @@ function staticFor(sp){
   zl.sort((a,b)=>zm[a]-zm[b]);
   const zP=new Float32Array(nz).fill(-1);let cum=0;
   zl.forEach(z=>{zP[z]=(cum+zc[z]/2)/tot;cum+=zc[z]});
-  e={P,rf,SC,ob,zone:{mean:zm,cls:zk,P:zP,count:zc,min:zmin,max:zmax,conif:Float32Array.from(zcf,(v,k)=>zcn[k]?v/zcn[k]:NaN)}};
+  e={P,rf,SC,ob,amax,zone:{mean:zm,cls:zk,P:zP,count:zc,min:zmin,max:zmax,conif:Float32Array.from(zcf,(v,k)=>zcn[k]?v/zcn[k]:NaN)}};
   staticCache.set(key,e);
   if(staticCache.size>STATIC_MAX)staticCache.delete(staticCache.keys().next().value);
   return e;
 }
+// couleurs en pourcentage : aptitude rapportée à la meilleure cellule forestière de l'espèce dans la région chargée (100 % = le meilleur lieu)
+const aptPct=(st,a)=>st.amax>0?Math.max(0,Math.min(100,Math.round(100*a/st.amax))):0;
+const thrPct=(st,sp)=>THR[sp.id].map(t=>t==null?null:Math.round(100*t/st.amax));
+// pic de saison : jour de l'année où la fréquence des relevés est maximale, décalé selon l'altitude
+const PEAKC={};
+function peakDay(sp,alt){const k=sp.id+"|"+alt;if(PEAKC[k]!==undefined)return PEAKC[k];
+  let best=-1,bd=[];for(let d=0;d<365;d++){const dt=new Date(Date.UTC(2026,0,1+d,12)),s=dt.toISOString().slice(0,10),v=seasonF(sp.key,s,alt);
+    if(v>best+1e-9){best=v;bd=[d]}else if(Math.abs(v-best)<=1e-9)bd.push(d)}
+  const d=bd[Math.floor(bd.length/2)];return PEAKC[k]=new Date(Date.UTC(2026,0,1+d,12)).toISOString().slice(0,10)}
+const peakTxt=(sp,alt)=>fmtDate(peakDay(sp,alt));
 const pOf=(st,i)=>{const v=st.P[i];return v===P_NONE?-1:(v-1)/P_SCALE};
 let NZ=0,zoneHa=.04;
 function trap2(v,t){return Math.max(.03,trap(v,t))}
@@ -1840,7 +1855,7 @@ function popupHtml(latlng){
     h+=`<p class="small" style="margin:6px 0 4px"><b>Au point cliqué :</b></p>`;
   }else h+=rgBox(i,0);
   let w=null;const ak=info.SC,top=Math.max(1,Math.round(100*(1-info.P))),T_=THR[sp.id];
-  h+=`<div class="tot"><span>Aptitude du lieu : ${info.A.toFixed(2)}<br><span class="small">seuils ${T_[0].toFixed(2)} (moyen), ${T_[1].toFixed(2)} (élevé)${T_[2]!=null?` et ${T_[2].toFixed(2)} (très élevé)`:""} ; dans les ${top} % meilleures forêts de la région chargée</span></span><span class="pill c${ak}">${CLS_LAB[ak]}</span></div>`;
+  const TP=thrPct(st,sp);h+=`<div class="tot"><span>Aptitude du lieu : <b>${aptPct(st,info.A)} %</b> du meilleur lieu de l'espèce (${info.A.toFixed(2)})<br><span class="small">seuils ${TP[0]} % (moyen), ${TP[1]} % (élevé)${TP[2]!=null?` et ${TP[2]} % (très élevé)`:""} ; dans les ${top} % meilleures forêts de la région chargée</span></span><span class="pill c${ak}">${CLS_LAB[ak]}</span></div>`;
   if(state.mode==="now"){prepWeather(sp);seasonTab(sp,meteo.dates[state.d]);w=weatherAt(i,sp,state.d);
     const k=wAdj(ak,w.W),dk=k-ak;
     h+=`<div class="tot"><span>Météo ${wLab(w.W)} (${w.W.toFixed(2)})<br><span class="small">${fcKind(state.d)==="prévision"?"prévue ":fcKind(state.d)==="estimation"?"estimée ":""}au ${fmtDate(meteo.dates[state.d])}${dk>0?", relève d'une classe":dk<0?`, abaisse d'${dk===-1?"une classe":"deux classes"}`:""}</span></span><span class="pill c${k}">${CLS_LAB[k]}</span></div>`}
@@ -1870,7 +1885,7 @@ function popupHtml(latlng){
   h+=`<div class="look"><b>Sosies :</b> ${sp.look}</div>`;
   h+=`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" data-addcoin="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)}">Marquer comme mon coin</button>${z?`<button class="btn" data-alertz="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)},${z}">🔔 Alerte pour cette forêt</button>`:""}</div></div>`;
   const zk=state.view==="zone"&&z&&st.zone.P[z]>=0?zoneNow.cls[z]:(w?wAdj(ak,w.W):ak);
-  const short=S0+`<div class="fx" style="grid-template-columns:1fr auto"><span class="lab">${sp.fr}</span><span class="pill c${zk}">${CLS_LAB[zk]}</span></div>`+rgBox(i,state.view==="zone"?z:0)+huntBox(i)+DET_BTN;
+  const short=S0+`<div class="fx" style="grid-template-columns:1fr auto"><span class="lab">${sp.fr}</span><span class="pill c${zk}">${CLS_LAB[zk]} · ${aptPct(st,state.view==="zone"&&z&&st.zone.P[z]>=0?st.zone.mean[z]:info.A)} %</span></div>`+rgBox(i,state.view==="zone"?z:0)+huntBox(i)+DET_BTN;
   return {short,full:h};
 }
 const SORT_SRC=ZONE.SORT_SRC;
@@ -1978,7 +1993,8 @@ function updateLegend(){
   const el=$("legend");
   if(state.mode==="now"&&state.sp!=="multi"){let h="";for(let k=4;k>=1;k--){const a=NOW_COLORS[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${NOW_LAB[k]}</span>`}
     el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Pas de couleur : moins de 45 % ou terrain peu favorable</span>`;return}
-  if(state.sp!=="multi"){el.innerHTML=`<span class="sw" style="background:var(--s-top)"></span><span>Très élevé : le meilleur quart de la classe élevée (4 % des forêts de la carte)</span><span class="sw" style="background:var(--s-high)"></span><span>Élevé : au-dessus du seuil de l'espèce (15 % des forêts de la carte, très élevé compris)</span><span class="sw" style="background:var(--s-mid)"></span><span>Moyen : les 25 % suivants</span><span class="sw" style="background:var(--s-low)"></span><span>Faible : le reste des forêts</span>`;return}
+  if(state.sp!=="multi"){const sp=SPECIES.find(s=>s.id===state.sp),TP=thrPct(staticFor(sp),sp),hi=TP[2]!=null;
+    el.innerHTML=`<span class="sw" style="background:var(--s-top)"></span><span>Très élevé : ${hi?"au moins "+TP[2]+" %":"le meilleur quart de la classe élevée"} de l'aptitude du meilleur lieu de l'espèce</span><span class="sw" style="background:var(--s-high)"></span><span>Élevé : ${TP[1]} % à ${hi?TP[2]:100} %</span><span class="sw" style="background:var(--s-mid)"></span><span>Moyen : ${TP[0]} % à ${TP[1]} %</span><span class="sw" style="background:var(--s-low)"></span><span>Faible : moins de ${TP[0]} %</span>`;return}
   const nw=state.mode==="now";let h="";for(let k=MULTI_MAX;k>=(nw?1:2);k--){const a=(nw?NOW_COLORS:MULTI_COLORS)[k];h+=`<span class="sw" style="background:rgba(${a[0]},${a[1]},${a[2]},${(a[3]/255).toFixed(2)})"></span><span>${nw&&k===1?"Concentration faible":MULTI_LAB[k]}</span>`}
   el.innerHTML=h+`<span class="sw" style="background:transparent;border:1px dashed var(--muted)"></span><span>Le reste des forêts</span>`;
 }
@@ -1988,8 +2004,8 @@ function renderSpeciesList(){
   const el=$("species");
   if(!el.children.length){
     SPECIES.forEach(sp=>{const b=document.createElement("button");b.className="sp";b.dataset.id=sp.id;
-      b.innerHTML=`<span><span class="fr">${sp.fr}</span>${sp.weak?`<span class="weak" title="${esc(sp.weak)}">fiabilité faible</span>`:""}<br><span class="la">${sp.la}</span></span><span class="now"></span>`;
-      b.onclick=()=>{state.sp=state.lastSp=sp.id;saveState();render()};el.appendChild(b)});
+      b.innerHTML=`<span><span class="fr">${sp.fr}</span>${sp.weak?`<span class="weak" title="${esc(sp.weak)}">fiabilité faible</span>`:""}<br><span class="la">${sp.la}</span></span><span class="now"></span><span class="sp-i" role="button" tabindex="0" aria-label="Fiche technique de ${esc(sp.fr)}">i</span>`;
+      b.onclick=e=>{if(e.target.closest(".sp-i")){e.stopPropagation();showSpInfo(sp.id);return}state.sp=state.lastSp=sp.id;saveState();render()};el.appendChild(b)});
   }
   const date=seasonDate(),multi=state.sp==="multi";
   $("sp-box").hidden=multi;$("t-multi").setAttribute("aria-pressed",multi);$("t-sp").setAttribute("aria-pressed",!multi);
@@ -2003,7 +2019,7 @@ function renderSpeciesList(){
     const sp=SPECIES.find(s=>s.id===b.dataset.id);b.setAttribute("aria-pressed",sp.id===state.sp);
     b.hidden=!inTier(sp)||(state.seasonOnly&&nIn>0&&!inSeason(sp));
     const s=seasonF(sp.key,date,REG_ALT),fs=fungi[sp.key],n=fsCount(fs);
-    b.querySelector(".now").innerHTML=`saison ${Math.round(s*100)} %`+(LITE?"":`<br><span class="rel">${n} relevés région</span>`)});
+    b.querySelector(".now").innerHTML=`saison ${Math.round(s*100)} %<br><span class="rel">pic vers le ${peakTxt(sp,REG_ALT)}</span>`+(LITE?"":`<br><span class="rel">${n} relevés région</span>`)});
   if(NARROW.matches){const sel=el.querySelector("[aria-pressed=\"true\"]");if(sel){const t=sel.offsetLeft-(el.clientWidth-sel.offsetWidth)/2;el.scrollLeft=Math.max(0,t)}}
 }
 
@@ -2017,6 +2033,26 @@ function showTierInfo(t){
   el.innerHTML=`<div class="ti-head"><b>${TIER_TXT[t]} (${list.length})</b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
     `<div class="ti-safe"><b>Prudence.</b> Utilisez toujours un guide de terrain. Ne cueillez que les champignons que vous avez identifiés avec certitude, et faites toujours contrôler toute votre récolte par un contrôleur officiel (VAPKO) avant de la consommer. En cas de doute ou de malaise : Tox Info Suisse, 145.</div><dl>`+
     list.map(sp=>`<dt>${esc(sp.fr)} <i>${esc(sp.la)}</i></dt><dd>${sp.eat?esc(sp.eat)+" ":""}${sp.taste?`<span>Goût : ${esc(sp.taste)}</span>`:""}</dd><dd><b>Confusions :</b> ${esc(sp.look)}</dd>`).join("")+`</dl>`;
+  el.querySelector(".ti-x").onclick=()=>{el.hidden=true};
+  el.hidden=false;
+}
+// fiche technique d'une espèce (« i » de la puce)
+function showSpInfo(id){
+  const sp=SPECIES.find(s=>s.id===id),el=$("tier-info");
+  if(!el.hidden&&el.dataset.sp===id){el.hidden=true;return}
+  el.dataset.sp=id;el.dataset.tier="";
+  const fs=fungi[sp.key],n=fsCount(fs),HOST={conif:"conifères",broad:"feuillus",both:"conifères et feuillus",any:"tous types de forêt"};
+  const rng=a=>`${a[1]}–${a[2]} m (tolérance ${a[0]}–${a[3]} m)`,rt=a=>`${a[1]}–${a[2]} °C (tolérance ${a[0]}–${a[3]} °C)`;
+  const pk=[400,800,1200,1600].map(a=>`<tr><td>${a} m</td><td>${peakTxt(sp,a)}</td></tr>`).join("");
+  el.innerHTML=`<div class="ti-head"><b>${esc(sp.fr)} <i>${esc(sp.la)}</i></b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
+   `<div class="ti-safe"><b>Prudence.</b> Ne consommez rien sans le contrôle d'un contrôleur officiel (VAPKO). Tox Info Suisse : 145.</div>`+
+   `<p style="margin:4px 0"><b>Catégorie :</b> ${esc(TIER_NAMES[sp.tier])}${sp.weak?` · <span class="weak">fiabilité faible</span> ${esc(sp.weak)}`:""}</p>`+
+   `<p style="margin:4px 0">${sp.eat?esc(sp.eat)+" ":""}${sp.taste?`Goût : ${esc(sp.taste)}`:""}</p>`+
+   `<p style="margin:4px 0"><b>Associé à :</b> ${esc(sp.hostTxt||HOST[sp.host]||"")}</p>`+
+   `<p style="margin:4px 0"><b>Altitude favorable :</b> ${rng(sp.alt)}<br><b>Température favorable :</b> ${rt(sp.temp)}<br><b>Gel :</b> facteur ${sp.frost} par jour de gel</p>`+
+   `<p style="margin:4px 0"><b>Pic de saison</b> (d'après les relevés SwissFungi, décalé d'une semaine par 250 m au-dessus de 600 m) :</p><table class="sp-pk">${pk}</table>`+
+   `<p style="margin:4px 0"><b>Relevés dans la région :</b> ${n}</p>`+
+   `<p style="margin:4px 0"><b>Confusions :</b> ${esc(sp.look)}</p>`;
   el.querySelector(".ti-x").onclick=()=>{el.hidden=true};
   el.hidden=false;
 }
