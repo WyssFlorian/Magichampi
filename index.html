@@ -1428,8 +1428,8 @@ function regionF(sid,key){
   if(c)return [1,"own",[c,f[sq][1]]];
   const nb=sqNeighbours[sq]||[];let n=0,last=0;
   nb.forEach(q=>{const k=sqCount(key,q);if(k){n+=k;last=Math.max(last,f[q][1])}});
-  if(n)return [.925,"near",[n,last]];
-  return [.85,"none",null];
+  if(n)return [.914,"near",[n,last]];
+  return [.83,"none",null];
 }
 // décalage de saison : en altitude, les pousses d'automne commencent et finissent plus tôt (1 semaine par 250 m au-dessus de 600 m, au plus 4 semaines)
 const seasonShift=alt=>clamp((alt-600)/250*7,-28,28);
@@ -1509,9 +1509,12 @@ let LITE=false;
 // 17.11.2026 : type de forêt inconnu = moyenne des 8 types connus pour l'espèce (et non plus 1, valeur optimale)
 const HAB0={};
 const habF=(i,sp)=>{if(LITE)return 1;const t=HAB[sp.id];if(!t||!G.hab)return 1;const h=G.hab[i];if(h)return t[h]||1;let m=HAB0[sp.id];if(m==null){m=0;for(let k=1;k<9;k++)m+=t[k];m=HAB0[sp.id]=m/8}return m};
+// 20.11.2026 (étape 2) : poids calibrés par validation croisée sur 247 relevés précis (blocs de 5 km, fond groupe cible) : l'essence faisait double emploi avec le type de forêt (poids 0,2) et l'altitude était trop sélective (poids 0,6) ; SwissFungi x1,15 (via regionF)
+const W_HOST=.2,W_ALT=.6;
+const hostW=(c,pref,soft)=>Math.pow(hostF(c,pref,soft),W_HOST),altW=(v,t)=>Math.pow(trap2(v,t),W_ALT);
 function aptAt(i,sp,r,ob){
   const c=LITE||G.conif[i]===255?NaN:G.conif[i]/100;
-  return habF(i,sp)*hostF(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*trap2(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
+  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
 }
 // confirmation par les observations précises (iNaturalist) de l'espèce : bonus de +50 % au point, décroissant (250 m), nul au-delà de 1 km
 const OB_B=.5,OB_L=250,OB_MAX=1000;
@@ -1800,7 +1803,7 @@ function cellInfo(i,sp){
   const c=G.conif[i]===255?NaN:G.conif[i]/100,h=G.vhm[i]/5,edge=G.edge[i]*2,dem=G.dem[i],sl=G.slope[i],asp=G.aspect[i]*2,tpi=G.tpi[i];
   const [rF,rK,rD]=regionF(G.sq[i],sp.key);
   return {A,P:pOf(st,i),SC:st.SC[i],c,h,edge,dem,sl,asp,tpi,rF,rK,rD,mi:G.mi[i],ca:G.ca[i],ob:st.ob[i],
-    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostF(c,sp.host,G.hab&&G.hab[i]>0),alt:trap2(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
+    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostW(c,sp.host,G.hab&&G.hab[i]>0),alt:altW(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
 }
 function rainSvg(m){
   const P=meteo.rprelimd[m],n=P.length,w=262,h=46,bw=w/n,mx=Math.max(20,...P.map(v=>v||0)),no=meteo.nobs;
@@ -1876,6 +1879,7 @@ const SORT_P=ZONE.SORT_P;
 const MAP_THR_EXTRA=ZONE.MAP_THR_EXTRA;
 // 17.11.2026 (étape 1) : seuils recalculés après les corrections du type de forêt inconnu et de la lisière du cèpe (60/85/96,25 % des forêts de la carte)
 const MAP_THR_V4=ZONE.MAP_THR_V4;
+const MAP_THR_V5=ZONE.MAP_THR_V5;
 
 // zones sans chasse (districts francs fédéraux, réserves d'oiseaux d'eau ; geo.admin.ch, lues le 16.11.2026)
 // zones de tir militaires (avis de tir et zones de danger publiés, DDPS / geo.admin.ch, lues le 17.11.2026) ; [lat,lng]
@@ -3142,7 +3146,7 @@ async function boot(){
   // couches secondaires : chargées en parallèle, affichées dès qu'elles arrivent (n'attendent pas la grille)
   const later={rs:fetch(ZD+"reserves.geojson",NC).then(r=>r.json()),aj:fetch(ZD+"acces.geojson",NC).then(r=>r.json()),tj:fetch(ZD+"sentiers.geojson",NC).then(r=>r.json())};
   const [dj,ti]=await Promise.all([fetch(ZD+"data.json",NC).then(r=>r.json()),fetch(ZD+"tiles_index.json",NC).then(r=>r.json())]);
-  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{});
+  D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{},typeof MAP_THR_V5!=="undefined"?MAP_THR_V5:{});
   // version test « données ouvertes » : altitudes et saisons d'expert, sans SwissFungi, carte des milieux, part de résineux ni iNaturalist
   if(meta.lite){LITE=true;SPECIES.forEach(s=>{if(meta.lite.alt[s.id])s.alt=meta.lite.alt[s.id]});document.body.classList.add("lite");
     const b=document.createElement("p");b.className="lite-banner";b.textContent="Version test « données ouvertes » : sans SwissFungi, sans carte des milieux ni part de résineux (essences), sans iNaturalist. Altitudes et saisons fixées à dire d'expert.";$("sec-head").appendChild(b)}
