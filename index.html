@@ -2774,7 +2774,7 @@ function fillShare(){
   ["sh-wa","sh-mail","sh-copy","sh-native"].forEach(id=>{const e=$(id);e.style.opacity=none?.45:1;e.style.pointerEvents=none?"none":""})}
 /* ---------- envoi chiffré des coins à l'auteur (voir partage/ et docs/partage-chiffre.md) ----------
    ECDH P-256 éphémère + HKDF-SHA256 + AES-256-GCM, même algorithme que partage/crypto.mjs. Rien n'est envoyé sans case cochée. */
-const SHARE_CFG={url:"",pub:{kty:"EC",crv:"P-256",x:"hWic8NqLXYoItDzEHSomzNUb_iNQ1jDvm91YpfbqePw",y:"Hzcq7r7-yuI-ClqIX_giA7we0EQ1RIWf5SZlzW8lZVU"}};  // à remplir après déploiement du Worker : url ("https://….workers.dev") et pub (clé publique JWK de partage/keygen.mjs)
+const SHARE_CFG={url:"https://champi-partage.champi-2026.workers.dev",pub:{kty:"EC",crv:"P-256",x:"hWic8NqLXYoItDzEHSomzNUb_iNQ1jDvm91YpfbqePw",y:"Hzcq7r7-yuI-ClqIX_giA7we0EQ1RIWf5SZlzW8lZVU"}};  // à remplir après déploiement du Worker : url ("https://….workers.dev") et pub (clé publique JWK de partage/keygen.mjs)
 const SE_KEY="champi-partage";
 const seState=()=>{try{const o=JSON.parse(localStorage.getItem(SE_KEY)||"null");if(o&&o.secret)return o}catch(e){}return {secret:"",sent:{},subs:[]}};
 const seSave=o=>{try{localStorage.setItem(SE_KEY,JSON.stringify(o))}catch(e){}};
