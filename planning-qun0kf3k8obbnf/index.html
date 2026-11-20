@@ -11,8 +11,9 @@ select,input,button{font-size:16px;background:#222;color:#eee;border:1px solid #
 .r td{background:#3a1a1a}.qq{color:#9fd8a0;font-size:13px;margin-top:4px}.r .qq{color:#ff7b7b;font-weight:600}
 td,th{padding:6px 4px}td button{display:block;margin-bottom:3px}.m{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:4px;color:#aaa;font-size:13px}
 </style></head><body>
-<h1>Planification Magichampi (mise à jour 20 nov. 2026, v33)</h1>
+<h1>Planification Magichampi (mise à jour 20 nov. 2026, v34)</h1>
 <p class="k">✅ autorisé : Claude lance sans te demander · ❔ à valider : Claude te demande d'abord (tu vérifies le quota exact) · 🏁 terminé · 🚫 bloqué/annulé. Flèches ↕ : ordre de priorité. Les choix sont enregistrés sur cet appareil (navigateur). Les nouvelles lignes s'ajoutent sans toucher à tes choix.</p>
+<p class="k">Remarque : le site pèse ≈ 716 Mo sur la limite de 1 Go de GitHub Pages ; à prendre en compte pour NE, JU, GE et VS.</p>
 <p class="k">Coût réel mesuré le 20 nov. : les tâches faites après 8 h (VAPKO, carte unique Vaud, pente, WSL, bandes boisées, zones difficiles, lignes de niveau, revue de visibilité, mises à jour du planning) ont coûté 8 % de la semaine, pour ≈ 325 k tokens estimés, soit ≈ 2,5 % par 100 k au lieu de 12 %. Taux ajusté : 2,7 % par 100 k (réel + 10 % de marge), appliqué aux prévisions ci-dessous. Une seule mesure : à affiner. Les tokens par tâche restent des estimations.</p>
 <div class="q">Quota restant au départ (ven. 20 nov. 8 h) : <input id="q0" type="number" min="0" max="100" step="1" onchange="qs()"> % · Taux : <input id="qr" type="number" min="0.5" max="100" step="0.1" onchange="qs()"> % de quota par 100 k tokens · <label><input id="hd" type="checkbox" onchange="hs()"> Masquer les tâches terminées (🏁)</label></div>
 <p class="k">Sous chaque ligne : date, tokens, coût de la tâche, cumul de la semaine et quota restant. Estimation grossière : milieu de la fourchette de tokens × taux, tâches ✅ et ❔ décomptées par date (🏁 et 🚫 ne comptent pas), remise à 100 % chaque vendredi 8 h. Rouge sous 15 %.</p>
@@ -33,18 +34,18 @@ var D=[
 ["visibilite","Revue complète de la visibilité : couleurs, types et épaisseurs de lignes, hachurages, rivières par niveau de zoom (grand cours d'eau → ruisseau), lignes de niveau, dégradés de concentration / d'aptitude, rendu général quand tout est actif, affichage par défaut au redémarrage","2026-11-20","≈ 60-100 k · réel : estimé 60-100 k (PR 47)","🏁","mailles"],
 ["mailles","Mailles SwissFungi : interrupteur du menu fonctionnel + style discret (tireté vert clair 2 px), sur les 3 régions fusionnées","2026-11-20","≈ 10-15 k · réel : estimé 10-15 k (PR 33)","🏁","opensource"],
 ["opensource","Préparation open source : licence non commerciale, mail WSL, iNaturalist en coins partagés, README/attributions, explication dans l'app de la présence de Leaflet (crédits / à propos), cartes générées sans rendre publiques les données (WSL, etc.) · la purge de l'historique git est planifiée dans une ligne séparée","2026-11-20","≈ 40-70 k · réel : estimé 40-70 k (PR 51 et 53)","🏁"],
-["coins","Partage chiffré des coins pour améliorer la prédiction · livré, désactivé jusqu'au déploiement du Worker et de la clé publique","2026-11-20","≈ 40-80 k · réel : estimé 40-80 k (PR 56)","🏁"],
-["worker","Déployer le Worker du partage chiffré des coins (≈ 15 min, action de Florian) + clé publique, pour activer le partage","2026-11-20","0 (action de Florian)","❔","purge"],
+["coins","Partage chiffré des coins pour améliorer la prédiction · livré, désactivé jusqu'au déploiement du Worker et de la clé publique","2026-11-20","≈ 40-80 k · réel : estimé 40-80 k (PR 56/64/67)","🏁"],
+["worker","Déployer le Worker du partage chiffré des coins (≈ 15 min, action de Florian) + clé publique, pour activer le partage","2026-11-20","0 (action de Florian) · Worker déployé (PR 64/67) ; reste le test de Florian","🏁","purge"],
 ["purge","Purge de l'historique git (dépôt Magichampi) · validée par Florian le 20 nov. · à lancer seulement quand Florian dit « go purge », après fusion des PR 56 et 57 ; toutes les PR ouvertes doivent être fusionnées avant le force-push","2026-11-20","≈ 15-25 k","✅"],
 ["vaud","Extension au canton de Vaud, socle (lot 1) : registre des 8 régions, bande de 1 km de chevauchement, hors ligne téléchargeable par région, fiche docs/extension-vaud.md","2026-11-20","≈ 100-130 k · réel : estimé 100-130 k (PR 52)","🏁"],
 ["wsl-all","Extension de la carte WSL (essences d'arbres) à toutes les cartes (8 régions, pipeline réutilisable) · les régions Vaud sont ensuite générées avec WSL","2026-11-20","≈ 20-40 k · réel : estimé 20-40 k (PR 59)","🏁","fribourg"],
 ["fribourg","Région Fribourg (déjà couverte par l'ancienne carte Riviera-Chablais) · coût à préciser par le fil Vaud","2026-11-20","≈ 20 k (+ 10 % de marge ≈ 22 k)","✅","ne"],
 ["masque","Case à cocher « Masquer les tâches terminées » dans la planification (état mémorisé, cumuls inchangés)","2026-11-20","≈ 5 k · réel : estimé ≈ 5 k","🏁","vd-cote"],
-["vd-cote","Région Vaud : La Côte / Nyon / Jura (à générer, après réponse à la carte de décision)","2026-11-21","≈ 250 k","❔","ne"],
-["vd-broye","Région Vaud : Broye (à générer, après réponse à la carte de décision)","2026-11-21","≈ 100 k","❔","ne"],
-["vd-vully","Région Vaud : Vully / Avenches (à générer, après réponse à la carte de décision)","2026-11-21","≈ 100 k","❔","ne"],
-["vd-chablais","Région Vaud : Chablais alpin (à générer, après réponse à la carte de décision)","2026-11-21","≈ 100 k","❔","ne"],
-["vd-paysdenhaut","Région Vaud : Pays-d'Enhaut / Diablerets (à générer, après réponse à la carte de décision)","2026-11-21","≈ 100 k","❔","ne"],
+["vd-cote","Région Vaud : La Côte / Nyon / Jura (8 régions fusionnées avec WSL, faite le 20 nov.)","2026-11-20","≈ 250 k · réel : estimé (≈ 600 k pour les 5 régions, non mesuré)","🏁","ne"],
+["vd-broye","Région Vaud : Broye (8 régions fusionnées avec WSL, faite le 20 nov.)","2026-11-20","≈ 100 k · réel : estimé (≈ 600 k pour les 5 régions, non mesuré)","🏁","ne"],
+["vd-vully","Région Vaud : Vully / Avenches (8 régions fusionnées avec WSL, faite le 20 nov.)","2026-11-20","≈ 100 k · réel : estimé (≈ 600 k pour les 5 régions, non mesuré)","🏁","ne"],
+["vd-chablais","Région Vaud : Chablais alpin (8 régions fusionnées avec WSL, faite le 20 nov.)","2026-11-20","≈ 100 k · réel : estimé (≈ 600 k pour les 5 régions, non mesuré)","🏁","ne"],
+["vd-paysdenhaut","Région Vaud : Pays-d'Enhaut / Diablerets (8 régions fusionnées avec WSL, faite le 20 nov.)","2026-11-20","≈ 100 k · réel : estimé (≈ 600 k pour les 5 régions, non mesuré)","🏁","ne"],
 ["ne","Extension NE (≈ 290 Mo), après Vaud","2026-11-28","≈ 20 k","✅"],
 ["ju","Extension JU (≈ 300 Mo), après Vaud","2026-11-28","≈ 20 k","✅"],
 ["ge","Extension GE (≈ 100 Mo), après Vaud","2026-11-28","≈ 12 k","✅"],
@@ -65,7 +66,7 @@ function load(){
  }
  st=(st||[]).filter(function(x){return byId[x.id]});
  st.forEach(function(x){var m=MOVED[x.id];if(m&&x.d==m[0])x.d=m[1]});
- var DONE={"wsl-all":1,masque:1,fusion:1,wsl:1,couleurs:1,modele:1,mailles:1,vapko:1,pente:1,unecarte:1,bandes:1,difficile:1,niveau:1,visibilite:1,opensource:1,vaud:1,coins:1};st.forEach(function(x){if(DONE[x.id]&&x.s!="🚫")x.s="🏁"}); /* terminé le 20 nov. */
+ var DONE={"vd-cote":1,"vd-broye":1,"vd-vully":1,"vd-chablais":1,"vd-paysdenhaut":1,worker:1,"wsl-all":1,masque:1,fusion:1,wsl:1,couleurs:1,modele:1,mailles:1,vapko:1,pente:1,unecarte:1,bandes:1,difficile:1,niveau:1,visibilite:1,opensource:1,vaud:1,coins:1};st.forEach(function(x){if(DONE[x.id]&&x.s!="🚫")x.s="🏁"}); /* terminé le 20 nov. */
  var GO={};st.forEach(function(x){if(GO[x.id]&&x.s=="❔")x.s="✅"}); /* lancé par Florian le 20 nov. */
  var seen={};st.forEach(function(x){seen[x.id]=1});
  D.forEach(function(r){if(seen[r.id])return;var n={id:r.id,s:r.s,d:r.d},k=-1;st.forEach(function(x,i){if(x.id==r.b)k=i});if(k<0)st.push(n);else st.splice(k,0,n)}); /* nouvelles lignes : avant leur ancre si elle existe, sinon en bas */
