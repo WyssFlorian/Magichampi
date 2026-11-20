@@ -1563,15 +1563,26 @@ let W_HOST=.1,W_ALT=.6;
 // Codes de la couche « wsl » : 0 = inconnu, 1..15 = classe WSL + 1. Pour une espèce qui nomme ses arbres hôtes (WSL_HOSTS), facteur = 1 si l'essence dominante
 // est un hôte, WSL_SAME (même type, feuillu ou résineux) ou WSL_OTHER sinon ; l'écart à 1 est réduit pour le hêtre et l'épicéa (surestimés) ; inconnu = moyenne
 // de l'espèce sur la région (comme le type de forêt inconnu). Poids W_WSL calibré par validation (blocs de 5 km).
-let W_WSL=.4,WSL_SAME=.6,WSL_OTHER=.3;const WSL_REL=[.8,.8,.8,.8,.8,.8,.6,.8,.6,.8,.8,.8,.8,.8,.8];  // fiabilité par classe (hêtre = 6, épicéa = 8)
+let W_WSL=.4,WSL_SAME=.6,WSL_OTHER=.3,WSL_NEAR=.9;const WSL_REL=[.8,.8,.8,.8,.8,.8,.6,.8,.6,.8,.8,.8,.8,.8,.8];  // fiabilité par classe (hêtre = 6, épicéa = 8)
+// 20.11.2026 (2) : trois groupes d'espèces, avec une puissance propre. N = hôtes étroits (pins, épicéa, sapin : lien quasi obligatoire), B = feuillus précis (chênes, châtaignier, hêtre, frêne...),
+// G = généralistes (le reste des espèces à hôtes nommés). Un hôte à moins de 50 m (anneaux de 25 et 50 m) compte presque comme un hôte (WSL_NEAR), car la carte WSL se trompe d'une cellule sur quatre.
+let W_WSL_N=1.6,W_WSL_B=1.2;const WSL_GRP={};
+"pinophilus deliciosus sparassis bovinus luteus turci vinosa mustelina paludosa decolorans badia lutescens glutinosus imbricatus tubaeformis varius clavatus".split(" ").forEach(s=>WSL_GRP[s]=1);
+"reticulatus cornucopioides virescens cyanoxantha vesca aurea luridus umbellatus praestans morelb".split(" ").forEach(s=>WSL_GRP[s]=2);
 const WSL_CONIF=[1,0,0,0,0,0,0,0,1,1,1,1,0,0,0];
-const WSL_HOSTS={edulis:[0,8,6],reticulatus:[12,13,5,6],pinophilus:[11,8,10,9],cibarius:[6,8,0],cornucopioides:[6,12,13],tubaeformis:[8,0],morelb:[7,2,3,1],repandum:[6,8,0],badia:[8,11,10],lutescens:[8,11],deliciosus:[11,10],sparassis:[11],virescens:[6,12,13],cyanoxantha:[6,12,13],erythropus:[6,8,0],glutinosus:[8,11],varius:[8],praestans:[6],vesca:[6,12,13],aurea:[6,12,13],turci:[11,10],vinosa:[8],mustelina:[8],integra:[8],imbricatus:[8],clavatus:[8,0],umbellatus:[12,13,6],bovinus:[11,10],luridus:[12,13,6],luteus:[11,10]};
+const WSL_HOSTS={edulis:[0,8,6],reticulatus:[12,13,5,6],pinophilus:[11,8,10,9],cibarius:[6,8,0],cornucopioides:[6,12,13],tubaeformis:[8,0],morelb:[7,2,3,1],repandum:[6,8,0],paludosa:[8,0],decolorans:[8,11,10,9],bicolor:[8,0,11,10],badia:[8,11,10],lutescens:[8,11],deliciosus:[11,10],sparassis:[11],virescens:[6,12,13],cyanoxantha:[6,12,13],erythropus:[6,8,0],glutinosus:[8,11],varius:[8],praestans:[6],vesca:[6,12,13],aurea:[6,12,13],turci:[11,10],vinosa:[8],mustelina:[8],integra:[8],imbricatus:[8],clavatus:[8,0],umbellatus:[12,13,6],bovinus:[11,10],luridus:[12,13,6],luteus:[11,10]};
 let WSL0={};const WSL_NAMES=["","sapin blanc","érable sycomore","aulne glutineux","aulne blanc","bouleau","châtaignier","hêtre","frêne","épicéa","pin cembro","pin de montagne","pin sylvestre","chêne sessile","chêne pédonculé","sorbier des oiseleurs"];
 const wslRaw=(k,H)=>H.includes(k)?1:(WSL_CONIF[k]===(WSL_CONIF[H[0]]||0)?WSL_SAME:WSL_OTHER);
-const wslVal=(k,H)=>{const r=WSL_REL[k];return 1-r*(1-wslRaw(k,H))};
-const wslF=(i,sp)=>{if(LITE||!W_WSL)return 1;const H=WSL_HOSTS[sp.id];if(!H||!G.wsl)return 1;const w=G.wsl[i];
-  if(w){return Math.pow(wslVal(w-1,H),W_WSL)}
-  let m=WSL0[sp.id];if(m==null){const h=new Float64Array(16);const n=G.wsl.length;for(let q=0;q<n;q+=7)if(G.fx[q]&&G.wsl[q])h[G.wsl[q]]++;let t=0,s=0;for(let k=1;k<16;k++){t+=h[k];s+=h[k]*wslVal(k-1,H)}m=WSL0[sp.id]=t?Math.pow(s/t,W_WSL):1}
+const wslVal=(k,H,near)=>{const r=WSL_REL[k];return 1-r*(1-(near?WSL_NEAR:wslRaw(k,H)))};
+const wslExp=sp=>{const g=WSL_GRP[sp.id];return g===1?W_WSL_N:g===2?W_WSL_B:W_WSL};
+// vrai si une cellule voisine (anneaux de 1 et 2 cellules, soit 25 et 50 m) a pour essence dominante un hôte
+function wslNear(i,H){const w=REG.cols,h=REG.rows,x=i%w,y=(i/w)|0,g=G.wsl;
+  for(let d=1;d<=2;d++)for(let dy=-d;dy<=d;dy++){const yy=y+dy;if(yy<0||yy>=h)continue;
+    for(let dx=-d;dx<=d;dx+=(dy===-d||dy===d)?1:2*d){const xx=x+dx;if(xx<0||xx>=w)continue;const v=g[yy*w+xx];if(v&&H.includes(v-1))return true}}
+  return false}
+const wslF=(i,sp)=>{const W=wslExp(sp);if(LITE||!W)return 1;const H=WSL_HOSTS[sp.id];if(!H||!G.wsl)return 1;const w=G.wsl[i];
+  if(w){const k=w-1;return Math.pow(wslVal(k,H,!H.includes(k)&&wslNear(i,H)),W)}
+  let m=WSL0[sp.id];if(m==null){const h=new Float64Array(16);const n=G.wsl.length;for(let q=0;q<n;q+=7)if(G.fx[q]&&G.wsl[q])h[G.wsl[q]]++;let t=0,s=0;for(let k=1;k<16;k++){t+=h[k];s+=h[k]*wslVal(k-1,H,false)}m=WSL0[sp.id]=t?Math.pow(s/t,W):1}
   return m};
 const hostW=(c,pref,soft)=>Math.pow(hostF(c,pref,soft),W_HOST),altW=(v,t)=>Math.pow(trap2(v,t),W_ALT);
 function aptAt(i,sp,r,ob){
