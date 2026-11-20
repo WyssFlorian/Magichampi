@@ -1157,7 +1157,7 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk">Transparence <input type="range" id="o-alpha" min="20" max="130" value="130" style="max-width:140px" aria-label="Opacité du score"></label>
         <p class="small" style="margin:-4px 0 0">Le score s'éclaircit aussi automatiquement en zoomant, pour voir la forêt dessous.</p>
         <label class="chk lite-hide"><input type="checkbox" id="o-sq"> Mailles SwissFungi 5 km</label>
-        <p class="small" style="margin:-4px 0 0">Trait plein : espèce signalée dans la maille.</p>
+        <p class="small" style="margin:-4px 0 0">Tirets vert clair ; maille légèrement teintée et plus visible si l'espèce y est signalée.</p>
         <label class="chk"><input type="checkbox" id="o-res" checked> Réserves et marais protégés</label>
         <label class="chk lite-hide"><input type="checkbox" id="o-obs" checked> <span class="obs-icon" aria-hidden="true" style="display:inline-block"></span> Observations iNaturalist</label>
         <p class="small" style="margin:-4px 0 0">Observations précises ; par espèce, seulement l'espèce choisie.</p>
@@ -1394,7 +1394,7 @@ let D,G,meta,meteo,fungi,sqNeighbours={};
 const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tier:1,hide:[]};
 try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if([0,1,2,3].includes(s.tier))state.tier=s.tier;{const c=SPECIES.find(x=>x.id===state.sp);if(c&&state.tier&&c.tier!==state.tier)state.tier=c.tier}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
-const LAY_IDS=["o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko"];
+const LAY_IDS=["o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-sq"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
 function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
@@ -2249,8 +2249,7 @@ function renderSquares(){
   Object.entries(meta.polys).forEach(([k,ring])=>{
     const per=list.map(sp=>({sp,c:sqCount(sp.key,k),last:(fungi[sp.key].squares[k]||[])[1]})).filter(x=>x.c);
     const n=per.reduce((a,x)=>a+x.c,0),hit=n>0;
-    const st={color:"#0b2a6f",weight:hit?3:1.5,opacity:.95,dashArray:hit?null:"5 4",fill:hit,fillColor:"#0b2a6f",fillOpacity:hit?.08:0,interactive:true};
-    sqLayer.addLayer(L.polygon(ring,{color:"#fff",weight:st.weight+2.5,opacity:.8,fill:false,interactive:false}));
+    const st={color:"#9be08f",weight:2,opacity:hit?.95:.6,dashArray:"6 5",fill:hit,fillColor:"#9be08f",fillOpacity:hit?.07:0,interactive:true};
     const p=L.polygon(ring,st);
     p.bindTooltip(!hit?`Aucun relevé ${YR_LAB[state.yr]} dans cette maille${multi?" pour les espèces affichées":" ("+list[0].fr+")"}`
       :multi?`Relevés ${YR_LAB[state.yr]} : `+per.map(x=>`${x.sp.fr} ${x.c}`).join(", ")
@@ -3337,7 +3336,7 @@ async function boot(){
   const zoomAlpha=z=>z<=13?1:z===14?.8:z===15?.6:z===16?.5:.42;
   const applyAlpha=()=>overlay.setOpacity($("o-alpha").value/130*zoomAlpha(Math.round(map.getZoom())));
   $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();
-  $("o-sq").onchange=renderSquares;
+  $("o-sq").onchange=()=>{saveLay();renderSquares()};
   setupCoinForm();setupShare();setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
   document.querySelectorAll("[data-act=tour]").forEach(b=>b.onclick=tourStart);
   {let seen=null;try{seen=localStorage.getItem("champi-tour2")}catch(e){seen="?"}if(!seen)setTimeout(tourStart,1200)}
