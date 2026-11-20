@@ -11,8 +11,8 @@ Demande de Florian (20 nov. 2026) : couvrir tout le canton, affichage découpé 
 | nyn | La Côte, Nyon, Jura vaudois (Vallée de Joux ouest) | **publiée (lot 2)** | 6,06 – 46,28 – 6,52 – 46,70 |
 | bro | Broye (Moudon, Lucens, Payerne) | **publiée (lot 3)** | 6,68 – 46,60 – 7,00 – 46,99 |
 | vul | Vully et Avenches | **publiée (lot 4)** | 6,98 – 46,78 – 7,26 – 46,99 |
-| chb | Chablais alpin (Bex, Ormonts, Gryon) | à faire | 6,74 – 46,18 – 7,26 – 46,37 |
-| pde | Pays-d'Enhaut et Diablerets | à faire | 7,04 – 46,35 – 7,26 – 46,62 |
+| chb | Chablais alpin (Bex, Ormonts, Gryon) | **publiée (lot 5)** | 6,74 – 46,18 – 7,26 – 46,37 |
+| pde | Pays-d'Enhaut et Diablerets | **publiée (lot 6)** | 7,04 – 46,35 – 7,26 – 46,62 |
 
 Reste non couvert : environ 30 km² d'eau du lac de Neuchâtel (aucune forêt).
 Les emprises nominales voisines se recouvrent déjà d'environ 1,5 km ; chaque nouvelle région reçoit en plus une bande de 1 km (`bbox` de `zones.js`), soit au moins 2,5 km de recouvrement. Les trois régions publiées gardent leurs emprises (pas de nouvelle génération).
@@ -63,3 +63,11 @@ Même chaîne que le lot 2 (`pipeline/vd/run_zone.sh bro` puis `finish_zone.sh b
 
 ## Lot 4 : Vully et Avenches (`vul/`)
 Même chaîne. Couche WSL : 84,3 % de la forêt classée. Région petite (≈ 50 Mo). La région Riviera-Chablais est renommée « Riviera-Chablais et Veveyse (FR) » : ses données contenaient déjà la Veveyse fribourgeoise, qui n'a donc pas besoin d'être régénérée (liste des régions et téléchargement hors ligne).
+
+## Lots 5 et 6 : Chablais alpin (`chb/`) et Pays-d'Enhaut (`pde/`)
+Même chaîne que les lots 2 à 4. Couche WSL sur la forêt de l'emprise : 86,7 % (chb) et 84,0 % (pde) des cellules de forêt de 25 m. Deux régions de montagne : une grande partie de l'emprise est hors forêt, et les espèces d'altitude sont moins bien classées par le WSL.
+
+## Bilan (20 nov. 2026)
+Tout le canton est couvert par 8 régions (≈ 716 Mo de site : ple 120, lsn 41, gdv 118, nyn 107, bro 103, vul 53, chb 103, pde 72 Mo, plus le reste). Le site approche 3/4 de la limite recommandée de 1 Go pour GitHub Pages : une extension à d'autres cantons demandera de réduire le fond de carte (carte nationale seule, zoom 14 au plus) ou de passer par un hébergement de fichiers statiques.
+Reste à faire (hors périmètre de cette extension) : sorties des sociétés de mycologie et zones de tir militaires dans les nouvelles régions ; lignes de bus des arrêts ; vérification des mailles de morilles ; validation du modèle sur les régions alpines.
+Génération : scripts `pipeline/vd/` du dépôt privé app-champignons (`run_zone.sh <id>` puis `finish_zone.sh <id> <raster WSL>` dans un clone de ce dépôt).
