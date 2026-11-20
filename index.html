@@ -1589,7 +1589,7 @@ function aptAt(i,sp,r,ob){
 // confirmation par VOS coins de l'espèce (y compris ceux importés depuis des observations iNaturalist) : bonus de +50 % au point, décroissant (250 m), nul au-delà de 1 km
 const OB_B=.5,OB_L=250,OB_MAX=1000;
 // Observations iNaturalist agrégées (case de 0,005° × 0,0075°, jamais de point brut), bloc écrit par tools/inat_bonus_public.py. Elles relèvent le score PUBLIC comme vos coins
-// (maximum, jamais une somme : un lieu présent dans les deux n'est pas compté deux fois) et ne servent ni à la calibration ni à la validation (aptAt les ignore).
+// (maximum, jamais une somme : un lieu présent dans les deux n'est pas compté deux fois) et ne servent ni à la calibration ni à la validation (la validation appelle aptAt avec un bonus nul ; staticFor exclut aussi le bonus de l'aptitude maximale des pourcentages).
 /*PUB_OBS_BEGIN*/const PUB_OBS={"badia":[[46.5425,6.79875],[46.5675,6.69375],[46.5675,6.70125],[46.5725,6.69375],[46.5725,6.70125],[46.5875,6.71625],[46.6625,6.55875],[46.6825,6.63375]],"cornucopioides":[[46.5225,6.57375],[46.5225,6.58125],[46.5325,6.67125],[46.5375,6.67125],[46.5475,6.67875],[46.6025,6.36375],[46.6175,6.48375],[46.6225,6.48375],[46.6225,6.49125],[46.6425,6.43125],[46.6625,6.48375]],"cyanoxantha":[[46.6175,6.49125],[46.6675,6.45375]],"edulis":[[46.3825,7.04625],[46.5425,6.79875],[46.5725,6.73875],[46.5725,6.74625],[46.5825,6.66375],[46.5925,6.66375],[46.7875,6.49875],[46.7925,6.51375]],"procera":[[46.4875,6.82875],[46.4925,6.84375],[46.4925,6.92625],[46.5475,6.37125],[46.5675,6.34875],[46.5675,6.64125],[46.5725,6.67875]],"repandum":[[46.4925,6.92625]],"tubaeformis":[[46.4875,6.82875],[46.4925,6.83625],[46.5425,6.79875],[46.5575,6.77625],[46.5725,6.69375],[46.5925,6.69375],[46.6275,6.49125],[46.6425,6.43125],[46.6725,6.46125],[46.7525,6.50625]]};/*PUB_OBS_END*/
 function obsBonus(sp){
   const n=meta.rows*meta.cols,ob=new Float32Array(n),lat=L.CRS.EPSG3857.unproject(L.point(meta.x0,meta.y1-meta.rows*meta.res/2)).lat,gres=meta.res*Math.cos(lat*Math.PI/180),R=Math.ceil(OB_MAX/gres);
@@ -1610,16 +1610,16 @@ function staticFor(sp){
   if(!SCR||SCR.A.length<n)SCR={A:new Float32Array(n),bin:new Uint32Array(n),H:new Uint32Array((1<<18)+1)};
   const A=SCR.A,bin=SCR.bin,H=SCR.H;H.fill(0);
   const rf=new Float32Array(meta.squares.length).fill(-1),ob=obsBonus(sp),SC=new Uint8Array(n).fill(255);
-  let m=0,amax=0;
+  let m=0,amax=0;  // amax : maximum de l'aptitude SANS le bonus d'observations (même échelle que les seuils de classes et la calibration)
   for(let i=0;i<n;i++){
     if(!usable(i)){A[i]=-1;continue}
     const sid=G.sq[i];let r=rf[sid];if(r<0)r=rf[sid]=regionF(sid,sp.key)[0];
-    A[i]=aptAt(i,sp,r,ob);SC[i]=thrClass(A[i],sp);if(A[i]>amax)amax=A[i];m++;
+    A[i]=aptAt(i,sp,r,ob);SC[i]=thrClass(A[i],sp);const a0=A[i]/(1+ob[i]);if(a0>amax)amax=a0;m++;
   }
-  // rang (percentile) de chaque cellule en temps linéaire : histogramme fin de l'aptitude (2^18 classes, aptitude entre 0 et 1),
+  // rang (percentile) de chaque cellule en temps linéaire : histogramme fin de l'aptitude (2^18 classes couvrant 0 à 2 : l'aptitude dépasse 1 avec le facteur d'humidité (jusqu'à 1,15) et le bonus d'observations (jusqu'à ×1,5), maximum possible 1,73),
   // puis effectifs cumulés ; les valeurs d'une même classe sont traitées comme ex aequo (rang moyen)
   const NB=1<<18;
-  for(let i=0;i<n;i++){const a=A[i];if(a<0)continue;const k=Math.min(NB-1,(a*NB)|0);bin[i]=k;H[k+1]++}
+  for(let i=0;i<n;i++){const a=A[i];if(a<0)continue;const k=Math.min(NB-1,(a*(NB/2))|0);bin[i]=k;H[k+1]++}
   for(let k=1;k<=NB;k++)H[k]+=H[k-1];
   const P=new Uint16Array(n),den=Math.max(1,m-1);
   for(let i=0;i<n;i++){if(A[i]<0)continue;const k=bin[i];P[i]=1+Math.round((H[k]+H[k+1]-1)/2/den*P_SCALE)}
