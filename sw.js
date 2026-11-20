@@ -1,5 +1,5 @@
-// version v4-20nov-hab
-const SHELL="cartes-shell-v4-20nov-hab",DATA="cartes-donnees-v2";
+// version v5-20nov-d8d10
+const SHELL="cartes-shell-v5-20nov-d8d10",DATA="cartes-donnees-v2";
 self.addEventListener("install",e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(["./","leaflet.js","manifest.webmanifest","icon.svg"])).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>(k.startsWith("cartes-shell-")&&k!==SHELL)||k==="cartes-donnees").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 function fresh(u){return /\/$|\.html$|data\.json$|zone\.js$|files\.json$|sw\.js$/.test(u.pathname)}
