@@ -1,5 +1,5 @@
 // Cloudflare Worker : reçoit des envois DÉJÀ CHIFFRÉS (le Worker ne peut pas les lire) et les range dans un dépôt GitHub privé.
-// Secrets (jamais dans le code) : GITHUB_TOKEN (jeton à droits limités, Contents lecture/écriture sur le seul dépôt privé).
+// Secrets (jamais dans le code) : GITHUB_TOKEN (jeton à droits limités sur le seul dépôt privé : Contents et Issues, lecture/écriture).
 // Variables (wrangler.toml) : REPO ("wyssflorian/magichampi-coins-prive"), ALLOWED_ORIGIN.
 // Aucune adresse IP, aucun journal : l'IP ne sert qu'au compteur anti-abus de Cloudflare (binding RL), sans être stockée par ce code.
 const MAX_BODY = 64 * 1024;
@@ -53,15 +53,30 @@ async function remove(env, b) {
   return json(env, 200, { deleted: false });   // déjà absent : même réponse, pour ne rien révéler
 }
 
+async function contact(env, b) {
+  // formulaire de contact : crée une « issue » dans le dépôt privé ; GitHub envoie alors un e-mail au propriétaire, dont l'adresse n'apparaît jamais ici
+  if (!b || typeof b.msg !== "string") return json(env, 400, { error: "format" });
+  if (b.website) return json(env, 200, { ok: true });          // champ-piège invisible : les robots le remplissent
+  const msg = b.msg.trim(), reply = typeof b.reply === "string" ? b.reply.trim() : "";
+  const topic = ["suppression", "acces", "question", "autre"].includes(b.topic) ? b.topic : "autre";
+  if (msg.length < 5 || msg.length > 2000 || reply.length > 200) return json(env, 400, { error: "format" });
+  const fence = (t) => "```text\n" + t.replace(/`/g, "'").replace(/@/g, "(at)") + "\n```";   // pas de @mentions, pas de mise en forme
+  const body = `**Sujet** : ${topic}\n\n**Message**\n${fence(msg)}\n\n**Réponse à** : ${reply ? fence(reply) : "(non indiqué)"}`;
+  const r = await fetch(`https://api.github.com/repos/${env.REPO}/issues`, { method: "POST",
+    headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "User-Agent": "champi-partage", "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Contact carte : " + topic, body }) });
+  return r.ok ? json(env, 200, { ok: true }) : json(env, 502, { error: "envoi" });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(env) });
-    if (req.method !== "POST" || (u.pathname !== "/submit" && u.pathname !== "/delete")) return json(env, 404, { error: "introuvable" });
+    if (req.method !== "POST" || (u.pathname !== "/submit" && u.pathname !== "/delete" && u.pathname !== "/contact")) return json(env, 404, { error: "introuvable" });
     if (req.headers.get("Origin") !== env.ALLOWED_ORIGIN) return json(env, 403, { error: "origine" });
     if (!(req.headers.get("content-type") || "").includes("application/json")) return json(env, 415, { error: "type" });
     if (env.RL) { const ok = await env.RL.limit({ key: req.headers.get("CF-Connecting-IP") || "?" }); if (!ok.success) return json(env, 429, { error: "trop de requetes" }); }
     const b = await readBody(req);
-    return u.pathname === "/submit" ? submit(env, b) : remove(env, b);
+    return u.pathname === "/submit" ? submit(env, b) : u.pathname === "/contact" ? contact(env, b) : remove(env, b);
   },
 };

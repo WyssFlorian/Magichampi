@@ -5,9 +5,10 @@ import { encrypt, decrypt } from "./crypto.mjs";
 import assert from "node:assert/strict";
 const kp = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
 const pub = await crypto.subtle.exportKey("jwk", kp.publicKey), priv = await crypto.subtle.exportKey("jwk", kp.privateKey);
-const files = new Map();
+const files = new Map(), issues = [];
 globalThis.fetch = async (url, init = {}) => {
   const p = new URL(url).pathname.replace(/^\/repos\/[^/]+\/[^/]+\/contents\//, ""), m = init.method || "GET", body = init.body && JSON.parse(init.body);
+  if (m === "POST" && /\/issues$/.test(new URL(url).pathname)) { issues.push(body); return new Response("{}", { status: 201 }); }
   if (m === "PUT") { files.set(p, Buffer.from(body.content, "base64").toString()); return new Response("{}", { status: 201 }); }
   if (m === "DELETE") { files.delete(p); return new Response("{}"); }
   return files.has(p) ? new Response(JSON.stringify({ sha: "x", content: Buffer.from(files.get(p)).toString("base64") })) : new Response("{}", { status: 404 });
@@ -31,4 +32,8 @@ assert.equal((await call("/delete", { id, secret: "x".repeat(32), months: [month
 assert.equal(files.size, 1);
 assert.equal((await (await call("/delete", { id, secret, months: [month] })).json()).deleted, true);
 assert.equal(files.size, 0);
-console.log("OK : chiffrement, stockage illisible, refus origine/format, suppression par secret.");
+assert.equal((await call("/contact", { msg: "Bonjour @autre `x` effacez mes coins", reply: "moi@exemple.ch", topic: "suppression" })).status, 200);
+assert.ok(issues.length === 1 && !issues[0].body.includes("@autre") && issues[0].title.includes("suppression"));
+assert.equal((await call("/contact", { msg: "robot", website: "http://spam" })).status, 200); assert.equal(issues.length, 1, "champ-piège");
+assert.equal((await call("/contact", { msg: "x" })).status, 400);
+console.log("OK : chiffrement, stockage illisible, refus origine/format, suppression par secret, formulaire de contact.");
