@@ -1120,6 +1120,18 @@ details.more[open]>summary{margin-bottom:4px}
         <textarea id="imp-text" rows="4" aria-label="Message reçu"></textarea>
         <div class="row" style="gap:6px;margin-top:6px"><label class="btn" style="cursor:pointer">📄 Importer un fichier<input id="imp-file" type="file" accept=".txt,text/plain" hidden></label><button class="btn primary" id="imp-go">Ajouter ces coins</button><span class="small" id="imp-msg" role="status"></span></div>
       </div>
+      <details class="coin-more" id="sec-share-enc"><summary>Aider à améliorer la carte (envoi chiffré)</summary>
+        <div id="se-off" class="small" hidden>Cette fonction n'est pas encore activée sur cette carte.</div>
+        <div id="se-on">
+        <p class="small" style="margin:6px 0">Vous pouvez envoyer vos coins <b>chiffrés</b> à l'auteur pour affiner le modèle (calage des seuils et des espèces). Les données sont chiffrées dans votre navigateur avec la clé publique de l'auteur : le serveur de transit ne peut pas les lire, et rien n'est jamais affiché sur la carte.</p>
+        <p class="small" style="margin:0 0 6px"><b>Envoyé</b> : pour chaque coin avec une espèce : l'espèce, la position (au choix) et le mois. <b>Jamais envoyé</b> : le nom du coin, les photos, votre identité, votre adresse IP (non conservée), vos alertes.</p>
+        <label class="cf-l">Position<select id="se-prec" class="coin-sel"><option value="blur">Floutée (carré d'environ 500 m)</option><option value="exact">Exacte (à quelques mètres)</option></select></label>
+        <label class="chk" style="margin:6px 0"><input type="checkbox" id="se-consent"> <span>J'accepte que mes coins sélectionnés soient envoyés chiffrés à l'auteur, uniquement pour améliorer le modèle. Ils ne seront ni publiés, ni transmis, ni utilisés autrement. Je peux les faire effacer à tout moment.</span></label>
+        <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn primary" id="se-send" type="button">Envoyer mes coins</button><button class="btn" id="se-del" type="button">Effacer mes envois</button><span class="small" id="se-msg" role="status"></span></div>
+        <details style="margin-top:6px"><summary class="small">Code de suppression (à garder)</summary><p class="small" style="margin:4px 0">Ce code prouve que les envois sont les vôtres. Gardez-le : si vous videz votre navigateur, il permet d'effacer vos envois plus tard.</p><textarea id="se-code" rows="2" aria-label="Code de suppression"></textarea><div class="row" style="gap:6px;margin-top:4px"><button class="btn" id="se-del-code" type="button">Effacer avec ce code</button></div></details>
+        <p class="small" style="margin:6px 0 0">Conformément à la loi suisse sur la protection des données (LPD), l'envoi est volontaire ; la finalité est limitée à l'amélioration du modèle ; les données sont conservées dans un dépôt privé et effacées sur demande. Une position exacte dans un endroit privé peut identifier un lieu : préférez « floutée » si vous hésitez.</p>
+        </div>
+      </details>
       <p class="small coin-privacy">🔒 <b>Confidentialité</b> : vos coins sont enregistrés dans ce navigateur, sur cet appareil. Si vous êtes connecté à claude.ai, une copie privée (sans les photos) est aussi gardée en ligne dans votre espace personnel de cette carte, pour les recharger automatiquement après un vidage du navigateur ou sur un autre appareil : ni l'auteur de la carte ni les autres personnes qui l'ouvrent ne peuvent la lire. Les coins ne sont partagés que si vous le faites vous-même (« Partager mes coins »), et la personne qui les reçoit peut alors les transmettre. Les photos restent sur l'appareil : gardez une sauvegarde (💾) pour les conserver.</p>
       </details>
     </details>
@@ -2760,6 +2772,45 @@ function fillShare(){
   $("sh-wa").href=none?"#":"https://wa.me/?text="+encodeURIComponent(msg);
   $("sh-mail").href=none?"#":"mailto:?subject="+encodeURIComponent("Mes coins à champignons")+"&body="+encodeURIComponent(msg);
   ["sh-wa","sh-mail","sh-copy","sh-native"].forEach(id=>{const e=$(id);e.style.opacity=none?.45:1;e.style.pointerEvents=none?"none":""})}
+/* ---------- envoi chiffré des coins à l'auteur (voir partage/ et docs/partage-chiffre.md) ----------
+   ECDH P-256 éphémère + HKDF-SHA256 + AES-256-GCM, même algorithme que partage/crypto.mjs. Rien n'est envoyé sans case cochée. */
+const SHARE_CFG={url:"",pub:null};  // à remplir après déploiement du Worker : url ("https://….workers.dev") et pub (clé publique JWK de partage/keygen.mjs)
+const SE_KEY="champi-partage";
+const seState=()=>{try{const o=JSON.parse(localStorage.getItem(SE_KEY)||"null");if(o&&o.secret)return o}catch(e){}return {secret:"",sent:{},subs:[]}};
+const seSave=o=>{try{localStorage.setItem(SE_KEY,JSON.stringify(o))}catch(e){}};
+const seB64=u8=>{let x="";u8.forEach(c=>x+=String.fromCharCode(c));return btoa(x).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")};
+const seHex=u8=>[...u8].map(b=>b.toString(16).padStart(2,"0")).join("");
+async function seEncrypt(pub,obj){
+  const E=new TextEncoder(),sub=crypto.subtle,P={name:"ECDH",namedCurve:"P-256"};
+  const pk=await sub.importKey("jwk",pub,P,false,[]),eph=await sub.generateKey(P,true,["deriveBits"]);
+  const sh=await sub.deriveBits({name:"ECDH",public:pk},eph.privateKey,256),hk=await sub.importKey("raw",sh,"HKDF",false,["deriveKey"]);
+  const key=await sub.deriveKey({name:"HKDF",hash:"SHA-256",salt:new Uint8Array(32),info:E.encode("champi-partage-v1")},hk,{name:"AES-GCM",length:256},false,["encrypt"]);
+  const iv=crypto.getRandomValues(new Uint8Array(12)),ct=new Uint8Array(await sub.encrypt({name:"AES-GCM",iv},key,E.encode(JSON.stringify(obj))));
+  return {v:1,epk:seB64(new Uint8Array(await sub.exportKey("raw",eph.publicKey))),iv:seB64(iv),ct:seB64(ct)}}
+const seBlur=(v,step)=>+(Math.floor(v/step)*step+step/2).toFixed(5);
+function seSetup(){
+  const on=!!(SHARE_CFG.url&&SHARE_CFG.pub&&window.crypto&&crypto.subtle);$("se-on").hidden=!on;$("se-off").hidden=on;if(!on)return;
+  const msg=t=>$("se-msg").textContent=t,post=async(path,b)=>{const r=await fetch(SHARE_CFG.url+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});if(!r.ok)throw new Error(r.status);return r.json()};
+  const showCode=()=>{const o=seState();$("se-code").value=o.secret&&o.subs.length?seB64(new TextEncoder().encode(JSON.stringify({s:o.secret,u:o.subs}))):""};showCode();
+  $("se-send").onclick=async()=>{
+    if(!$("se-consent").checked){msg("Cochez d'abord la case d'accord.");return}
+    const o=seState();if(!o.secret)o.secret=seHex(crypto.getRandomValues(new Uint8Array(16)));
+    const todo=state.coins.filter(c=>c.sp&&!o.sent[c.id]&&isFinite(c.lat)&&isFinite(c.lng));
+    if(!todo.length){msg("Rien de nouveau à envoyer (seuls les coins avec une espèce partent, une seule fois).");return}
+    const blur=$("se-prec").value==="blur";
+    const coins=todo.map(c=>({sp:c.sp,lat:blur?seBlur(c.lat,.005):+c.lat.toFixed(5),lng:blur?seBlur(c.lng,.0075):+c.lng.toFixed(5),prec:blur?"500m":"exact",...(c.date?{date:c.date.slice(0,7)}:{})}));
+    msg("Envoi…");
+    try{
+      const env=await seEncrypt(SHARE_CFG.pub,{coins}),dh=seHex(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(o.secret))));
+      const r=await post("/submit",{...env,dh});todo.forEach(c=>o.sent[c.id]=1);o.subs.push({i:r.id,m:new Date().toISOString().slice(0,7)});seSave(o);showCode();
+      msg(`${todo.length} coin${todo.length>1?"s":""} envoyé${todo.length>1?"s":""}, chiffré${todo.length>1?"s":""}. Merci !`);$("se-consent").checked=false}
+    catch(e){msg("Échec de l'envoi : réessayez plus tard.")}};
+  const erase=async(secret,subs,after)=>{
+    if(!subs.length){msg("Aucun envoi à effacer.");return}
+    let ok=0;try{for(const u of subs){const r=await post("/delete",{id:u.i,secret,months:[u.m]});ok++}}catch(e){msg("Échec : réessayez plus tard.");return}
+    after();msg(`${ok} envoi${ok>1?"s":""} effacé${ok>1?"s":""}.`)};
+  $("se-del").onclick=()=>{const o=seState();erase(o.secret,o.subs,()=>{seSave({secret:o.secret,sent:{},subs:[]});showCode()})};
+  $("se-del-code").onclick=()=>{try{const c=JSON.parse(unb64u($("se-code").value.trim()));if(!c.s||!Array.isArray(c.u))throw 0;erase(c.s,c.u,()=>{const o=seState();if(o.secret===c.s){seSave({secret:o.secret,sent:{},subs:[]})}showCode()})}catch(e){msg("Code illisible.")}}}
 function addCoin(lat,lng){openCoinForm(-1,L.latLng(lat,lng))}
 
 // petit écran : la fiche s'ouvre dans un panneau en bas de la carte au lieu d'une bulle
@@ -3470,7 +3521,7 @@ async function boot(){
   const applyAlpha=()=>overlay.setOpacity($("o-alpha").value/130*zoomAlpha(Math.round(map.getZoom())));
   $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();
   $("o-sq").onchange=()=>{saveLay();renderSquares()};
-  setupCoinForm();setupShare();setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
+  setupCoinForm();setupShare();try{seSetup()}catch(e){console.warn(e)}setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
   document.querySelectorAll("[data-act=tour]").forEach(b=>b.onclick=tourStart);
   {let seen=null;try{seen=localStorage.getItem("champi-tour2")}catch(e){seen="?"}if(!seen)setTimeout(tourStart,1200)}
   state.view=state.view||"zone";
