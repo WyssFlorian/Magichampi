@@ -944,7 +944,7 @@ details.more[open]>summary{margin-bottom:4px}
 .sp .sp-i{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;border:1px solid currentColor;font:italic 600 10px/13px Georgia,serif;text-align:center;opacity:.7;cursor:pointer}
 .sp .sp-i:hover,.sp .sp-i:focus{opacity:1}
 .sp .sp-i::before{content:"";position:absolute;inset:-6px}
-.sp-pk{border-collapse:collapse;font-variant-numeric:tabular-nums}.sp-pk td{padding:1px 10px 1px 0}
+.sp-pk{border-collapse:collapse;font-variant-numeric:tabular-nums}.sp-pk td,.sp-pk th{padding:1px 10px 1px 0;text-align:left}.sp-pk th{font-weight:600;color:var(--muted)}
 .tier-info .ti-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .tier-info .ti-head b{font-size:13px}
 .tier-info .ti-x{border:0;background:none;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:0 2px}
@@ -1581,6 +1581,11 @@ function peakDay(sp,alt){const k=sp.id+"|"+alt;if(PEAKC[k]!==undefined)return PE
     if(v>best+1e-9){best=v;bd=[d]}else if(Math.abs(v-best)<=1e-9)bd.push(d)}
   const d=bd[Math.floor(bd.length/2)];return PEAKC[k]=new Date(Date.UTC(2026,0,1+d,12)).toISOString().slice(0,10)}
 const peakTxt=(sp,alt)=>fmtDate(peakDay(sp,alt));
+// début et fin de saison : premier et dernier jour où l'indice de saison (même fonction que le modèle) atteint SEASON_MIN
+const SPANC={};
+function seasonSpan(sp,alt){const k=sp.id+"|"+alt;if(SPANC[k])return SPANC[k];
+  let a=-1,z=-1;for(let d=0;d<365;d++){const s=new Date(Date.UTC(2026,0,1+d,12)).toISOString().slice(0,10);if(seasonF(sp.key,s,alt)>=SEASON_MIN){if(a<0)a=d;z=d}}
+  const f=d=>d<0?"–":fmtDate(new Date(Date.UTC(2026,0,1+d,12)).toISOString().slice(0,10));return SPANC[k]=[f(a),f(z)]}
 const pOf=(st,i)=>{const v=st.P[i];return v===P_NONE?-1:(v-1)/P_SCALE};
 let NZ=0,zoneHa=.04;
 function trap2(v,t){return Math.max(.03,trap(v,t))}
@@ -2043,14 +2048,16 @@ function showSpInfo(id){
   el.dataset.sp=id;el.dataset.tier="";
   const fs=fungi[sp.key],n=fsCount(fs),HOST={conif:"conifères",broad:"feuillus",both:"conifères et feuillus",any:"tous types de forêt"};
   const rng=a=>`${a[1]}–${a[2]} m (tolérance ${a[0]}–${a[3]} m)`,rt=a=>`${a[1]}–${a[2]} °C (tolérance ${a[0]}–${a[3]} °C)`;
-  const pk=[400,800,1200,1600].map(a=>`<tr><td>${a} m</td><td>${peakTxt(sp,a)}</td></tr>`).join("");
+  const pk=`<tr><th>Altitude</th><th>Début</th><th>Pic</th><th>Fin</th><th>Aptitude</th></tr>`+[400,800,1200,1600].map(a=>{const s=seasonSpan(sp,a);return `<tr><td>${a} m</td><td>${s[0]}</td><td>${peakTxt(sp,a)}</td><td>${s[1]}</td><td>${Math.round(100*altW(a,sp.alt))} %</td></tr>`}).join("");
+  const MO=sp.moist>0?"apprécie les sols frais et humides (+15 % sur le relief le plus humide)":sp.moist<0?"préfère les sols plutôt secs (+15 % sur le relief le plus sec)":"indifférente au relief humide ou sec";
   el.innerHTML=`<div class="ti-head"><b>${esc(sp.fr)} <i>${esc(sp.la)}</i></b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
    `<div class="ti-safe"><b>Prudence.</b> Ne consommez rien sans le contrôle d'un contrôleur officiel (VAPKO). Tox Info Suisse : 145.</div>`+
    `<p style="margin:4px 0"><b>Catégorie :</b> ${esc(TIER_NAMES[sp.tier])}${sp.weak?` · <span class="weak">fiabilité faible</span> ${esc(sp.weak)}`:""}</p>`+
    `<p style="margin:4px 0">${sp.eat?esc(sp.eat)+" ":""}${sp.taste?`Goût : ${esc(sp.taste)}`:""}</p>`+
    `<p style="margin:4px 0"><b>Associé à :</b> ${esc(sp.hostTxt||HOST[sp.host]||"")}</p>`+
    `<p style="margin:4px 0"><b>Altitude favorable :</b> ${rng(sp.alt)}<br><b>Température favorable :</b> ${rt(sp.temp)}<br><b>Gel :</b> facteur ${sp.frost} par jour de gel</p>`+
-   `<p style="margin:4px 0"><b>Pic de saison</b> (d'après les relevés SwissFungi, décalé d'une semaine par 250 m au-dessus de 600 m) :</p><table class="sp-pk">${pk}</table>`+
+   `<p style="margin:4px 0"><b>Humidité :</b> ${MO}. En conditions du moment, l'eau du sol compte pour toutes les espèces : effet nul sous 35 % de la réserve en eau, plein au-dessus de 80 %.</p>`+
+   `<p style="margin:4px 0"><b>Saison</b> (relevés SwissFungi ; début et fin = indice de saison ≥ ${Math.round(SEASON_MIN*100)} % ; décalage d'une semaine par 250 m au-dessus de 600 m). « Aptitude » = valeur maximale du facteur d'altitude du modèle à cette altitude (100 % = optimum) :</p><table class="sp-pk">${pk}</table>`+
    `<p style="margin:4px 0"><b>Relevés dans la région :</b> ${n}</p>`+
    `<p style="margin:4px 0"><b>Confusions :</b> ${esc(sp.look)}</p>`;
   el.querySelector(".ti-x").onclick=()=>{el.hidden=true};
