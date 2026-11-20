@@ -1207,7 +1207,10 @@ details.more[open]>summary{margin-bottom:4px}
       <div class="menu-page" data-t="Météo et outils"><h3>Météo et outils</h3>
       <p class="small" id="upd" style="margin:6px 0 10px"><span id="upd-lab"></span></p>
         <div class="tool-btns"><button class="btn tool-big" type="button" data-act="tour"><b>? Guide</b><span>Revoir la visite animée</span></button><button class="btn tool-big" type="button" data-act="off" title="Télécharger toute la carte pour l'utiliser sans réseau"></button></div>
-        <p class="small" style="margin:10px 0 0">« Actualiser » (sous la date de référence, bouton « i ») recharge les prévisions de MétéoSuisse. « Hors ligne » télécharge toute la carte (<span class='mb'></span>) pour l'utiliser sans réseau.</p>
+        <p class="small" style="margin:10px 0 0">« Actualiser » (sous la date de référence, bouton « i ») recharge les prévisions de MétéoSuisse. « Hors ligne » télécharge toute la carte de la région affichée (<span class='mb'></span>) pour l'utiliser sans réseau.</p>
+        <h4 style="margin:14px 0 4px">Régions hors ligne</h4>
+        <p class="small" style="margin:0 0 6px">Chaque région se télécharge séparément ; elles se recouvrent d'au moins 1 km, pour passer de l'une à l'autre sans trou.</p>
+        <div id="off-zones"></div>
       </div>
       <div class="menu-page" data-t="Calcul du score" id="menu-score"><h3>Comment le score est calculé</h3>
       <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue × observations proches. Elle ne dépend pas de la météo.</p>
@@ -1261,15 +1264,16 @@ details.more[open]>summary{margin-bottom:4px}
 </div>
 
 <script src="leaflet.js"></script>
+<script src="zones.js"></script>
 <script>
-// Région : ?r=ple|lsn|gdv, sinon la dernière utilisée, sinon Riviera-Chablais
+// Région : ?r=<id d'une région de zones.js>, sinon la dernière utilisée, sinon Riviera-Chablais
 // Carte unique « Canton de Vaud » : les données sont préparées par région ; la région chargée est celle de la vue (dernière position, ou ?r=ple|lsn|gdv)
-var ZBOX={ple:[46.35,6.74,46.62,7.06],lsn:[46.45,6.45,46.63,6.75],gdv:[46.53,6.26,46.86,6.7]};
+var ZBOX={},ZNAME={};ZONES.forEach(function(z){if(z.ok){ZBOX[z.id]=z.bbox;ZNAME[z.id]=z.nom}});
 function zoneAt(la,lo,pref){var k,c=[];for(k in ZBOX){var z=ZBOX[k];if(la>=z[0]&&la<=z[2]&&lo>=z[1]&&lo<=z[3])c.push(k)}return c.indexOf(pref)>=0?pref:(c[0]||"")}
 var ZID=(new URLSearchParams(location.search).get("r"))||"",SAVED_VIEW=null;
 try{SAVED_VIEW=JSON.parse(localStorage.getItem("champi-view-pos")||"null")}catch(e){}
-if(!/^(ple|lsn|gdv)$/.test(ZID)){var zs="";try{zs=localStorage.getItem("champi-zone")||""}catch(e){}
-  ZID=(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],zs))||(/^(ple|lsn|gdv)$/.test(zs)?zs:"ple")}
+if(!ZBOX[ZID]){var zs="";try{zs=localStorage.getItem("champi-zone")||""}catch(e){}
+  ZID=(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],zs))||(ZBOX[zs]?zs:"ple")}
 else SAVED_VIEW=null;
 try{localStorage.setItem("champi-zone",ZID)}catch(e){}
 var ZD=ZID+"/";document.write('<script src="'+ZD+'zone.js"><\/script>');
@@ -3308,7 +3312,7 @@ async function boot(){
   {let swT;map.on("moveend",()=>{const c=map.getCenter(),z=map.getZoom();
     try{localStorage.setItem("champi-view-pos",JSON.stringify([+c.lat.toFixed(5),+c.lng.toFixed(5),z]))}catch(e){}
     clearTimeout(swT);swT=setTimeout(()=>{if(state.adding)return;const n=zoneAt(c.lat,c.lng,ZID);
-      if(n&&n!==ZID){const nm={ple:"Riviera-Chablais",lsn:"Région lausannoise",gdv:"Gros-de-Vaud"}[n];
+      if(n&&n!==ZID){const nm=ZNAME[n];
         const m=document.createElement("div");m.setAttribute("role","status");m.style.cssText="position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:3000;background:#2f5d3a;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;box-shadow:0 2px 8px #0005";m.textContent="Chargement de la région « "+nm+" »…";document.body.appendChild(m);
         try{localStorage.setItem("champi-zone",n)}catch(e){}
         setTimeout(()=>location.replace(location.pathname),150)}},700)})}
@@ -3477,31 +3481,60 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
 (function(){
   if(!("serviceWorker" in navigator))return;
   navigator.serviceWorker.register("sw.js",{scope:"./"}).catch(function(e){console.warn(e)});
-  var zone=ZID;
-  var MB=ZONE.mb;
+  var DATA="cartes-donnees";
+  var key=function(z){return "offline-"+z};
+  var stamp=function(z){try{return localStorage.getItem(key(z))}catch(e){return null}};
+  var busy=false,rows={};
+  var zoneDef=function(z){return ZONES.filter(function(q){return q.id===z})[0]};
+  var fmt=function(d){try{return new Date(d).toLocaleDateString("fr-CH",{day:"numeric",month:"short"})}catch(e){return ""}};
+  // télécharge les fichiers d'une région (data, grilles, tuiles de fond) dans le cache ; prog(%) pendant le téléchargement
+  async function dlZone(z,prog){
+    var base=z+"/",list=await fetch(base+"files.json",{cache:"no-cache"}).then(function(r){return r.json()});
+    list=list.concat(["zone.js"]);
+    var c=await caches.open(DATA),n=0,fail=0,i=0,N=list.length;
+    async function one(){while(i<N){var f=list[i++];
+      try{var r=await fetch(base+f,{cache:"no-cache"});if(r.ok){await c.put(new URL(base+f,location.href).href,r)}else fail++}catch(e){fail++}
+      n++;if(prog&&(n%10===0||n===N))prog(Math.round(100*n/N))}}
+    await Promise.all([one(),one(),one(),one()]);
+    if(fail)throw new Error("incomplet");
+    try{localStorage.setItem(key(z),new Date().toISOString())}catch(e){}
+  }
+  async function rmZone(z){
+    var c=await caches.open(DATA),ks=await c.keys(),p=new URL(z+"/",location.href).href;
+    await Promise.all(ks.filter(function(k){return k.url.indexOf(p)===0}).map(function(k){return c.delete(k)}));
+    try{localStorage.removeItem(key(z))}catch(e){}
+  }
+  function drawRows(){
+    var box=document.getElementById("off-zones");if(!box)return;
+    box.innerHTML="";rows={};
+    ZONES.forEach(function(q){
+      var r=document.createElement("div");r.style.cssText="display:flex;align-items:center;gap:8px;margin:4px 0;flex-wrap:wrap";
+      var t=document.createElement("span");t.style.cssText="flex:1 1 150px;font-size:14px";t.textContent=q.nom+(q.id===ZID?" (affichée)":"")+(q.mb?" · "+q.mb:"");
+      var b=document.createElement("button");b.className="btn";b.type="button";
+      var d=document.createElement("button");d.className="btn";d.type="button";d.textContent="Supprimer";d.style.display="none";
+      r.appendChild(t);r.appendChild(b);r.appendChild(d);box.appendChild(r);
+      var lab=function(x){b.textContent=x};
+      var refresh=function(){var s=stamp(q.id);
+        if(!q.ok){lab("Bientôt");b.disabled=true;d.style.display="none";return}
+        b.disabled=busy;d.style.display=s?"":"none";lab(s?"Hors ligne ✓ "+fmt(s)+" · mettre à jour":"Télécharger")};
+      b.onclick=async function(){if(busy||!q.ok)return;busy=true;Object.keys(rows).forEach(function(k){rows[k].refresh()});
+        try{lab("…");await dlZone(q.id,function(p){lab(p+" %")})}catch(e){console.warn(e);lab("Incomplet, réessayer");busy=false;setTimeout(function(){Object.keys(rows).forEach(function(k){rows[k].refresh()})},2500);return}
+        busy=false;Object.keys(rows).forEach(function(k){rows[k].refresh()});syncMain()};
+      d.onclick=async function(){if(busy)return;busy=true;try{await rmZone(q.id)}catch(e){console.warn(e)}busy=false;Object.keys(rows).forEach(function(k){rows[k].refresh()});syncMain()};
+      rows[q.id]={refresh:refresh};refresh();
+    });
+  }
+  var zone=ZID,MB=ZONE.mb,bs=[];
+  function syncMain(){bs.forEach(function(b){var big=b.classList.contains("tool-big"),t=stamp(zone)?"Hors ligne ✓":"Télécharger hors ligne";
+    if(big)b.innerHTML="<b>"+t+"</b><span>Région affichée sans réseau ("+MB+")</span>";else b.textContent=t+" ("+MB+")"})}
   function addBtn(){
-    var bs=document.querySelectorAll("[data-act=off]");if(!bs.length){return setTimeout(addBtn,300)}
-    var busy=false;
-    var lab=function(t,big){bs.forEach(function(b){
-      var big=b.classList.contains("tool-big");
-      if(big){b.innerHTML="<b>"+t+"</b><span>Toute la carte sans réseau ("+MB+")</span>"}
-      else b.textContent=t+(/%|…|Échec|Incomplet/.test(t)?"":" ("+MB+")")})};
-    var set=function(d){busy=d;bs.forEach(function(b){b.disabled=d})};
-    var done=function(){try{return localStorage.getItem("offline-"+zone)}catch(e){return null}};
-    lab(done()?"Hors ligne ✓":"Télécharger hors ligne");
+    bs=document.querySelectorAll("[data-act=off]");if(!bs.length){return setTimeout(addBtn,300)}
+    syncMain();drawRows();
     var go=async function(){
-      if(busy)return;set(true);lab("…");
-      try{
-        var list=await fetch(ZD+"files.json",{cache:"no-cache"}).then(function(r){return r.json()});
-        var c=await caches.open("cartes-donnees"),n=0,fail=0,i=0,N=list.length;
-        async function one(){while(i<N){var f=list[i++];
-          try{var r=await fetch(ZD+f,{cache:"no-cache"});if(r.ok){await c.put(new URL(ZD+f,location.href).href,r)}else fail++}catch(e){fail++}
-          n++;if(n%10===0||n===N)lab(Math.round(100*n/N)+" %")}}
-        await Promise.all([one(),one(),one(),one()]);
-        if(fail){lab("Incomplet, réessayer");set(false);return}
-        try{localStorage.setItem("offline-"+zone,new Date().toISOString())}catch(e){}
-        lab("Hors ligne ✓");set(false);
-      }catch(e){console.warn(e);lab("Échec, réessayer");set(false)}
+      if(busy)return;busy=true;bs.forEach(function(b){b.disabled=true;b.textContent="…"});
+      try{await dlZone(zone,function(p){bs.forEach(function(b){b.textContent=p+" %"})})}
+      catch(e){console.warn(e);bs.forEach(function(b){b.disabled=false;b.textContent="Incomplet, réessayer"});busy=false;return}
+      busy=false;bs.forEach(function(b){b.disabled=false});syncMain();drawRows();
     };
     bs.forEach(function(b){b.onclick=go});
   }
