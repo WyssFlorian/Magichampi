@@ -1,1 +1,12 @@
 .cache-meteo/
+
+# Données brutes tierces : jamais dans ce dépôt public (voir docs/donnees-et-open-source.md)
+*.tif
+*.tiff
+*.gpkg
+*.gpkg.gz
+*.gz.part*
+*.nc
+*.zip
+data-wsl-essences/
+raw/
