@@ -1112,13 +1112,13 @@ details.more[open]>summary{margin-bottom:4px}
       <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" id="share-coins" aria-expanded="false">Partager mes coins</button><button class="btn" id="import-coins" aria-expanded="false">Importer des coins</button></div>
       <div id="share-box" class="share-box" hidden>
         <p class="small" style="margin:0 0 6px">Envoyez ce message ; la personne le colle ensuite dans « Importer des coins » de sa carte. Il contient aussi un lien swisstopo par coin.</p>
-        <div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn" id="sh-wa" target="_blank" rel="noopener">WhatsApp</a><a class="btn" id="sh-mail" target="_blank" rel="noopener">E-mail</a><button class="btn" id="sh-native" hidden>Autre app…</button><button class="btn" id="sh-copy">Copier le message</button></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn" id="sh-wa" target="_blank" rel="noopener">WhatsApp</a><a class="btn" id="sh-mail" target="_blank" rel="noopener">E-mail</a><button class="btn" id="sh-native" hidden>Autre app…</button><button class="btn" id="sh-copy">Copier le message</button><button class="btn" id="sh-file">Enregistrer un fichier</button></div>
         <textarea id="sh-text" readonly rows="5" aria-label="Message à envoyer"></textarea>
       </div>
       <div id="import-box" class="share-box" hidden>
         <p class="small" style="margin:0 0 6px">Collez ici le message reçu (en entier, ou seulement la ligne qui commence par CHAMPI1:).</p>
         <textarea id="imp-text" rows="4" aria-label="Message reçu"></textarea>
-        <div class="row" style="gap:6px;margin-top:6px"><button class="btn primary" id="imp-go">Ajouter ces coins</button><span class="small" id="imp-msg" role="status"></span></div>
+        <div class="row" style="gap:6px;margin-top:6px"><label class="btn" style="cursor:pointer">📄 Importer un fichier<input id="imp-file" type="file" accept=".txt,text/plain" hidden></label><button class="btn primary" id="imp-go">Ajouter ces coins</button><span class="small" id="imp-msg" role="status"></span></div>
       </div>
       <p class="small coin-privacy">🔒 <b>Confidentialité</b> : vos coins sont enregistrés dans ce navigateur, sur cet appareil. Si vous êtes connecté à claude.ai, une copie privée (sans les photos) est aussi gardée en ligne dans votre espace personnel de cette carte, pour les recharger automatiquement après un vidage du navigateur ou sur un autre appareil : ni l'auteur de la carte ni les autres personnes qui l'ouvrent ne peuvent la lire. Les coins ne sont partagés que si vous le faites vous-même (« Partager mes coins »), et la personne qui les reçoit peut alors les transmettre. Les photos restent sur l'appareil : gardez une sauvegarde (💾) pour les conserver.</p>
       </details>
@@ -1162,7 +1162,7 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk lite-hide"><input type="checkbox" id="o-sq"> Mailles SwissFungi 5 km</label>
         <p class="small" style="margin:-4px 0 0">Tirets vert clair ; maille légèrement teintée et plus visible si l'espèce y est signalée.</p>
         <label class="chk"><input type="checkbox" id="o-res" checked> Réserves et marais protégés</label>
-        <label class="chk lite-hide"><input type="checkbox" id="o-obs" checked> <span class="obs-icon" aria-hidden="true" style="display:inline-block"></span> Observations iNaturalist</label>
+        <label class="chk lite-hide" hidden><input type="checkbox" id="o-obs"> <span class="obs-icon" aria-hidden="true" style="display:inline-block"></span> Observations iNaturalist</label>
         <p class="small" style="margin:-4px 0 0">Observations précises ; par espèce, seulement l'espèce choisie.</p>
       </div>
       <div class="sub-h" style="margin-top:12px">Géographie</div>
@@ -1219,7 +1219,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Humidité : moitié humidité topographique (creux et bas de versant, calculée sur swissALTI3D), moitié bilan hydrique des stations forestières OFEV/WSL (avril-août, moyenne 2009-2018).</li>
         <li>Sol : roche et dépôts de surface de la carte géologique GeoCover (swisstopo, 1:25 000), classés de très acide à calcaire et comparés aux préférences de l'espèce. Les marais et glissements de terrain comptent aussi comme lieux plus humides. Là où GeoCover manque, l'atlas géochimique des sols (OFEV, 1 km) est utilisé.</li>
         <li>Présence connue : l'espèce est-elle signalée à SwissFungi dans la maille de 5 km (×1), une maille voisine (×0,93) ou pas du tout (×0,85) ? Le curseur « Relevés SwissFungi » limite ces relevés aux 2 ou 5 dernières années.</li>
-        <li>Observations iNaturalist : affichées pour information et utilisées pour vérifier le modèle, mais elles n'entrent plus dans le score depuis le 16 nov. 2026 (licences souvent non commerciales).</li>
+        <li>Observations iNaturalist : retirées de la carte publique le 20 nov. 2026 (licences souvent non commerciales). Elles se chargent comme coins (Mes coins › Importer un fichier) ; vos coins d'une espèce relèvent la note de +50 % au point, jusqu'à 1 km.</li>
               </ul>
       <p><b>Classes</b> : les seuils sont fixes pour chaque espèce. Ils ont été calculés sur toutes les forêts de cette carte : 15 % y sont en classe élevée et 25 % en moyenne. Le meilleur quart de la classe élevée (4 % des forêts) est affiché à part, en « très élevé » (bleu-violet). La classe d'un lieu ne change donc pas quand on déplace ou zoome la carte. Attention : une classe est un rang parmi les forêts de la carte, pas une probabilité de trouver l'espèce. « Très élevé » veut dire « parmi les 4 % de forêts les plus favorables de cette carte ». Les seuils sont propres à chaque carte, car avec des seuils communs aux trois cartes, la région de Lausanne passait jusqu'à 60 % de ses forêts en classe élevée.</p>
       <p><b>Conditions du moment</b> = aptitude × saison (renforcée : exposant 1,6 sur la fréquence des relevés) × eau du sol × température × gel. Une météo défavorable abaisse la classe d'un ou deux crans ; une météo très favorable (indice d'au moins 0,6) la relève d'un cran.</p>
@@ -1240,7 +1240,7 @@ details.more[open]>summary{margin-bottom:4px}
       <div class="menu-page" data-t="Sources et limites"><h3>Sources et limites</h3>
       <ul>
         <li>Météo : MétéoSuisse, analyses en grille 1 km (pluie provisoire, température, minimum, ensoleillement), open data.</li>
-        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km. Observations précises : iNaturalist, qualité « recherche », via GBIF (licences CC BY ou CC BY-NC des observateurs, voir chaque observation).</li>
+        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km. Observations précises iNaturalist : non publiées ici (licences CC BY-NC possibles) ; l'auteur les importe dans ses propres coins, qui renforcent la note autour d'eux.</li>
         <li>Sol et eau : carte géologique GeoCover © swisstopo (données ouvertes) ; atlas géochimique des sols de Suisse (calcium) et bilan hydrique des stations forestières, OFEV/WSL, geo.admin.ch.</li>
         <li>Forêt : OFEV/WSL, Inventaire forestier national (degré de mélange, hauteur de végétation) ; Carte des milieux naturels de Suisse v1.2 (OFEV/WSL, TypoCH, geo.admin.ch).</li>
         <li>Relief, cartes et photos : © swisstopo. Réserves : Pro Natura, inventaires fédéraux des marais, Parcs suisses (zones, OFEV). Milieux à ménager : réserves forestières, inventaires fédéraux des zones alluviales et des sites de reproduction de batraciens (OFEV, geo.admin.ch).</li>
@@ -1416,7 +1416,7 @@ const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
 function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
-function saveCoins(){try{localStorage.setItem("pleiades-coins",JSON.stringify(state.coins));localStorage.setItem("champi-coins-mod",String(Date.now()))}catch(e){}if(typeof bkInfo==="function")bkInfo();if(typeof cloudSoon==="function")cloudSoon();const b=document.getElementById("share-box");if(b&&!b.hidden)fillShare()}
+function saveCoins(){try{localStorage.setItem("pleiades-coins",JSON.stringify(state.coins));localStorage.setItem("champi-coins-mod",String(Date.now()))}catch(e){}try{const sg=state.coins.filter(c=>c.sp).map(c=>c.sp+c.lat.toFixed(4)+c.lng.toFixed(4)).sort().join(";");if(window.__coinSig!==undefined&&window.__coinSig!==sg){multiCache=null;SCR=null;render()}window.__coinSig=sg}catch(e){}if(typeof bkInfo==="function")bkInfo();if(typeof cloudSoon==="function")cloudSoon();const b=document.getElementById("share-box");if(b&&!b.hidden)fillShare()}
 
 /* ---------- factors ---------- */
 function hostF(c,pref,soft){
@@ -1551,13 +1551,13 @@ const wslF=(i,sp)=>{if(LITE||!W_WSL)return 1;const H=WSL_HOSTS[sp.id];if(!H||!G.
 const hostW=(c,pref,soft)=>Math.pow(hostF(c,pref,soft),W_HOST),altW=(v,t)=>Math.pow(trap2(v,t),W_ALT);
 function aptAt(i,sp,r,ob){
   const c=LITE||G.conif[i]===255?NaN:G.conif[i]/100;
-  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 16.11.2026 : le bonus iNaturalist (CC BY-NC) ne sert plus au score, seulement à la validation
+  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r*(1+ob[i]);  // 20.11.2026 : bonus +50 % (décroissant, 250 m, nul au-delà de 1 km) autour de VOS coins de la même espèce ; les points iNaturalist ne sont plus publiés, ils s'importent comme coins
 }
-// confirmation par les observations précises (iNaturalist) de l'espèce : bonus de +50 % au point, décroissant (250 m), nul au-delà de 1 km
+// confirmation par VOS coins de l'espèce (y compris ceux importés depuis des observations iNaturalist) : bonus de +50 % au point, décroissant (250 m), nul au-delà de 1 km
 const OB_B=.5,OB_L=250,OB_MAX=1000;
 function obsBonus(sp){
   const n=meta.rows*meta.cols,ob=new Float32Array(n),lat=L.CRS.EPSG3857.unproject(L.point(meta.x0,meta.y1-meta.rows*meta.res/2)).lat,gres=meta.res*Math.cos(lat*Math.PI/180),R=Math.ceil(OB_MAX/gres);
-  (D.obs||[]).forEach(o=>{if(o.sp!==sp.key)return;const p=L.CRS.EPSG3857.project(L.latLng(o.lat,o.lon)),c0=Math.floor((p.x-meta.x0)/meta.res),r0=Math.floor((meta.y1-p.y)/meta.res);
+  (state.coins||[]).forEach(o=>{if(o.sp!==sp.id)return;const p=L.CRS.EPSG3857.project(L.latLng(o.lat,o.lng)),c0=Math.floor((p.x-meta.x0)/meta.res),r0=Math.floor((meta.y1-p.y)/meta.res);
     for(let r=Math.max(0,r0-R);r<=Math.min(meta.rows-1,r0+R);r++)for(let c=Math.max(0,c0-R);c<=Math.min(meta.cols-1,c0+R);c++){const d=Math.hypot(r-r0,c-c0)*gres;if(d>OB_MAX)continue;const b=OB_B*Math.exp(-d/OB_L),k=r*meta.cols+c;if(b>ob[k])ob[k]=b}});
   return ob;
 }
@@ -1565,8 +1565,9 @@ function obsBonus(sp){
 const MOBILE=typeof matchMedia==="function"&&matchMedia("(pointer:coarse)").matches;
 const staticCache=new Map(),STATIC_MAX=MOBILE?10:12;let SCR=null;
 const P_NONE=0,P_SCALE=65534;
+const coinSig=sp=>(state.coins||[]).filter(c=>c.sp===sp.id).map(c=>c.lat.toFixed(4)+","+c.lng.toFixed(4)).join(";");
 function staticFor(sp){
-  const key=sp.id+(state.excl?"x":"")+(state.resp?"r":"")+(state.acc?"a":"")+state.yr;
+  const key=sp.id+(state.excl?"x":"")+(state.resp?"r":"")+(state.acc?"a":"")+state.yr+coinSig(sp);
   let e=staticCache.get(key);
   if(e){staticCache.delete(key);staticCache.set(key,e);return e}
   const n=meta.rows*meta.cols;
@@ -1905,7 +1906,7 @@ function popupHtml(latlng){
   const rTxt=info.rK==="own"?`signalée dans cette maille : ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]}, dernier en ${info.rD[1]}`:info.rK==="near"?`pas dans cette maille, mais ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]} dans les mailles voisines`:`aucun relevé ${YR_LAB[state.yr]} dans la maille ni autour`;
   if(!LITE)h+=fxRow("Présence connue",info.rF,rTxt+" (SwissFungi : reflète aussi l'effort d'observation, d'où un poids modeste)");
   h+=GH("Accès et sécurité")+fxRow("Pente",info.f.slope,`${info.sl}° (comptée dans l'aptitude : sans elle la validation baisse ; sert aussi à juger l'effort et le risque)`);
-  if(info.ob>0)h+=`<p class="small">Observation(s) iNaturalist précise(s) de l'espèce à proximité (pour information, n'entre plus dans le score).</p>`;
+  if(info.ob>0)h+=`<p class="small">Un de vos coins de cette espèce est proche : la note est relevée (jusqu'à +50 %).</p>`;
   if(w){
     h+=GH("Conditions du moment")+fxRow("Saison",w.season,`fréquence de l'espèce à cette période, décalée de ${Math.round(-seasonShift(info.dem))} jours pour l'altitude`);
     h+=fxRow("Eau du sol",w.rainF,`réserve estimée ${Math.round(w.soil*100)} % entre J−14 et J−3 (pluie ${Math.round(w.rain)} mm de J−16 à J−3, moins l'évaporation)${w.soil<.6?" ; versants nord favorisés":""}`);
@@ -2746,6 +2747,8 @@ function setupShare(){
   tog("share-coins","share-box","import-coins","import-box");tog("import-coins","import-box","share-coins","share-box");
   $("sh-copy").onclick=async()=>{const t=$("sh-text");try{await navigator.clipboard.writeText(t.value);$("sh-copy").textContent="Copié ✓"}catch(e){t.focus();t.select();try{document.execCommand("copy");$("sh-copy").textContent="Copié ✓"}catch(e2){$("sh-copy").textContent="Sélectionné : copiez"}}setTimeout(()=>$("sh-copy").textContent="Copier le message",2500)};
   if(navigator.share){$("sh-native").hidden=false;$("sh-native").onclick=()=>navigator.share({title:"Mes coins à champignons",text:$("sh-text").value}).catch(()=>{})}
+  $("sh-file").onclick=()=>{const b=new Blob([$("sh-text").value],{type:"text/plain"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="mes-coins-champignons.txt";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+  $("imp-file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;$("imp-msg").textContent=importCoins(await f.text())};
   $("imp-go").onclick=()=>{$("imp-msg").textContent=importCoins($("imp-text").value);if(/ajouté/.test($("imp-msg").textContent))$("imp-text").value=""};
 }
 function fillShare(){
