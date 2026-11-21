@@ -142,3 +142,10 @@ Demande de Florian : ajouter les bons comestibles présents dans le canton de Va
 | Agaric des forêts | 3 | 1 | 0.82 | feuillus et résineux | 480–1460 | 8/12/20/25 | 0.7 | indiff. (k 0) | faible |
 | Agaric sylvatique | 3 | 0 | – | résineux | 456–1250 | 6/10/18/23 | 0.75 | acide (k 0.15) | faible |
 | Agaric des bois | 3 | 0 | – | feuillus et résineux | 488–1275 | 7/11/19/24 | 0.7 | indiff. (k 0) | faible |
+
+## Ajout du Lactaire de l'épicéa (21.11.2026)
+Demande de Florian : ajouter *Lactarius deterrimus* dans les bons comestibles (palier 2), sur toutes les cartes. Il l'avait retiré le 15.11 parce que le guide VAPKO le déconseille ; la décision de le proposer est la sienne, et la fiche garde la mention « le guide VAPKO le déconseille : faire contrôler ».
+- Relevés SwissFungi : 3 959 en Suisse (plus que le seuil de 450 de la PR 85), déjà présents dans les `data.json` des 8 régions (mailles de 5 km, mois, altitudes) : rien de nouveau à télécharger, aucun doublon ajouté.
+- Paramètres : épicéa seul (WSL classe 9, groupe N), altitude 370 / 528 / 1501 / 1950 m (p10-p90 des relevés vaudois, n = 330), température 3/8/17/23 °C, gel 0,75, sol légèrement acide (k 0,15), tableau d'habitat repris de la v1. Aucun tableau de validation propre : fiabilité non évaluée (les observations indépendantes servent à la calibration globale, qui n'a pas été relancée).
+- Seuils de classes recalculés pour les 8 régions (`tools/seuils.js`) ; ceux des 79 autres espèces n'ont pas bougé.
+- Coins iNaturalist : les 5 coins « Lactarius deterrimus » (GBIF 3925401541, 5868098566, 5868239679, 5828082824, 3915543981) sont rattachés à l'espèce « Lactaire de l'épicéa » (et non plus au Lactaire délicieux) dans le fichier d'import. Ils restent des coins de l'utilisateur : pas de double comptage avec les relevés SwissFungi.
