@@ -2453,7 +2453,7 @@ function renderCoins(){
   list.forEach(({c,k})=>{
     if(!coinOnMap(c))return;  // sur la carte : seulement les coins de l'espèce recherchée (et ceux sans espèce)
     const cl=coinClass(c),dot=coinDot(c);  // pastille : aptitude du lieu seule, sans filtres ni exclusions
-    const m=L.marker([c.lat,c.lng],{icon:L.divIcon({className:"coin-hit",html:'<div class="coin-icon'+(dot?" dot-"+dot:"")+'"></div>',iconSize:[34,34],iconAnchor:[17,17]}),draggable:true,zIndexOffset:1000,title:c.name+(c.sp?" · "+coinSpName(c.sp):"")});
+    const m=L.marker([c.lat,c.lng],{icon:L.divIcon({className:"coin-hit",html:'<div class="coin-icon'+(dot?" dot-"+dot:"")+'"></div>',iconSize:[44,44],iconAnchor:[22,22]}),draggable:true,zIndexOffset:1000,title:c.name+(c.sp?" · "+coinSpName(c.sp):"")});
     m.on("dragend",e=>{const p=e.target.getLatLng();c.lat=p.lat;c.lng=p.lng;saveCoins();renderCoins()});
     m.on("click",e=>{L.DomEvent.stopPropagation(e);goCoin(k)});
     coinLayer.addLayer(m);
@@ -2475,7 +2475,8 @@ const fmtCoinDate=d=>{const [y,m,dd]=d.split("-");return `${+dd}.${+m}.${y}`};
 function goCoin(k){const c=state.coins[k];if(!c)return;
   if(c.sp&&c.sp!==state.sp){const sp=SPECIES.find(x=>x.id===c.sp);if(sp&&(!state.seasonOnly||inSeason(sp))){state.sp=state.lastSp=sp.id;saveState();render()}}
   if(NARROW.matches)map.getContainer().scrollIntoView({behavior:"smooth",block:"start"});
-  map.setView([c.lat,c.lng],COIN_ZOOM);openPopup(L.latLng(c.lat,c.lng))}
+  const ll=L.latLng(c.lat,c.lng);POPQ={ll,t:Date.now()};  // si la vue change de région de données, la fiche est rouverte après le chargement
+  map.setView([c.lat,c.lng],COIN_ZOOM);openPopup(ll)}
 /* ---------- photos des coins : IndexedDB, sur cet appareil seulement ---------- */
 let photoDB=null;
 function pdb(){if(photoDB)return photoDB;photoDB=new Promise((res,rej)=>{try{const r=indexedDB.open("champi-coins",1);r.onupgradeneeded=()=>r.result.createObjectStore("photos");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});return photoDB}
@@ -3400,7 +3401,7 @@ async function loadRegion(R){
   staticCache.clear();multiCache=null;SCR=null;ZRG=null;PATCH=null;setTimeout(refreshRelief,0);urbanKey="";currentClass=null;multiCls=null;
   return true;
 }
-let regionBusy=false;
+let regionBusy=false,POPQ=null;
 let autoT;
 async function reloadRegion(only,auto){
   if(regionBusy)return;
@@ -3408,7 +3409,7 @@ async function reloadRegion(only,auto){
   if(!R)return;
   if(REG&&R.c0===REG.c0&&R.r0===REG.r0&&R.cols===REG.cols&&R.rows===REG.rows)return;
   regionBusy=true;const bt=$("load-region");bt.disabled=true;bt.textContent="Chargement…";
-  try{await loadRegion(R);closeAll();overlay.setBounds(regionLL());regionLayer.setBounds(regionLL());render()}
+  try{await loadRegion(R);closeAll();overlay.setBounds(regionLL());regionLayer.setBounds(regionLL());render();if(POPQ&&Date.now()-POPQ.t<15000){const q=POPQ.ll;POPQ=null;openPopup(q)}}
   catch(e){console.error(e)}
   finally{regionBusy=false;bt.disabled=false;bt.textContent="Charger les données de cette région";updateRegionHint()}
 }
