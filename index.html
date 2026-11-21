@@ -2475,8 +2475,22 @@ const fmtCoinDate=d=>{const [y,m,dd]=d.split("-");return `${+dd}.${+m}.${y}`};
 function goCoin(k){const c=state.coins[k];if(!c)return;
   if(c.sp&&c.sp!==state.sp){const sp=SPECIES.find(x=>x.id===c.sp);if(sp&&(!state.seasonOnly||inSeason(sp))){state.sp=state.lastSp=sp.id;saveState();render()}}
   if(NARROW.matches)map.getContainer().scrollIntoView({behavior:"smooth",block:"start"});
-  const ll=L.latLng(c.lat,c.lng);POPQ={ll,t:Date.now()};  // si la vue change de région de données, la fiche est rouverte après le chargement
-  map.setView([c.lat,c.lng],COIN_ZOOM);openPopup(ll)}
+  const ll=L.latLng(c.lat,c.lng);POPQ={id:c.id,t:Date.now()};  // si la vue change de région de données, la fiche est rouverte après le chargement
+  map.setView([c.lat,c.lng],COIN_ZOOM);openCoinInfo(k)}
+// fiche DU COIN (et non de la zone) : nom, espèce, date, photo, note du lieu ; boutons Modifier et Voir la zone
+function openCoinInfo(k){const c=state.coins[k];if(!c)return;const ll=L.latLng(c.lat,c.lng),cl=coinClass(c),dot=coinDot(c);
+  const dl={r:"Pas dans une zone propice",o:"Valeurs moyennes",v:"Le lieu correspond"}[dot]||"";
+  const h=`<div class="pp coin-info"><h3 style="margin:0 0 2px">📍 ${esc(c.name)}</h3>
+    <div class="small">${esc(c.sp?coinSpName(c.sp):"Espèce non précisée")}${c.date?" · "+fmtCoinDate(c.date):""}</div>
+    ${dot?`<p style="margin:8px 0 2px"><span class="coin-dot-lab"><i class="coin-icon dot-${dot}" style="display:inline-block;vertical-align:middle"></i> <b>${dl}</b></span> <span class="small">· ${esc(cl.txt)} (aptitude du lieu, sans météo)</span></p>`:""}
+    ${c.photo?`<img class="cf-img ci-photo" alt="Photo du coin" hidden>`:""}
+    <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" data-ci="ed">✎ Modifier</button><button class="btn" data-ci="zone">Voir la zone</button></div></div>`;
+  const wire=el=>{if(!el)return;const e=el.querySelector('[data-ci="ed"]'),z=el.querySelector('[data-ci="zone"]');
+    if(e)e.onclick=()=>{const d=$("sec-coins");if(d)d.open=true;openCoinForm(state.coins.indexOf(c));closeAll()};
+    if(z)z.onclick=()=>openPopup(ll);
+    if(c.photo)photoGet(c.id).then(u=>{const im=el.querySelector("img.ci-photo");if(im&&u){im.src=u;im.hidden=false}})};
+  if(NARROW.matches){map.closePopup();showSheet(h,ll);wire($("sheet-body"));return}
+  closeSheet();const pop=L.popup({maxWidth:300,autoPanPadding:[20,20],offset:[0,-8]}).setLatLng(ll).setContent(h).openOn(map);wire(pop.getElement())}
 /* ---------- photos des coins : IndexedDB, sur cet appareil seulement ---------- */
 let photoDB=null;
 function pdb(){if(photoDB)return photoDB;photoDB=new Promise((res,rej)=>{try{const r=indexedDB.open("champi-coins",1);r.onupgradeneeded=()=>r.result.createObjectStore("photos");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});return photoDB}
@@ -3409,7 +3423,7 @@ async function reloadRegion(only,auto){
   if(!R)return;
   if(REG&&R.c0===REG.c0&&R.r0===REG.r0&&R.cols===REG.cols&&R.rows===REG.rows)return;
   regionBusy=true;const bt=$("load-region");bt.disabled=true;bt.textContent="Chargement…";
-  try{await loadRegion(R);closeAll();overlay.setBounds(regionLL());regionLayer.setBounds(regionLL());render();if(POPQ&&Date.now()-POPQ.t<15000){const q=POPQ.ll;POPQ=null;openPopup(q)}}
+  try{await loadRegion(R);closeAll();overlay.setBounds(regionLL());regionLayer.setBounds(regionLL());render();if(POPQ&&Date.now()-POPQ.t<15000){const k=state.coins.findIndex(x=>x.id===POPQ.id);POPQ=null;if(k>=0)openCoinInfo(k)}}
   catch(e){console.error(e)}
   finally{regionBusy=false;bt.disabled=false;bt.textContent="Charger les données de cette région";updateRegionHint()}
 }
