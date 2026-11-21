@@ -849,8 +849,8 @@ select{font:inherit;color:inherit;background:var(--panel);border:1px solid var(-
 .obs-icon{width:11px;height:11px;border-radius:50%;background:#74ac00;border:2px solid #fff;box-shadow:0 0 0 1px #2d4a00}.obs-icon.other{background:#b9c7a0;width:8px;height:8px}
 .coin-hit,.sortie-hit{display:flex;align-items:center;justify-content:center}
 .coin-icon{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #111;box-shadow:0 0 0 2px #fff}
-.coin-icon.ring-ok{box-shadow:0 0 0 2px #fff,0 0 0 6px #2e9e44,0 0 0 8px #fff}
-.coin-icon.ring-far{box-shadow:0 0 0 2px #fff,0 0 0 6px #f57c00,0 0 0 8px #fff}
+.coin-icon.dot-r,.coin-icon.dot-o,.coin-icon.dot-v{border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+.coin-icon.dot-r{background:#d32f2f}.coin-icon.dot-o{background:#f57c00}.coin-icon.dot-v{background:#2e9e44}
 .leaflet-container{font-family:var(--font-body)}
 .leaflet-control-attribution{font-size:10px}
 .sheet{position:absolute;left:0;right:0;bottom:0;z-index:1000;background:var(--panel);color:var(--fg);border-radius:14px 14px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.35);max-height:46%;display:flex;flex-direction:column;transition:max-height .2s}
@@ -1050,7 +1050,7 @@ details.more[open]>summary{margin-bottom:4px}
     <section id="sec-leg">
       <h2>Légende</h2>
       <div class="legend" id="legend"></div>
-      <p class="small" style="margin:6px 0 0">Coins : anneau <b style="color:#2e9e44">vert</b> = lieu optimal pour l'espèce (classe Élevé ou Très élevé) ; anneau <b style="color:#f57c00">orange</b> = score éloigné de l'optimum (classe Moyen ou moins).</p>
+      <p class="small" style="margin:6px 0 0">Coins : pastille <b style="color:#2e9e44">verte</b> = le lieu correspond (classe Élevé ou Très élevé) ; <b style="color:#f57c00">orange</b> = valeurs moyennes (Faible à Moyen) ; <b style="color:#d32f2f">rouge</b> = pas dans une zone propice (Très faible ou hors forêt). Calculée sans la météo, les filtres ni les exclusions.</p>
       <div class="legend" id="legend-tr" style="margin-top:6px"><span class="trail-sw"></span><span>Chemin de randonnée</span><span class="trail-sw b"></span><span>Chemin de montagne (pointillé)</span></div>
     </section>
 
@@ -1931,7 +1931,7 @@ function cellInfo(i,sp){
   const c=G.conif[i]===255?NaN:G.conif[i]/100,h=G.vhm[i]/5,edge=G.edge[i]*2,dem=G.dem[i],sl=G.slope[i],asp=G.aspect[i]*2,tpi=G.tpi[i];
   const [rF,rK,rD]=regionF(G.sq[i],sp.key);
   return {A,P:pOf(st,i),SC:st.SC[i],c,h,edge,dem,sl,asp,tpi,rF,rK,rD,mi:G.mi[i],ca:G.ca[i],
-    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostW(c,sp.host,G.hab&&G.hab[i]>0)*wslF(i,sp),wsl:G.wsl?G.wsl[i]:0,alt:altW(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
+    hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostW(c,sp.host,G.hab&&G.hab[i]>0)*wslF(i,sp),wsl:G.wsl?G.wsl[i]:0,alt:altW(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp)}};
 }
 function rainSvg(m){
   const P=meteo.rprelimd[m],n=P.length,w=262,h=46,bw=w/n,mx=Math.max(20,...P.map(v=>v||0)),no=meteo.nobs;
@@ -2423,6 +2423,17 @@ function coinClass(c){
   if(!sp)return {k:kb>=4?3:kb>=2?2:0,txt:["faible","faible","moyenne","forte","très forte"][kb]+" concentration"};
   return {k:kb,txt:CLS_LAB[kb],site:mode==="site"&&state.mode==="now"};
 }
+// pastille d'un coin : aptitude du lieu pour son espèce, SANS météo, filtres (cueillette responsable, accès libre, forêts exclues) ni masques.
+// r = rouge (très faible ou hors forêt), o = orange (faible à moyen), v = vert (élevé ou très élevé) ; classes calibrées, meilleure cellule à ~75 m. null : espèce inconnue ou hors zone chargée
+function coinDot(c){
+  const sp=c.sp?SPECIES.find(x=>x.id===c.sp):(state.sp==="multi"?null:SPECIES.find(x=>x.id===state.sp));
+  if(!sp||!G||!G.sq)return null;
+  const i=idxAt(L.latLng(c.lat,c.lng));if(i<0)return null;
+  const r0=Math.floor(i/meta.cols),c0=i%meta.cols,rf={};let best=-1;
+  for(let dr=-3;dr<=3;dr++)for(let dc=-3;dc<=3;dc++){const r=r0+dr,cc=c0+dc;if(r<0||cc<0||r>=meta.rows||cc>=meta.cols)continue;
+    const j=r*meta.cols+cc;if(!G.fx[j])continue;const sid=G.sq[j];let f=rf[sid];if(f===undefined)f=rf[sid]=regionF(sid,sp.key)[0];
+    const a=aptAt(j,sp,f),k=thrClass(a,sp);if(k>best)best=k}
+  return best<0||best===0?"r":best>=3?"v":"o"}
 // « Communauté » activé : la carte montre les coins de l'espèce recherchée (en mode « toutes » : des espèces actives)
 function coinOnMap(c){if(!COMM.on)return false;if(!c.sp)return true;
   if(state.sp==="multi")return activeSpecies().some(s=>s.id===c.sp);return c.sp===state.sp}
@@ -2441,10 +2452,8 @@ function renderCoins(){
   const list=state.coins.map((c,k)=>({c,k})).filter(o=>keep(o.c)).sort((a,b)=>ord(a.c.sp)-ord(b.c.sp)||a.c.name.localeCompare(b.c.name,"fr",{numeric:true}));
   list.forEach(({c,k})=>{
     if(!coinOnMap(c))return;  // sur la carte : seulement les coins de l'espèce recherchée (et ceux sans espèce)
-    const cl=coinClass(c);
-    // anneau : vert = classe Élevé ou Très élevé (proche de l'optimum du milieu), orange = classe Moyen ou moins ; rien si hors zone/forêt
-    const ring=cl.k==null?"":cl.k>=3?" ring-ok":" ring-far";
-    const m=L.marker([c.lat,c.lng],{icon:L.divIcon({className:"coin-hit",html:'<div class="coin-icon'+ring+'"></div>',iconSize:[34,34],iconAnchor:[17,17]}),draggable:true,title:c.name+(c.sp?" · "+coinSpName(c.sp):"")});
+    const cl=coinClass(c),dot=coinDot(c);  // pastille : aptitude du lieu seule, sans filtres ni exclusions
+    const m=L.marker([c.lat,c.lng],{icon:L.divIcon({className:"coin-hit",html:'<div class="coin-icon'+(dot?" dot-"+dot:"")+'"></div>',iconSize:[34,34],iconAnchor:[17,17]}),draggable:true,zIndexOffset:1000,title:c.name+(c.sp?" · "+coinSpName(c.sp):"")});
     m.on("dragend",e=>{const p=e.target.getLatLng();c.lat=p.lat;c.lng=p.lng;saveCoins();renderCoins()});
     m.on("click",e=>{L.DomEvent.stopPropagation(e);goCoin(k)});
     coinLayer.addLayer(m);
