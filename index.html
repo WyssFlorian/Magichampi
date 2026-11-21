@@ -1820,6 +1820,7 @@ function seasonDate(){return state.mode==="now"?meteo.dates[state.d]:localToday(
 let REG_ALT=800;
 function inSeason(sp){return seasonF(sp.key,seasonDate(),REG_ALT)>=SEASON_MIN}
 const inTier=sp=>(!state.tier||sp.tier===state.tier)&&!state.hide.includes(sp.id);
+function spAlpha(L){return L.slice().sort((a,b)=>a.fr.localeCompare(b.fr,"fr",{sensitivity:"base"}))}  // listes de choix : ordre alphabétique français, sans tenir compte des accents
 function activeSpecies(){return SPECIES.filter(sp=>inTier(sp)&&(!state.seasonOnly||inSeason(sp)))}
 function render(){try{renderInner()}catch(e){console.error(e)}}
 function renderInner(){
@@ -2142,7 +2143,7 @@ const TIER_TXT=["Toutes les espèces","Stars : les plus recherchées","Bons come
 function showTierInfo(t){
   const el=$("tier-info");
   if(!el.hidden&&+el.dataset.tier===t){el.hidden=true;return}
-  const list=SPECIES.filter(sp=>!t||sp.tier===t);
+  const list=spAlpha(SPECIES.filter(sp=>!t||sp.tier===t));
   el.dataset.tier=t;
   el.innerHTML=`<div class="ti-head"><b>${TIER_TXT[t]} (${list.length})</b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
     `<div class="ti-safe"><b>Prudence.</b> Utilisez toujours un guide de terrain. Ne cueillez que les champignons que vous avez identifiés avec certitude, et faites toujours contrôler toute votre récolte par un contrôleur officiel (VAPKO) avant de la consommer. En cas de doute ou de malaise : Tox Info Suisse, 145.</div><dl>`+
@@ -2188,7 +2189,7 @@ function menuSetup(){infoToggles();const P=[...document.querySelectorAll("#menu-
 const TIER_NAMES=["","★ Stars","Bons comestibles","Comestibles intéressants"];
 function fillSpFilter(){
   const box=$("sp-filter");if(!box)return;
-  box.innerHTML=[1,2,3].map(t=>{const L=SPECIES.filter(s=>s.tier===t);
+  box.innerHTML=[1,2,3].map(t=>{const L=spAlpha(SPECIES.filter(s=>s.tier===t));
     return `<div class="spf-tier"><div class="row"><b>${TIER_NAMES[t]} (${L.filter(s=>!state.hide.includes(s.id)).length}/${L.length})</b><span><button type="button" data-all="${t}">tout cocher</button><button type="button" data-none="${t}">tout décocher</button></span></div>`+
       L.map(s=>`<label><input type="checkbox" data-sp="${s.id}"${state.hide.includes(s.id)?"":" checked"}><span>${esc(s.fr)} <i>${esc(s.la)}</i></span></label>`).join("")+`</div>`}).join("");
   const apply=()=>{
@@ -2510,7 +2511,7 @@ function openCoinForm(k,ll){
   const c=k>=0?state.coins[k]:null;CF.k=k;CF.photo=undefined;CF.acc=null;
   $("cf-title").textContent=c?"Modifier le coin":"Nouveau coin";
   $("cf-name").value=c?c.name:"Coin "+(state.coins.length+1);
-  $("cf-sp").innerHTML=`<option value="">Non précisé</option>`+SPECIES.map(x=>`<option value="${x.id}">${esc(x.fr)}</option>`).join("");
+  $("cf-sp").innerHTML=`<option value="">Non précisé</option>`+spAlpha(SPECIES).map(x=>`<option value="${x.id}">${esc(x.fr)}</option>`).join("");
   $("cf-sp").value=c?(c.sp||""):(state.sp!=="multi"?state.sp:"");
   $("cf-date").value=c&&c.date?c.date:"";$("cf-date").max=localToday();
   CF.lat=c?c.lat:ll?ll.lat:null;CF.lng=c?c.lng:ll?ll.lng:null;cfPos();
