@@ -95,3 +95,50 @@ Trouvées le 20.11.2026 par recherche web ; seuls les titres ont été vus, pas 
 - Droit d'usage commercial de la carte WSL : pas encore demandé.
 
 Note (20.11.2026) : le malus de sol maximal est k·|p| (k = 0,15 ou 0,3, p = préférence de l'espèce entre −1 et 1), donc 7,5 % pour p = ±0,5 et k = 0,15, et non k. Pour les hôtes, la valeur « même type » de l'essence WSL est définie par rapport au premier hôte de la liste de l'espèce.
+
+## Ajout de 34 espèces bonnes comestibles (21.11.2026)
+Demande de Florian : ajouter les bons comestibles présents dans le canton de Vaud et la Veveyse, repérés dans SwissFungi (plus de 320 relevés en Suisse, 658 espèces), hors prairies et pelouses, hors espèces de la liste rouge suisse (Senn-Irlet et al. 2007, vérifiée sur le PDF complet). L'évaluation comestible / non comestible des 658 espèces est un travail à dire d'expert, non revu par la VAPKO.
+- Écartées pour la liste rouge : Lactaire à lait rouge sang (NT), Bolet orangé (le Leccinum des chênes est VU, celui du bouleau NT : les relevés ne distinguent pas), Russule jaune claire (VU), Oronge (VU), Hygrophore de mars (NT).
+- Pas revérifié pour ces 34 espèces : l'annexe 2 du règlement vaudois (RLPrPNP). Les 45 espèces d'origine avaient été contrôlées.
+- Relevés SwissFungi : ensemble de données SwissFungi/WSL (GBIF), un enregistrement par identifiant ; doublons (même lieu, même date, même récolteur) écartés ; aucune espèce n'avait de doublon. Mailles de 5 km (`EXTRA_FUNGI`), mois (toute la Suisse), altitude (relevés VD + Veveyse, ou toute la Suisse s'il y en a moins de 40).
+- Seuils de classes recalculés pour les 8 régions (`tools/seuils.js`, `MAP_THR_V6`) ; ceux des 45 espèces d'origine n'ont pas bougé (vérifié région par région).
+- Validation : seulement 20 relevés précis indépendants (GBIF hors SwissFungi, incertitude ≤ 100 m, sans doublon) tombent en forêt dans la carte, pour 8 de ces espèces : rang moyen 0,65 sur 17 relevés en forêt. C'est trop peu pour juger une espèce : toutes sont donc marquées « fiabilité faible » dans ce tableau, et 11 portent en plus la mention « weak » dans le code (bois mort, prairies, peu de relevés précis, essences mal repérées).
+- Paliers : 3 « Stars » (Pholiote ridée, Chanterelle améthyste, Cèpe appendiculé), 15 « Bons comestibles », 16 « Comestibles intéressants » (comestibles corrects, bois mort ou jeunes seulement). Choix à dire d'expert, modifiable.
+- Russule verdoyante : retirée le 20.11 pour moins de 450 relevés ; elle a 431 relevés en Suisse, donc plus de 320, et est de retour.
+
+| Espèce | Palier | Relevés précis | Percentile (rang parmi forêts) | Hôte (expert) | Altitude optimum m (donnée SwissFungi, p10-p90) | Température °C (expert) | Gel (expert) | Sol (expert) | Fiabilité |
+|---|---|---|---|---|---|---|---|---|---|
+| Pholiote ridée | 1 | 0 | – | résineux | 580–1440 | 5/9/17/22 | 0.8 | acide (k 0.3) | faible |
+| Chanterelle améthyste | 1 | 0 | – | feuillus et résineux | 570–1371 | 7/11/19/24 | 0.7 | acide (k 0.15) | faible |
+| Cèpe appendiculé | 1 | 0 | – | feuillus | 453–1360 | 9/13/22/27 | 0.6 | calcaire (k 0.3) | faible |
+| Lactaire à lait abondant | 2 | 0 | – | feuillus et résineux | 528–1210 | 8/12/21/26 | 0.65 | acide (k 0.15) | faible |
+| Russule à odeur de crabe | 2 | 0 | – | feuillus et résineux | 671–1525 | 6/10/18/23 | 0.75 | acide (k 0.15) | faible |
+| Russule olivacée | 2 | 0 | – | feuillus et résineux | 541–1530 | 7/11/20/25 | 0.7 | calcaire (k 0.15) | faible |
+| Russule verdoyante | 2 | 1 | 0.19 | feuillus | 480–848 | 10/14/22/27 | 0.6 | acide (k 0.15) | faible |
+| Russule changeante | 2 | 0 | – | feuillus | 578–890 | 8/12/20/25 | 0.7 | indiff. (k 0) | faible |
+| Bolet rude (bouleau) | 2 | 0 | – | feuillus | 430–1049 | 7/11/19/24 | 0.7 | acide (k 0.3) | faible |
+| Bolet pulvérulent | 2 | 0 | – | feuillus et résineux | 383–720 | 10/14/22/27 | 0.6 | acide (k 0.15) | faible |
+| Chanterelle orangée | 2 | 0 | – | résineux | 579–880 | 7/11/19/24 | 0.7 | acide (k 0.3) | faible |
+| Chanterelle ondulée | 2 | 0 | – | feuillus et résineux | 488–891 | 7/11/18/23 | 0.75 | indiff. (k 0) | faible |
+| Pied-de-mouton roussâtre | 2 | 0 | – | feuillus et résineux | 505–1495 | 2/7/16/22 | 0.8 | calcaire (k 0.15) | faible |
+| Tricholome à odeur d’iris | 2 | 0 | – | indifférent | 476–2050 | 2/6/14/19 | 0.85 | calcaire (k 0.15) | faible |
+| Pied bleu glauque | 2 | 0 | – | feuillus et résineux | 430–1050 | 0/4/12/18 | 0.9 | indiff. (k 0) | faible |
+| Pleurote tardif | 2 | 2 | 0.56 | feuillus | 430–862 | -3/2/10/15 | 1 | indiff. (k 0) | faible |
+| Polypore des brebis | 2 | 0 | – | résineux | 651–1620 | 3/7/15/20 | 0.8 | indiff. (k 0) | faible |
+| Morille veinée | 2 | 0 | – | indifférent | 390–820 | 4/8/15/20 | 0.85 | calcaire (k 0.15) | faible |
+| Russule à pied violet | 3 | 0 | – | feuillus et résineux | 575–905 | 9/13/21/26 | 0.65 | indiff. (k 0) | faible |
+| Gomphide rutilant | 3 | 0 | – | résineux | 430–1240 | 5/9/17/22 | 0.75 | acide (k 0.3) | faible |
+| Gomphide helvétique | 3 | 0 | – | résineux | 560–1642 | 3/7/15/20 | 0.8 | acide (k 0.15) | faible |
+| Gomphide taché | 3 | 0 | – | résineux | 584–1685 | 4/8/16/21 | 0.8 | acide (k 0.15) | faible |
+| Hygrophore à odeur d'amande | 3 | 0 | – | résineux | 547–1520 | 2/6/14/19 | 0.85 | calcaire (k 0.15) | faible |
+| Hygrophore pustuleux | 3 | 0 | – | résineux | 540–1408 | 0/4/12/17 | 0.9 | calcaire (k 0.15) | faible |
+| Hygrophore des mélèzes | 3 | 0 | – | résineux | 494–1343 | 0/4/11/16 | 0.9 | indiff. (k 0) | faible |
+| Langue de bœuf | 3 | 1 | 0.74 | feuillus | 399–671 | 9/13/21/26 | 0.65 | acide (k 0.15) | faible |
+| Armillaire couleur de miel | 3 | 2 | 0.05 | indifférent | 421–891 | 4/8/16/21 | 0.8 | indiff. (k 0) | faible |
+| Polypore écailleux | 3 | 0 | – | feuillus | 380–890 | 4/8/17/22 | 0.8 | indiff. (k 0) | faible |
+| Polypore géant | 3 | 3 | 0.84 | feuillus | 426–811 | 8/12/20/25 | 0.7 | indiff. (k 0) | faible |
+| Oreille de Judas | 3 | 5 | 0.81 | feuillus | 394–660 | -4/2/12/18 | 1 | indiff. (k 0) | faible |
+| Vesse-de-loup perlée | 3 | 2 | 0.74 | indifférent | 509–1449 | 6/10/18/24 | 0.75 | indiff. (k 0) | faible |
+| Agaric des forêts | 3 | 1 | 0.82 | feuillus et résineux | 480–1460 | 8/12/20/25 | 0.7 | indiff. (k 0) | faible |
+| Agaric sylvatique | 3 | 0 | – | résineux | 456–1250 | 6/10/18/23 | 0.75 | acide (k 0.15) | faible |
+| Agaric des bois | 3 | 0 | – | feuillus et résineux | 488–1275 | 7/11/19/24 | 0.7 | indiff. (k 0) | faible |
