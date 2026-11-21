@@ -1197,7 +1197,7 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk"><input type="checkbox" id="o-lim-m"> <span class="lim-sw lim-m" aria-hidden="true"></span> <span>Limites des communes</span></label>
         <p class="small" style="margin:-4px 0 0">Source : swissBOUNDARIES3D, swisstopo (simplifiées). Les noms des communes apparaissent dès le zoom 12.</p>
         <label class="chk"><input type="checkbox" id="o-relief"> <span><span class="relief-sw" aria-hidden="true"></span> Afficher la géographie</span></label>
-        <p class="small" style="margin:-4px 0 0">Comme le bouton ⛰ : falaises, lignes de niveau et les couches cochées ci-dessous, visibles en zoomant (lignes de niveau dès le zoom 13, cours d'eau dès 11, ruisseaux dès 13, routes dès 12, chemins dès 14-15). Les lignes de niveau se cochent aussi seules.</p>
+        <p class="small" style="margin:-4px 0 0">Comme le bouton ⛰ (qui coche et décoche aussi les lignes de niveau et les limites du canton, des régions et des communes) : falaises, lignes de niveau et les couches cochées ci-dessous, visibles en zoomant (lignes de niveau dès le zoom 13, cours d'eau dès 11, ruisseaux dès 13, routes dès 12, chemins dès 14-15). Les lignes de niveau se cochent aussi seules.</p>
         <div class="geo-sub">
         <label class="chk"><input type="checkbox" id="o-contour"> <span class="contour-sw" aria-hidden="true"></span> Lignes de niveau</label>
         <label class="chk"><input type="checkbox" id="o-water" checked> <span class="water-sw" aria-hidden="true"></span> Cours d'eau</label>
@@ -3516,7 +3516,7 @@ async function boot(){
   reliefLayer=new ReliefLayer({pane:"relief",minZoom:RELIEF_MINZ,maxZoom:18,updateWhenZooming:false,keepBuffer:1});
   // la couche de relief (falaises + lignes de niveau) est présente si « géographie » ou « lignes de niveau » est coché
   syncRelief=()=>{const on=state.relief||$("o-contour").checked;if(on&&!map.hasLayer(reliefLayer))reliefLayer.addTo(map);else if(!on&&map.hasLayer(reliefLayer))map.removeLayer(reliefLayer);else if(on)reliefLayer.redraw()};
-  const setRelief=v=>{state.relief=v;saveState();if(v){$("o-contour").checked=true;saveLay();loadWater()}syncRelief();syncWater();hardUpdate();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",()=>{geoStyle();syncWater()});
+  const setRelief=v=>{state.relief=v;saveState();if(v)loadWater();["o-contour","o-lim-c","o-lim-d","o-lim-m"].forEach(id=>$(id).checked=v);saveLay();syncLimits();syncRelief();syncWater();hardUpdate();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",()=>{geoStyle();syncWater()});
   $("o-contour").onchange=()=>{saveLay();syncRelief()};
   $("o-relief").checked=!!state.relief;$("o-relief").onchange=e=>setRelief(e.target.checked);if(state.relief)loadWater();syncRelief();
   ["o-water","o-road"].forEach(id=>$(id).onchange=()=>{saveLay();syncWater()});
