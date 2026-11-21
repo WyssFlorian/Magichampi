@@ -1233,6 +1233,7 @@ details.more[open]>summary{margin-bottom:4px}
       <p class="small" id="upd" style="margin:6px 0 10px"><span id="upd-lab"></span></p>
         <div class="tool-btns"><button class="btn tool-big" type="button" data-act="tour"><b>? Guide</b><span>Revoir la visite animée</span></button><button class="btn tool-big" type="button" data-act="off" title="Télécharger toute la carte pour l'utiliser sans réseau"></button></div>
         <p class="small" style="margin:10px 0 0">« Actualiser » (sous la date de référence, bouton « i ») recharge les prévisions de MétéoSuisse. « Hors ligne » télécharge toute la carte de la région affichée (<span class='mb'></span>) pour l'utiliser sans réseau.</p>
+        <div id="off-main-err" class="small" style="color:#e8a33d"></div>
         <h4 style="margin:14px 0 4px">Régions hors ligne</h4>
         <p class="small" style="margin:0 0 6px">Chaque région se télécharge séparément ; elles se recouvrent d'au moins 1 km, pour passer de l'une à l'autre sans trou.</p>
         <div id="off-zones"></div>
@@ -3655,16 +3656,30 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
   var fmt=function(d){try{return new Date(d).toLocaleDateString("fr-CH",{day:"numeric",month:"short"})}catch(e){return ""}};
   // télécharge les fichiers d'une région (data, grilles, tuiles de fond) dans le cache ; prog(%) pendant le téléchargement
   async function dlZone(z,prog){
-    var base=z+"/",list=await fetch(base+"files.json",{cache:"no-cache"}).then(function(r){return r.json()});
+    var base=z+"/",list=await fetch(base+"files.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error("manifeste introuvable ("+r.status+")");return r.json()});
     list=list.concat(["zone.js"]);
-    var c=await caches.open(DATA),n=0,fail=0,i=0,N=list.length;
-    async function one(){while(i<N){var f=list[i++];
-      try{var r=await fetch(base+f,{cache:"no-cache"});if(r.ok){await c.put(new URL(base+f,location.href).href,r)}else fail++}catch(e){fail++}
-      n++;if(prog&&(n%10===0||n===N))prog(Math.round(100*n/N))}}
-    await Promise.all([one(),one(),one(),one()]);
-    if(fail)throw new Error("incomplet");
+    var c=await caches.open(DATA),N=list.length,resume=!stamp(z),n=0,i=0,fails=[],quota=false,net=false;
+    try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+    // reprise : sans téléchargement complet précédent, on ne retélécharge que les fichiers absents du cache
+    async function one(f){var url=new URL(base+f,location.href).href;
+      if(resume&&f!=="zone.js"&&f!=="data.json"&&await c.match(url))return;
+      for(var t=0;t<3;t++){
+        try{var r=await fetch(url,{cache:"no-cache"});
+          if(r.ok){await c.put(url,r);return}
+          if(r.status===404){fails.push(f+" (404)");return}
+        }catch(e){
+          if(e&&(e.name==="QuotaExceededError"||/quota/i.test(e.message||""))){quota=true;return}
+          net=true}
+        await new Promise(function(k){setTimeout(k,600*(t+1))});
+      }
+      fails.push(f)}
+    async function worker(){while(i<N&&!quota){var f=list[i++];await one(f);n++;if(prog&&(n%10===0||n===N))prog(Math.round(100*n/N))}}
+    await Promise.all([worker(),worker(),worker()]);
+    if(quota){var e1=new Error("quota");e1.cause="Espace de stockage de l'appareil insuffisant : libérez de la place (Réglages › Safari / navigateur) puis réessayez ; les fichiers déjà reçus sont conservés.";throw e1}
+    if(fails.length){var e2=new Error("incomplet");e2.cause=(net?"Connexion interrompue":"Fichiers introuvables")+" : "+fails.length+" fichier(s) manquant(s) (ex. "+fails[0]+"). Réessayez : seuls les fichiers manquants seront retéléchargés.";throw e2}
     try{localStorage.setItem(key(z),new Date().toISOString())}catch(e){}
   }
+  var failMsg=function(e){return e&&e.cause?e.cause:"Téléchargement impossible : "+((e&&e.message)||"erreur réseau")};
   async function rmZone(z){
     var c=await caches.open(DATA),ks=await c.keys(),p=new URL(z+"/",location.href).href;
     await Promise.all(ks.filter(function(k){return k.url.indexOf(p)===0}).map(function(k){return c.delete(k)}));
@@ -3684,7 +3699,7 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
         if(!q.ok){lab("Bientôt");b.disabled=true;d.style.display="none";return}
         b.disabled=busy;d.style.display=s?"":"none";lab(s?"Hors ligne ✓ "+fmt(s)+" · mettre à jour":"Télécharger")};
       b.onclick=async function(){if(busy||!q.ok)return;busy=true;Object.keys(rows).forEach(function(k){rows[k].refresh()});
-        try{lab("…");await dlZone(q.id,function(p){lab(p+" %")})}catch(e){console.warn(e);lab("Incomplet, réessayer");busy=false;setTimeout(function(){Object.keys(rows).forEach(function(k){rows[k].refresh()})},2500);return}
+        try{lab("…");await dlZone(q.id,function(p){lab(p+" %")})}catch(e){console.warn(e);lab(e&&e.name==="Error"&&e.message==="quota"?"Espace insuffisant":"Incomplet, réessayer");t.title=failMsg(e);var em=r.querySelector(".off-err");if(!em){em=document.createElement("div");em.className="off-err small";em.style.cssText="flex:1 1 100%;color:#e8a33d";r.appendChild(em)}em.textContent=failMsg(e);busy=false;setTimeout(function(){Object.keys(rows).forEach(function(k){rows[k].refresh()})},2500);return}
         busy=false;Object.keys(rows).forEach(function(k){rows[k].refresh()});syncMain()};
       d.onclick=async function(){if(busy)return;busy=true;try{await rmZone(q.id)}catch(e){console.warn(e)}busy=false;Object.keys(rows).forEach(function(k){rows[k].refresh()});syncMain()};
       rows[q.id]={refresh:refresh};refresh();
@@ -3699,7 +3714,7 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
     var go=async function(){
       if(busy)return;busy=true;bs.forEach(function(b){b.disabled=true;b.textContent="…"});
       try{await dlZone(zone,function(p){bs.forEach(function(b){b.textContent=p+" %"})})}
-      catch(e){console.warn(e);bs.forEach(function(b){b.disabled=false;b.textContent="Incomplet, réessayer"});busy=false;return}
+      catch(e){console.warn(e);bs.forEach(function(b){b.disabled=false;b.textContent=e&&e.message==="quota"?"Espace insuffisant":"Incomplet, réessayer"});var eb=document.getElementById("off-main-err");if(eb)eb.textContent=failMsg(e);busy=false;return}
       busy=false;bs.forEach(function(b){b.disabled=false});syncMain();drawRows();
     };
     bs.forEach(function(b){b.onclick=go});
