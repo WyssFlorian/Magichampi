@@ -2081,12 +2081,13 @@ function syncComm(){
   const b=$("comm-btn");if(b)b.setAttribute("aria-pressed",COMM.on);
   if(obsLayer){const v=COMM.on;if(v&&!map.hasLayer(obsLayer))obsLayer.addTo(map);else if(!v&&map.hasLayer(obsLayer))map.removeLayer(obsLayer)}
   if(typeof renderCoins==="function"&&coinLayer)renderCoins();
+  if(vapkoSync)vapkoSync();
   if(sortLayer){const v=COMM.on&&$("o-sorties").checked;if(v&&!map.hasLayer(sortLayer))sortLayer.addTo(map);else if(!v&&map.hasLayer(sortLayer))map.removeLayer(sortLayer)}}
 function setComm(v){COMM.on=v;try{localStorage.setItem("champi-comm",v?"1":"0")}catch(e){}syncComm()}
 function setupComm(){
   const box=document.querySelector(".view-btns");if(!box)return;
   const b=document.createElement("button");b.className="btn";b.id="comm-btn";
-  b.title="Afficher ou masquer les sources communautaires cochées dans les options : sorties des sociétés mycologiques et observations iNaturalist";
+  b.title="Afficher ou masquer les sources communautaires cochées dans les options : sorties des sociétés mycologiques, observations iNaturalist et contrôles officiels des champignons";
   b.textContent="👥 Communauté";b.onclick=()=>setComm(!COMM.on);box.appendChild(b);
   const ob=$("o-obs");if(ob){const f=ob.onchange;ob.onchange=e=>{if(f)f(e);if(e.target.checked&&!COMM.on)setComm(true)}}
   syncComm()}
@@ -3180,12 +3181,12 @@ const VAPKO=[
  {n:"Leysin",a:"route du Vallon 13 - Chalet La Fantaisie",h:"Toute l'année sur appel téléphonique préalable au (numéro sur vapko.ch) ; gratuit",ll:[46.33913,7.00975],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
  {n:"Tévenon",a:"Rte de Fontanezier 2 - Ancien Collège",h:"16/08-15/11, DI: 17:00-18:30, sauf le 11/10 ; Toute l'année sur prise de RDV par écrit ; gratuit ; Pas de contrôle sur photo",ll:[46.84905,6.63785],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"},
  {n:"Marsens",a:"Rte Principale 34, 1633 Vuippens - Hôtel de Ville",h:"15.07 - 31.10., DI : 17:30 - 19:00 ; Toute l'année, sur appel téléphonique ; gratuit ; Contrôle également possible rue des Alpettes 4 à Bulle.",ll:[46.65837,7.074],lu:"20 novembre 2026",src:"https://www.vapko.ch/index.php/fr/component/vapkocheckpoints/"}];
-let vapkoLayer=null;
+let vapkoLayer=null,vapkoSync=null;
 function setupVapko(){const b=L.latLngBounds(meta.bounds||regionLL()).pad(.15);
   vapkoLayer=L.layerGroup(VAPKO.filter(p=>b.contains(p.ll)).map(p=>L.marker(p.ll,{icon:L.divIcon({className:"",html:`<span class="vapko-pin${p.closed?" off":""}" title="Contrôle des champignons">✓</span>`,iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:500})
     .bindPopup(`<div class="pp"><h3>Contrôle des champignons · ${esc(p.n)}</h3><p style="margin:4px 0">${esc(p.a)}</p><p style="margin:4px 0"><b>${esc(p.h)}</b></p>${itinLink(p.ll[0],p.ll[1])}<p class="small" style="margin:6px 0 0">Horaires lus le ${p.lu||"16 novembre 2026"} ; ceux de 2027 ne sont pas encore publiés. <a href="${p.src}" target="_blank" rel="noopener">Source</a> · <a href="https://www.vapko.ch/index.php/fr/lieux-et-places-de-controle" target="_blank" rel="noopener">tous les lieux (VAPKO)</a></p></div>`,{maxWidth:300})));
-  const sync=()=>{const v=$("o-vapko").checked;if(v&&!map.hasLayer(vapkoLayer))vapkoLayer.addTo(map);else if(!v&&map.hasLayer(vapkoLayer))map.removeLayer(vapkoLayer)};
-  $("o-vapko").onchange=()=>{saveLay();sync()};sync();
+  const sync=()=>{const v=$("o-vapko").checked&&COMM.on;if(v&&!map.hasLayer(vapkoLayer))vapkoLayer.addTo(map);else if(!v&&map.hasLayer(vapkoLayer))map.removeLayer(vapkoLayer)};
+  vapkoSync=sync;$("o-vapko").onchange=()=>{saveLay();if($("o-vapko").checked&&!COMM.on)setComm(true);else sync()};sync();
   $("o-hunti").checked=$("o-hunt").checked;$("o-hunt").onchange=()=>{$("o-hunti").checked=$("o-hunt").checked;saveLay();huntUpdate()}}
 /* ---------- ma position en temps réel : point bleu, précision, centrer, suivi, boussole ---------- */
 // 1er appui : démarre le GPS et suit la position. Glisser la carte arrête le suivi (le point reste).
