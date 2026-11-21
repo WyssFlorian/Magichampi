@@ -1210,8 +1210,8 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk"><input type="checkbox" id="o-trail" checked> <span class="trail-sw" aria-hidden="true"></span> <span>Sentiers de randonnée pédestre</span></label>
         <label class="chk"><input type="checkbox" id="o-hunt" checked> <span class="hunt-sw" aria-hidden="true"></span> <span>Chasse</span></label>
         <input type="checkbox" id="o-hunti" checked hidden>
-        <label class="chk"><input type="checkbox" id="o-hard"> <span class="hard-sw" aria-hidden="true"></span> <span>Zones difficiles d'accès</span></label>
-        <p class="small" style="margin:-4px 0 0">Hachures gris clair sur les forêts à pente d'au moins 30° et dans les marais d'importance nationale.</p>
+        <label class="chk"><input type="checkbox" id="o-hard" checked> <span class="hard-sw" aria-hidden="true"></span> <span>Zones difficiles d'accès</span></label>
+        <p class="small" style="margin:-4px 0 0">Hachures gris clair sur les forêts à pente d'au moins 30° et dans les marais d'importance nationale. Visibles quand la géographie est activée.</p>
         <label class="chk"><input type="checkbox" id="o-vapko" checked> <span class="vapko-pin" aria-hidden="true" style="width:15px;height:15px;font-size:10px">✓</span> <span>Contrôles officiels des champignons</span></label>
         </div>
       </div>
@@ -1280,7 +1280,7 @@ details.more[open]>summary{margin-bottom:4px}
 </div>
     </div>
     <div class="hunt-modal" id="hunt-modal" hidden role="dialog" aria-label="Chasse"><div class="menu-head"><b>Chasse</b><button class="ti-x" id="hunt-x" type="button" aria-label="Fermer">×</button></div>
-      <p class="small" style="margin:6px 0 0"><b>Zones difficiles d'accès</b> (case dans Géographie, désactivée par défaut) : hachures gris clair, dans l'autre sens que celles de la chasse, sur les forêts dont la pente atteint 30° ou plus (calculée sur le relief swissALTI3D à 25 m) et sur celles situées dans un haut-marais ou bas-marais d'importance nationale. Au-dessus de 30°, les observations de champignons sont environ sept fois moins nombreuses, en partie parce que ces pentes sont peu fréquentées. Ne sont pas encore prises en compte : les îles et les rives sans pont, et la densité du sous-bois (aucune donnée libre n'existe pour cette dernière).</p>
+      <p class="small" style="margin:6px 0 0"><b>Zones difficiles d'accès</b> (case dans Géographie, cochée par défaut ; visibles seulement quand la géographie est activée, comme le bouton ⛰) : hachures gris clair, dans l'autre sens que celles de la chasse, sur les forêts dont la pente atteint 30° ou plus (calculée sur le relief swissALTI3D à 25 m) et sur celles situées dans un haut-marais ou bas-marais d'importance nationale. Au-dessus de 30°, les observations de champignons sont environ sept fois moins nombreuses, en partie parce que ces pentes sont peu fréquentées. Ne sont pas encore prises en compte : les îles et les rives sans pont, et la densité du sous-bois (aucune donnée libre n'existe pour cette dernière).</p>
       <p class="small" id="hunt-day" style="margin:6px 0"></p>
       <p class="small" style="margin:6px 0 0"><b>Où sont les hachures ?</b> Sur les massifs forestiers entiers (forêts contiguës ; une bande boisée de moins de 50 m de large coupe le massif) d'au moins 10 hectares dont au moins 10 hectares sont à plus de 1 km des villages et de 2 km des villes. Ailleurs, la chasse reste possible mais n'est pas signalée.</p>
     </div>
@@ -3129,7 +3129,7 @@ const HardLayer=L.Layer.extend({
     const pat=y.createPattern(t,"repeat");if(pat.setTransform)pat.setTransform(new DOMMatrix([1/dpr,0,0,1/dpr,0,0]));
     y.globalCompositeOperation="source-in";y.fillStyle=pat;y.fillRect(0,0,s.x,s.y);x.setTransform(1,0,0,1,0,0);x.drawImage(o,0,0)}});
 function hardUpdate(){if(!map||!G)return;const cb=$("o-hard");if(!cb)return;
-  if(cb.checked){try{hardBuild()}catch(e){console.warn(e)}
+  if(cb.checked&&state.relief){try{hardBuild()}catch(e){console.warn(e)}
     if(!hardLayer){map.createPane("hard").style.zIndex=414;map.getPane("hard").style.pointerEvents="none";hardLayer=new HardLayer()}
     if(!map.hasLayer(hardLayer))hardLayer.addTo(map);else hardLayer._draw()}
   else if(hardLayer&&map.hasLayer(hardLayer))map.removeLayer(hardLayer)}
@@ -3516,7 +3516,7 @@ async function boot(){
   reliefLayer=new ReliefLayer({pane:"relief",minZoom:RELIEF_MINZ,maxZoom:18,updateWhenZooming:false,keepBuffer:1});
   // la couche de relief (falaises + lignes de niveau) est présente si « géographie » ou « lignes de niveau » est coché
   syncRelief=()=>{const on=state.relief||$("o-contour").checked;if(on&&!map.hasLayer(reliefLayer))reliefLayer.addTo(map);else if(!on&&map.hasLayer(reliefLayer))map.removeLayer(reliefLayer);else if(on)reliefLayer.redraw()};
-  const setRelief=v=>{state.relief=v;saveState();if(v){$("o-contour").checked=true;saveLay();loadWater()}syncRelief();syncWater();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",()=>{geoStyle();syncWater()});
+  const setRelief=v=>{state.relief=v;saveState();if(v){$("o-contour").checked=true;saveLay();loadWater()}syncRelief();syncWater();hardUpdate();$("o-relief").checked=v;$("geo-btn").setAttribute("aria-pressed",v)};map.on("zoomend",()=>{geoStyle();syncWater()});
   $("o-contour").onchange=()=>{saveLay();syncRelief()};
   $("o-relief").checked=!!state.relief;$("o-relief").onchange=e=>setRelief(e.target.checked);if(state.relief)loadWater();syncRelief();
   ["o-water","o-road"].forEach(id=>$(id).onchange=()=>{saveLay();syncWater()});
