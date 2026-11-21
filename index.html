@@ -1234,7 +1234,7 @@ details.more[open]>summary{margin-bottom:4px}
         <div id="off-zones"></div>
       </div>
       <div class="menu-page" data-t="Calcul du score" id="menu-score"><h3>Comment le score est calculé</h3>
-      <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue × observations proches. Elle ne dépend pas de la météo.</p>
+      <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue. Elle ne dépend pas de la météo.</p>
       <ul>
         <li>Type de forêt : Carte des milieux naturels de Suisse (hêtraie acidophile, hêtraie à sapin, pinède, conifères d'altitude…), pondéré selon les milieux typiques de l'espèce. Cette carte est elle-même modélisée : elle peut se tromper localement.</li>
         <li>Essences : part de résineux du LFI (10 m), comparée aux hôtes de l'espèce. Quand le type de forêt est connu, ce facteur compte deux fois moins, pour ne pas compter deux fois la même information.</li>
@@ -1243,7 +1243,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Humidité : moitié humidité topographique (creux et bas de versant, calculée sur swissALTI3D), moitié bilan hydrique des stations forestières OFEV/WSL (avril-août, moyenne 2009-2018).</li>
         <li>Sol : roche et dépôts de surface de la carte géologique GeoCover (swisstopo, 1:25 000), classés de très acide à calcaire et comparés aux préférences de l'espèce. Les marais et glissements de terrain comptent aussi comme lieux plus humides. Là où GeoCover manque, l'atlas géochimique des sols (OFEV, 1 km) est utilisé (toutes les régions depuis le 20 novembre 2026).</li>
         <li>Présence connue : l'espèce est-elle signalée à SwissFungi dans la maille de 5 km (×1), une maille voisine (×0,93) ou pas du tout (×0,85) ? Le curseur « Relevés SwissFungi » limite ces relevés aux 2 ou 5 dernières années.</li>
-        <li>Observations iNaturalist : les points et photos ont été retirés de la carte publique le 20 nov. 2026 (licences souvent non commerciales). Il en reste une trace agrégée (cases de 556 m × 574 m, sans point exact) qui relève la note de +50 % au centre de la case, jusqu'à 1 km. Vos coins d'une espèce font de même (le plus fort des deux compte, jamais la somme). Ces observations ne servent ni à la calibration ni à la validation des seuils.</li>
+        <li>Observations (iNaturalist, SwissFungi, vos coins) : <b>aucun effet local</b>. Un point d'observation ne relève pas la note du lieu où il a été fait. Ces observations servent seulement à régler, sur l'ensemble de la carte, l'importance de chaque facteur ci-dessus (calibration globale, validée sur des blocs de 5 km tenus à l'écart).</li>
               </ul>
       <p><b>Classes</b> : les seuils sont fixes pour chaque espèce. Ils ont été calculés sur toutes les forêts de cette carte : 15 % y sont en classe élevée et 25 % en moyenne. Le meilleur quart de la classe élevée (4 % des forêts) est affiché à part, en « très élevé » (bleu-violet). La classe d'un lieu ne change donc pas quand on déplace ou zoome la carte. Attention : une classe est un rang parmi les forêts de la carte, pas une probabilité de trouver l'espèce. « Très élevé » veut dire « parmi les 4 % de forêts les plus favorables de cette carte ». Les seuils sont propres à chaque carte, car avec des seuils communs aux trois cartes, la région de Lausanne passait jusqu'à 60 % de ses forêts en classe élevée.</p>
       <p><b>Conditions du moment</b> : indice = saison (renforcée : exposant 1,6 sur la fréquence des relevés) × eau du sol × température × gel, exprimé en % de l'aptitude maximale du lieu (saison et météo idéales). Seuls les lieux d'aptitude au moins moyenne sont colorés ; la couleur dépend de l'indice : jaune au-dessus de 45 %, rose 60 %, orange 75 %, bleu 90 %. La fiche indique la même classe que la couleur de la carte.</p>
@@ -1264,7 +1264,7 @@ details.more[open]>summary{margin-bottom:4px}
       <div class="menu-page" data-t="Sources et limites"><h3>Sources et limites</h3>
       <ul>
         <li>Météo : MétéoSuisse, analyses en grille 1 km (pluie provisoire, température, minimum, ensoleillement), open data.</li>
-        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km. Observations précises iNaturalist : non publiées ici (licences CC BY-NC possibles) ; l'auteur les importe dans ses propres coins, qui renforcent la note autour d'eux.</li>
+        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km. Observations précises iNaturalist : non publiées ici (licences CC BY-NC possibles) ; elles servent seulement à la calibration globale du modèle (aucun effet local sur la note d'un lieu).</li>
         <li>Sol et eau : carte géologique GeoCover © swisstopo (données ouvertes) ; atlas géochimique des sols de Suisse (calcium) et bilan hydrique des stations forestières, OFEV/WSL, geo.admin.ch.</li>
         <li>Forêt : OFEV/WSL, Inventaire forestier national (degré de mélange, hauteur de végétation) ; Carte des milieux naturels de Suisse v1.2 (OFEV/WSL, TypoCH, geo.admin.ch).</li>
         <li>Relief, cartes et photos : © swisstopo. Réserves : Pro Natura, inventaires fédéraux des marais, Parcs suisses (zones, OFEV). Milieux à ménager : réserves forestières, inventaires fédéraux des zones alluviales et des sites de reproduction de batraciens (OFEV, geo.admin.ch).</li>
@@ -1636,41 +1636,29 @@ const wslF=(i,sp)=>{const W=wslExp(sp);if(LITE||!W)return 1;const H=WSL_HOSTS[sp
   let m=WSL0[sp.id];if(m==null){const h=new Float64Array(16);const n=G.wsl.length;for(let q=0;q<n;q+=7)if(G.fx[q]&&G.wsl[q])h[G.wsl[q]]++;let t=0,s=0;for(let k=1;k<16;k++){t+=h[k];s+=h[k]*wslVal(k-1,H,false)}m=WSL0[sp.id]=t?Math.pow(s/t,W):1}
   return m};
 const hostW=(c,pref,soft)=>Math.pow(hostF(c,pref,soft),W_HOST),altW=(v,t)=>Math.pow(trap2(v,t),W_ALT);
-function aptAt(i,sp,r,ob){
+function aptAt(i,sp,r){
   const c=LITE||G.conif[i]===255?NaN:G.conif[i]/100;
-  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r*(1+ob[i]);  // 20.11.2026 : bonus +50 % (décroissant, 250 m, nul au-delà de 1 km) autour de VOS coins de la même espèce ; les points iNaturalist ne sont plus publiés, ils s'importent comme coins
-}
-// confirmation par VOS coins de l'espèce (y compris ceux importés depuis des observations iNaturalist) : bonus de +50 % au point, décroissant (250 m), nul au-delà de 1 km
-const OB_B=.5,OB_L=250,OB_MAX=1000;
-// Observations iNaturalist agrégées (case de 0,005° × 0,0075°, jamais de point brut), bloc écrit par tools/inat_bonus_public.py. Elles relèvent le score PUBLIC comme vos coins
-// (maximum, jamais une somme : un lieu présent dans les deux n'est pas compté deux fois) et ne servent ni à la calibration ni à la validation (la validation appelle aptAt avec un bonus nul ; staticFor exclut aussi le bonus de l'aptitude maximale des pourcentages).
-/*PUB_OBS_BEGIN*/const PUB_OBS={"badia":[[46.5425,6.79875],[46.5675,6.69375],[46.5675,6.70125],[46.5725,6.69375],[46.5725,6.70125],[46.5875,6.71625],[46.6625,6.55875],[46.6825,6.63375]],"cornucopioides":[[46.5225,6.57375],[46.5225,6.58125],[46.5325,6.67125],[46.5375,6.67125],[46.5475,6.67875],[46.6025,6.36375],[46.6175,6.48375],[46.6225,6.48375],[46.6225,6.49125],[46.6425,6.43125],[46.6625,6.48375]],"cyanoxantha":[[46.6175,6.49125],[46.6675,6.45375]],"edulis":[[46.3825,7.04625],[46.5425,6.79875],[46.5725,6.73875],[46.5725,6.74625],[46.5825,6.66375],[46.5925,6.66375],[46.7875,6.49875],[46.7925,6.51375]],"procera":[[46.4875,6.82875],[46.4925,6.84375],[46.4925,6.92625],[46.5475,6.37125],[46.5675,6.34875],[46.5675,6.64125],[46.5725,6.67875]],"repandum":[[46.4925,6.92625]],"tubaeformis":[[46.4875,6.82875],[46.4925,6.83625],[46.5425,6.79875],[46.5575,6.77625],[46.5725,6.69375],[46.5925,6.69375],[46.6275,6.49125],[46.6425,6.43125],[46.6725,6.46125],[46.7525,6.50625]]};/*PUB_OBS_END*/
-function obsBonus(sp){
-  const n=meta.rows*meta.cols,ob=new Float32Array(n),lat=L.CRS.EPSG3857.unproject(L.point(meta.x0,meta.y1-meta.rows*meta.res/2)).lat,gres=meta.res*Math.cos(lat*Math.PI/180),R=Math.ceil(OB_MAX/gres);
-  (state.coins||[]).filter(o=>o.sp===sp.id).concat(PUB_OBS[sp.id]?PUB_OBS[sp.id].map(([la,lo])=>({lat:la,lng:lo})):[]).forEach(o=>{const p=L.CRS.EPSG3857.project(L.latLng(o.lat,o.lng)),c0=Math.floor((p.x-meta.x0)/meta.res),r0=Math.floor((meta.y1-p.y)/meta.res);
-    for(let r=Math.max(0,r0-R);r<=Math.min(meta.rows-1,r0+R);r++)for(let c=Math.max(0,c0-R);c<=Math.min(meta.cols-1,c0+R);c++){const d=Math.hypot(r-r0,c-c0)*gres;if(d>OB_MAX)continue;const b=OB_B*Math.exp(-d/OB_L),k=r*meta.cols+c;if(b>ob[k])ob[k]=b}});
-  return ob;
+  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 21.11.2026 : plus AUCUN bonus local autour des coins ou des observations iNaturalist : ces points ne touchent que la calibration globale des poids (tools/calibration/)
 }
 // Cache borné (les plus récents gardés) : chaque entrée = rang par cellule sur 16 bits + statistiques des zones
 const MOBILE=typeof matchMedia==="function"&&matchMedia("(pointer:coarse)").matches;
 const staticCache=new Map(),STATIC_MAX=MOBILE?10:12;let SCR=null;
 const P_NONE=0,P_SCALE=65534;
-const coinSig=sp=>(state.coins||[]).filter(c=>c.sp===sp.id).map(c=>c.lat.toFixed(4)+","+c.lng.toFixed(4)).join(";");
 function staticFor(sp){
-  const key=sp.id+(state.excl?"x":"")+(state.resp?"r":"")+(state.acc?"a":"")+state.yr+coinSig(sp);
+  const key=sp.id+(state.excl?"x":"")+(state.resp?"r":"")+(state.acc?"a":"")+state.yr;
   let e=staticCache.get(key);
   if(e){staticCache.delete(key);staticCache.set(key,e);return e}
   const n=meta.rows*meta.cols;
   if(!SCR||SCR.A.length<n)SCR={A:new Float32Array(n),bin:new Uint32Array(n),H:new Uint32Array((1<<18)+1)};
   const A=SCR.A,bin=SCR.bin,H=SCR.H;H.fill(0);
-  const rf=new Float32Array(meta.squares.length).fill(-1),ob=obsBonus(sp),SC=new Uint8Array(n).fill(255);
-  let m=0,amax=0;  // amax : maximum de l'aptitude SANS le bonus d'observations (même échelle que les seuils de classes et la calibration)
+  const rf=new Float32Array(meta.squares.length).fill(-1),SC=new Uint8Array(n).fill(255);
+  let m=0,amax=0;  // amax : maximum de l'aptitude (même échelle que les seuils de classes et la calibration)
   for(let i=0;i<n;i++){
     if(!usable(i)){A[i]=-1;continue}
     const sid=G.sq[i];let r=rf[sid];if(r<0)r=rf[sid]=regionF(sid,sp.key)[0];
-    A[i]=aptAt(i,sp,r,ob);SC[i]=thrClass(A[i],sp);const a0=A[i]/(1+ob[i]);if(a0>amax)amax=a0;m++;
+    A[i]=aptAt(i,sp,r);SC[i]=thrClass(A[i],sp);if(A[i]>amax)amax=A[i];m++;
   }
-  // rang (percentile) de chaque cellule en temps linéaire : histogramme fin de l'aptitude (2^18 classes couvrant 0 à 2 : l'aptitude dépasse 1 avec le facteur d'humidité (jusqu'à 1,15) et le bonus d'observations (jusqu'à ×1,5), maximum possible 1,73),
+  // rang (percentile) de chaque cellule en temps linéaire : histogramme fin de l'aptitude (2^18 classes couvrant 0 à 2 : l'aptitude dépasse 1 avec le facteur d'humidité (jusqu'à 1,15) maximum possible 1,15),
   // puis effectifs cumulés ; les valeurs d'une même classe sont traitées comme ex aequo (rang moyen)
   const NB=1<<18;
   for(let i=0;i<n;i++){const a=A[i];if(a<0)continue;const k=Math.min(NB-1,(a*(NB/2))|0);bin[i]=k;H[k+1]++}
@@ -1689,7 +1677,7 @@ function staticFor(sp){
   zl.sort((a,b)=>zm[a]-zm[b]);
   const zP=new Float32Array(nz).fill(-1);let cum=0;
   zl.forEach(z=>{zP[z]=(cum+zc[z]/2)/tot;cum+=zc[z]});
-  e={P,rf,SC,ob,amax,zone:{mean:zm,cls:zk,P:zP,count:zc,min:zmin,max:zmax,conif:Float32Array.from(zcf,(v,k)=>zcn[k]?v/zcn[k]:NaN)}};
+  e={P,rf,SC,amax,zone:{mean:zm,cls:zk,P:zP,count:zc,min:zmin,max:zmax,conif:Float32Array.from(zcf,(v,k)=>zcn[k]?v/zcn[k]:NaN)}};
   staticCache.set(key,e);
   if(staticCache.size>STATIC_MAX)staticCache.delete(staticCache.keys().next().value);
   return e;
@@ -1935,10 +1923,10 @@ function lv95(lat,lon){ // formule approchée swisstopo
 const ASP=["N","NE","E","SE","S","SO","O","NO"];
 function fxRow(lab,v,txt){return `<span class="lab">${lab}</span><span class="bar"><i style="width:${Math.round(clamp(v,0,1)*100)}%"></i></span><span class="v">${v.toFixed(2)}</span><span class="why">${txt}</span>`}
 function cellInfo(i,sp){
-  const st=staticFor(sp),A=st.P[i]===P_NONE?-1:aptAt(i,sp,st.rf[G.sq[i]]>=0?st.rf[G.sq[i]]:regionF(G.sq[i],sp.key)[0],st.ob);
+  const st=staticFor(sp),A=st.P[i]===P_NONE?-1:aptAt(i,sp,st.rf[G.sq[i]]>=0?st.rf[G.sq[i]]:regionF(G.sq[i],sp.key)[0]);
   const c=G.conif[i]===255?NaN:G.conif[i]/100,h=G.vhm[i]/5,edge=G.edge[i]*2,dem=G.dem[i],sl=G.slope[i],asp=G.aspect[i]*2,tpi=G.tpi[i];
   const [rF,rK,rD]=regionF(G.sq[i],sp.key);
-  return {A,P:pOf(st,i),SC:st.SC[i],c,h,edge,dem,sl,asp,tpi,rF,rK,rD,mi:G.mi[i],ca:G.ca[i],ob:st.ob[i],
+  return {A,P:pOf(st,i),SC:st.SC[i],c,h,edge,dem,sl,asp,tpi,rF,rK,rD,mi:G.mi[i],ca:G.ca[i],
     hab:G.hab?G.hab[i]:0,f:{hab:habF(i,sp),host:hostW(c,sp.host,G.hab&&G.hab[i]>0)*wslF(i,sp),wsl:G.wsl?G.wsl[i]:0,alt:altW(dem,sp.alt),stand:standF(h,edge,sp.stand,sp.id),slope:slopeF(sl),moist:moistF(G.mi[i],sp.moist),soil:soilF(G.ca[i],sp),obs:1+st.ob[i]}};
 }
 function rainSvg(m){
@@ -1994,7 +1982,6 @@ function popupHtml(latlng){
   const rTxt=info.rK==="own"?`signalée dans cette maille : ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]}, dernier en ${info.rD[1]}`:info.rK==="near"?`pas dans cette maille, mais ${info.rD[0]} relevé(s) ${YR_LAB[state.yr]} dans les mailles voisines`:`aucun relevé ${YR_LAB[state.yr]} dans la maille ni autour`;
   if(!LITE)h+=fxRow("Présence connue",info.rF,rTxt+" (SwissFungi : reflète aussi l'effort d'observation, d'où un poids modeste)");
   h+=GH("Accès et sécurité")+fxRow("Pente",info.f.slope,`${info.sl}° (comptée dans l'aptitude : sans elle la validation baisse ; sert aussi à juger l'effort et le risque)`);
-  if(info.ob>0)h+=`<p class="small">Un de vos coins de cette espèce est proche : la note est relevée (jusqu'à +50 %).</p>`;
   if(w){
     h+=GH("Conditions du moment")+fxRow("Saison",w.season,`fréquence de l'espèce à cette période, décalée de ${Math.round(-seasonShift(info.dem))} jours pour l'altitude`);
     h+=fxRow("Eau du sol",w.rainF,`réserve estimée ${Math.round(w.soil*100)} % entre J−14 et J−3 (pluie ${Math.round(w.rain)} mm de J−16 à J−3, moins l'évaporation)${w.soil<.6?" ; versants nord favorisés":""}`);

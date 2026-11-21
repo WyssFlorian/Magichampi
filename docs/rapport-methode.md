@@ -1,5 +1,7 @@
 # Magichampi : méthode et calculs, rapport scientifique vérifié contre le code
 
+> **Modification du 21 novembre 2026 (décision de Florian).** Les points de mesure (observations iNaturalist, coins de l'utilisateur, coins partagés) **n'ont plus aucun effet sur la zone où ils ont été observés** : le bonus local « +50 % autour du point » (anciennes sections 4.10 et 7.1) est supprimé du score. Ces points servent désormais **uniquement à une routine de calibration globale** (nouvelle section 9.1, `tools/calibration/`) qui règle l'importance de chaque facteur pour toute la carte. Cette décision **remplace la règle du 20 novembre** (« l'iNaturalist ne sert jamais à la calibration ») : comme un point n'influence plus sa propre zone, il n'y a plus de fuite directe vers le score, et la validation reste honnête grâce à une validation croisée par blocs de 5 km (les blocs tenus à l'écart ne servent pas à l'ajustement). La règle anti-double-compte est conservée et étendue (section 9.1). Les mentions du bonus plus bas sont conservées comme historique et marquées *supprimé*.
+
 Version du code décrite : `main` de Magichampi au commit `dcb7f7c` (PR 78 fusionnée, 20 novembre 2026, après les PR 72 à 78), `index.html` (3 628 lignes). Les numéros de ligne (`index.html:1444`) renvoient à cette version. Les scripts de préparation des données sont dans le dépôt privé `app-champignons` (`pipeline/`, branche `main` au commit `eef5b1c`, PR 3 fusionnée).
 
 **Seconde relecture (20 novembre 2026, après les PR 72 à 78).** Chaque ligne de la table de la section 12, chaque constante, chaque chiffre de validation et de couverture a été revérifié contre ce code : la validation a été rejouée sans le bonus iNaturalist (section 10) et les parts de forêts par classe, la couverture par région et les parts affectées par le bonus ont été remesurées. Les numéros de ligne ont été mis à jour (le code a perdu 2 lignes depuis la première version). Les formules et les constantes n'ont pas changé ; trois écarts nouveaux (D16 à D18) et deux précisions (section 4 : un facteur dépasse 1 ; section 4.10 : le bonus n'est plus seulement local) sont signalés. Aucun fichier de l'application n'a été modifié à cette étape ; D16 à D18 ont été corrigés ensuite (section 13.1).
@@ -33,9 +35,9 @@ Points à retenir (détail aux sections 9 à 13) :
 | Prévisions | MétéoSuisse, prévisions locales (points), interpolées | points | jours à venir | `alertes/meteo_update.py:79-115` |
 | Zones bâties, routes, réserves, marais | ARE 2025, swissTLM3D, Pro Natura, OFEV | vecteur | exclusions et zones de forêt (pas de score) | `pipeline/vd/grid.py:98-135, 183-219` |
 | Chasse, contrôles VAPKO | calendriers cantonaux VD et FR, liste VAPKO | — | couches d'information, **hors score** | `index.html:2878-3107` |
-| Coins de l'utilisateur, points iNaturalist importés | saisie locale ; fichier d'import | point | bonus +50 % autour des coins de l'espèce ; les points iNaturalist publics n'existent que sous forme agrégée (section 7.1) | `index.html:1590-1600` |
+| Coins de l'utilisateur, points iNaturalist importés | saisie locale ; fichier d'import | point | **aucun effet sur le score** (bonus local supprimé le 21.11.2026) ; entrée de la calibration globale (section 9.1) | `tools/calibration/` |
 
-Depuis le 20 novembre 2026 une trace **agrégée** des 62 coins iNaturalist du fichier d'import relève aussi le score public (section 7.1) ; les relevés précis iNaturalist/GBIF servent à la validation (section 10), jamais à la fois dans le score et dans la validation. (Texte antérieur : « ne servent qu'à la validation, jamais au score public ».) Leurs licences (CC BY, CC BY-NC) sont conservées dans le projet.
+Depuis le 21 novembre 2026, aucune observation ne relève le score de son lieu (la trace agrégée du 20 novembre est supprimée) ; les relevés précis iNaturalist/GBIF servent à la calibration globale et à sa validation croisée (sections 9.1 et 10). Leurs licences (CC BY, CC BY-NC) sont conservées dans le projet.
 
 ## 3. Prétraitement et grille de 25 m
 
@@ -125,8 +127,8 @@ Avec `[p, k] = SOIL[s]` (p = préférence de −1 acidophile à +1 calcicole, k 
 ### 4.9 Présence connue (`regionF`, `index.html:1469`)
 Selon la période de relevés choisie (2 dernières années, 5 dernières, toutes) : relevé dans la maille de 5 km de la cellule → 1 ; sinon relevé dans l'une des 8 mailles voisines → 0,914 ; sinon → 0,83. Ces deux valeurs sont 0,925 et 0,85 élevés à la puissance 1,15 (calibrée). Le terme reflète autant l'effort d'observation que la présence réelle.
 
-### 4.10 Bonus d'observations (`obsBonus`, `index.html:1590-1600`)
-Pour chaque point de l'espèce, `+0,5 · exp(−d / 250 m)`, nul au-delà de 1 000 m ; maximum retenu sur les points. Facteur `1 + bonus`. Les points sont de deux origines, combinées **par maximum** : les coins de l'utilisateur (locaux, dans le navigateur) et, depuis le 20 novembre 2026, 47 points iNaturalist agrégés publiés dans le code (bloc `PUB_OBS`, `index.html:1593`, section 7.1). Le bonus n'est appliqué que dans `staticFor` (l'affichage) ; le calcul des seuils et la validation passent un bonus nul à `aptAt`.
+### 4.10 Bonus d'observations — *supprimé le 21 novembre 2026*
+**Plus de bonus.** Ce qui suit décrit l'ancien comportement, pour l'historique : pour chaque point de l'espèce, `+0,5 · exp(−d / 250 m)`, nul au-delà de 1 000 m ; maximum retenu sur les points. Facteur `1 + bonus`. Les points sont de deux origines, combinées **par maximum** : les coins de l'utilisateur (locaux, dans le navigateur) et, depuis le 20 novembre 2026, 47 points iNaturalist agrégés publiés dans le code (bloc `PUB_OBS`, `index.html:1593`, section 7.1). Le bonus n'est appliqué que dans `staticFor` (l'affichage) ; le calcul des seuils et la validation passent un bonus nul à `aptAt`.
 
 ## 5. Rang, classes et zones
 
@@ -134,7 +136,7 @@ Pour chaque point de l'espèce, `+0,5 · exp(−d / 250 m)`, nul au-delà de 1 0
 
 **Rang** (`staticFor`, `index.html:1605`). Percentile de chaque cellule parmi les cellules utilisables, par histogramme à 2¹⁸ classes couvrant l'aptitude de 0 à 2 (ex æquo traités par rang moyen). Depuis la correction de D17, les aptitudes supérieures à 1 ne sont plus confondues.
 
-**Pourcentage affiché** : `aptPct = 100 · A / A_max`, A_max étant le meilleur A de l'espèce dans la région chargée, **bonus d'observations exclu** (D16, corrigé : même échelle que les seuils et la calibration ; une cellule du bonus peut donc afficher 100 %, plafonné). Les pourcentages de seuil affichés sont `100 · q / A_max`.
+**Pourcentage affiché** : `aptPct = 100 · A / A_max`, A_max étant le meilleur A de l'espèce dans la région chargée, (plus de bonus depuis le 21.11.2026 ; D16 est sans objet). Les pourcentages de seuil affichés sont `100 · q / A_max`.
 
 **Zones de forêt** : la classe d'une zone est celle de son 80ᵉ centile d'aptitude (ses 20 % meilleures cellules) ; l'indice relatif de la zone est son rang cumulé pondéré par la surface (`index.html:1627-1637`).
 
@@ -155,7 +157,8 @@ Mode « conditions du moment » (météo pour la date choisie, mesures puis pré
 - **Forte concentration** : chaque espèce affichée rapporte 3 (très élevé), 2 (élevé), 1 (moyen) points. Les seuils sont les maxima de : seuils fixes (2/4/6 points pour un palier, 4/6/8 pour toutes, réduits au prorata des espèces décochées) et quantiles 60/85/96 % des points sur les forêts chargées (`index.html:1768, 1794-1813`).
 - **Meilleur lieu** (`findBest`, `index.html:2269`) : score de zone `(classe + qualité) × taille × part de bonne classe`, avec `sizeW(a) = 0,2 + 0,8 · clamp(ln(a/0,5)/ln(40), 0, 1)` (a = surface du massif continu en ha) et un facteur `0,6 + 0,4 · min(1, ha en classe max / 3)`. Ne modifie pas le score.
 
-### 7.1 Bonus iNaturalist du score public et anti-doublons
+### 7.1 Bonus iNaturalist du score public et anti-doublons — *bonus supprimé le 21 novembre 2026*
+Le bloc `PUB_OBS` et `tools/inat_bonus_public.py` ont été supprimés. Les règles anti-doublons ci-dessous restent valables et sont reprises, étendues, en section 9.1.
 
 - **Forme.** 62 coins iNaturalist (observations « research grade », Vaud) → 47 cases par espèce de 0,005° × 0,0075° (≈ 556 m × 574 m), 7 espèces ; 5 coins sans espèce de l'application et 10 observations tombant dans une case déjà occupée sont fusionnés. Chaque case devient un point au centre de la case (bloc `PUB_OBS`, `index.html:1593`, produit par `tools/inat_bonus_public.py`). Aucun point exact, aucune photo, aucun auteur n'est publié.
 - **Effet.** Le même bonus que pour les coins de l'utilisateur : `× (1 + 0,5 · exp(−d / 250 m))`, nul au-delà de 1 km, combiné **par maximum** avec les coins de l'utilisateur.
@@ -172,6 +175,27 @@ Chasse (hachures, calendriers VD et FR), contrôles VAPKO, zones de tir, accès 
 Poids globaux (non par espèce) ajustés le 20 novembre 2026 sur les relevés précis, par régression « présence contre fond groupe cible » (softmax conditionnel : la probabilité d'une cellule de présence parmi les cellules de fond, comme dans une maximisation de vraisemblance de type MaxEnt), exposants bornés entre 0 et 3, régularisés vers 1, évalués par validation croisée à 5 plis par blocs de 5 km (`fit.py`, branche `claude/project-thread-8xtobh` d'`app-champignons`). Résultat : hôte 0,2, altitude 0,6, SwissFungi ×1,15 ; type de forêt, peuplement, pente, humidité et sol laissés à 1. Rang hors échantillon contre le fond : 0,590 → 0,647. Le poids de l'hôte a ensuite été ramené de 0,2 à 0,1 à l'arrivée de la carte WSL (W_WSL = 0,4, puis groupes 1,6 / 1,2 / 0,4), choix validé sur les mêmes relevés (0,639 → 0,654 → 0,656).
 
 Ne sont **pas** calibrés : les trapèzes de température, le gel, les tables type de forêt × espèce, les préférences de sol, le décalage de saison (7 jours par 250 m), la pénalité WSL (0,6 / 0,3), la fiabilité par classe WSL (0,8 / 0,6), les seuils des classes météo. Ce sont des valeurs d'expert (tableau complet dans `docs/provenance-parametres.md`).
+
+### 9.1 Routine de calibration globale avec les observations (21 novembre 2026)
+
+**Principe.** Une observation n'a aucun effet sur sa zone ; elle sert à régler, pour **toute** la carte, douze multiplicateurs globaux (1 = modèle actuel) : type de forêt, hôte, essence WSL (trois groupes d'espèces : hôtes étroits, feuillus précis, généralistes), altitude, peuplement, pente, humidité, sol, présence SwissFungi (maille voisine, aucune). Les poids sont des multiplicateurs de l'exposant de chaque facteur, ajustés par le même logit conditionnel « une observation contre les cellules du fond groupe cible de sa région », bornés à 0–3 et régularisés vers 1 (λ choisi par la vraisemblance hors échantillon).
+
+**Fichiers** (`tools/calibration/`) : `observations.py` fusionne les sources et retire les doublons ; `facteurs.js` (Playwright) extrait les neuf facteurs effectifs, pour chaque observation, chaque cellule du fond et un échantillon régulier de forêt, dans les huit régions ; `calibrer.py` ajuste et valide ; le résultat chiffré est dans `docs/rapport-methode-verif/calibration-2026-11-21.json`.
+
+**Validation sans fuite.** Validation croisée à 5 plis **par blocs de 5 km** (un bloc entier, observations et fond, est tenu à l'écart), 5 découpages aléatoires ; on rapporte le rang de l'observation tenue à l'écart parmi les forêts (`pct`) et parmi le fond (`pctBg`), et la log-vraisemblance hors échantillon. Intervalles de confiance des multiplicateurs : bootstrap par blocs (30 tirages).
+
+**Contrôle anti-double-compte** (règle de Florian du 20 novembre, étendue) : (1) une observation = un identifiant (GBIF ; le préfixe `inat` des coins importés est retiré) ; (2) à défaut, (espèce, position à 1e-4°, date) ; (3) une cellule par espèce (≈ 25 m) ; (4) une observation à cheval sur deux régions (recouvrement de 1 km) n'est gardée que dans la première ; (5) les coins iNaturalist importés recoupent les relevés GBIF : sur les 62 coins du fichier d'import, **57 portaient le même identifiant qu'un relevé GBIF** (déjà compté) et 5 n'avaient pas d'espèce ; ils n'ajoutent donc **aucune** observation nouvelle ; (6) SwissFungi (mailles de 5 km, issu en partie d'iNaturalist) n'est pas ajouté comme observations ; il reste un facteur du score. Rapport imprimé à chaque exécution. Les coins partagés (déchiffrés) s'ajoutent avec `--coins fichier.json` et passent par les mêmes règles.
+
+**Résultat du 21 novembre 2026** (229 observations distinctes, dont 178 utilisées après retrait des doublons entre régions et des paires espèce × cellule) :
+
+| | pct (rang parmi les forêts) | pctBg (rang parmi le fond) | log-vraisemblance |
+|---|---|---|---|
+| Modèle actuel, sans ajustement | 0,673 | 0,673 | −6,770 |
+| Calibré, validation croisée par blocs | 0,673 | 0,673 | −6,771 |
+
+**Conclusion honnête : la calibration ne trouve rien à améliorer hors échantillon.** Les multiplicateurs ajustés restent entre 0,96 et 1,03 (intervalles de confiance larges contenant 1, sauf la présence SwissFungi « maille voisine » à 1,015 [1,01 ; 1,03], effet négligeable) et un λ plus faible fait baisser la vraisemblance hors échantillon (−6,781 à λ = 0,001). Les poids du 20 novembre sont donc déjà au mieux compatible avec ces 178 observations ; **aucun poids n'a été changé, les seuils ne changent pas, les tuiles ne changent pas**. Valeur de référence avant/après de la validation officielle (247 paires par région, 0,663) : inchangée, puisque le score ne dépend plus des observations et que les poids sont conservés. Limites : 178 observations, presque toutes iNaturalist (biais de prospection) ; les 34 espèces ajoutées le 21 novembre n'ont pas encore de relevés précis rapprochés (`match.py` à relancer) ; la routine devient utile quand les coins partagés s'accumulent.
+
+**Reproduire.** `python3 tools/calibration/observations.py --gbif valid_obs.json --inat inat-coins.json [--coins partages.json] --out obs.json` ; `node tools/calibration/facteurs.js . <zone> obs.json f_<zone>.json` pour les huit zones ; `python3 tools/calibration/calibrer.py obs.json <dossier des f_*.json> calibration.json`.
 
 ## 10. Validation
 
@@ -201,7 +225,7 @@ Note (20 novembre 2026) : ces trois lignes par palier datent d'avant le reclasse
 
 Intervalle à 95 % par rééchantillonnage de blocs de 5 km (2 000 tirages, `docs/rapport-methode-verif/boot.py`) : pct [0,609 ; 0,713] (247 paires, 59 blocs), [0,606 ; 0,725] (185 distincts, 48 blocs) ; pctBg [0,616 ; 0,704] et [0,620 ; 0,721]. (La première version donnait [0,611 ; 0,716] et [0,607 ; 0,725] : l'écart de ±0,003 vient du tirage aléatoire.)
 
-**Sans bonus iNaturalist.** `rerun.js` appelle `aptAt` avec un bonus nul : les points iNaturalist agrégés (`PUB_OBS`) et les coins de l'utilisateur n'entrent ni dans la validation ni dans le calcul des seuils (`tools/seuils.js`). Les valeurs de ce tableau sont donc celles du modèle sans bonus, et identiques aux valeurs obtenues avant l'ajout du bonus. Le code contient un commentaire inexact (« aptAt les ignore », `index.html:1591`) : c'est l'appelant qui passe un bonus nul.
+**Sans bonus iNaturalist** (état avant le 21.11.2026, conservé : le bonus n'existe plus). `rerun.js` appelle `aptAt` avec un bonus nul : les points iNaturalist agrégés (`PUB_OBS`) et les coins de l'utilisateur n'entrent ni dans la validation ni dans le calcul des seuils (`tools/seuils.js`). Les valeurs de ce tableau sont donc celles du modèle sans bonus, et identiques aux valeurs obtenues avant l'ajout du bonus. Le code contient un commentaire inexact (« aptAt les ignore », `index.html:1591`) : c'est l'appelant qui passe un bonus nul.
 
 ### 10.3 Effet de la correction de la couche « conifères »
 Avec la couche inversée (état d'avant le 20 novembre à 14 h 24), le même script redonne exactement les valeurs de la documentation : 0,656 au total (ple 0,729, lsn 0,603, gdv 0,674), Boyce 0,99. Avec la couche corrigée : 0,663. Puissance de l'hôte, couche corrigée :
@@ -226,7 +250,7 @@ Le poids de l'hôte est donc sans effet mesurable entre 0 et 0,2 : l'information
 10. **Validation hors échantillon des seuils météo** : aucune. La carte « conditions du moment » n'a pas été validée contre des dates de relevés.
 11. **Poids de l'essence calibrés avec la couche inversée** (section 10.3) : à refaire quand le fichier de coins partagés sera disponible.
 12. **Seuils calculés sur plus de cellules que celles affichées.** Les seuils portent sur toutes les forêts (`fx > 0`), l'affichage par défaut sur `fx = 1` : en moyenne l'écart est faible, pour certaines espèces il est grand (D8, section 5 ; l'écart est réduit depuis la correction de D8, puisque les cellules exclues ont maintenant des valeurs réelles).
-13. **Le bonus d'observations n'est pas validable** (section 7.1) (il n'entre plus dans A_max depuis la correction de D16).
+13. ~~Le bonus d'observations n'est pas validable~~ : sans objet depuis le 21 novembre 2026 (bonus supprimé).
 
 ## 12. Table de correspondance « formule → code »
 
@@ -245,7 +269,7 @@ Le poids de l'hôte est donc sans effet mesurable entre 0 et 0,2 : l'information
 | 11 | Humidité ±15 % / −10 % | `index.html:1462` `moistF` | oui |
 | 12 | Sol : 1 − k · clamp(−p·t, 0, 1) | `index.html:1465` `soilF` | oui (D11) |
 | 13 | Présence : 1 / 0,914 / 0,83 | `index.html:1469` `regionF` | oui |
-| 14 | Bonus coins +0,5 · exp(−d/250) | `index.html:1590-1600` `obsBonus`, `PUB_OBS` `1593` | oui |
+| 14 | ~~Bonus coins +0,5 · exp(−d/250)~~ | supprimé le 21.11.2026 (`obsBonus`, `PUB_OBS`) | sans objet |
 | 15 | Seuils q60 / q85 / q96,25 | `tools/seuils.js`, `index.html:1422` `thrClass` | oui (recalculés) |
 | 16 | Rang par histogramme | `index.html:1605-1645` `staticFor`, `aptPct` `1644` | oui |
 | 17 | Zone : 80ᵉ centile | `index.html:1627-1637` | oui |
@@ -334,7 +358,7 @@ Dans `docs/rapport-methode-verif/` (Playwright, Chromium ; chaque script sert le
 - `boot.py` : intervalles de confiance par blocs de 5 km, relevés distincts, sans le coprin (section 10.2).
 - `summ2.py` : pct, pctBg, Boyce et part en classe élevée à partir des sorties de `rerun.js`.
 - `resultats.json` : résultats agrégés (aucune donnée individuelle).
-Le fichier des relevés précis (`pipeline/validation/valid_obs.json`) reste dans le dépôt privé `app-champignons`.
+Le fichier des relevés précis (`pipeline/validation/valid_obs.json`) reste dans le dépôt privé `app-champignons`. La routine de calibration du 21.11.2026 est dans `tools/calibration/` (section 9.1).
 
 ## 16. Références (existence vérifiée, texte intégral non lu pour la plupart)
 
