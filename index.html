@@ -1565,6 +1565,14 @@ const usable=i=>{const f=G.fx[i];if(state.acc){if(SHOOT_G!==G)buildShoot();if(SH
    Réserves naturelles et zone centrale du Parc naturel du Jorat (OParcs art. 23 : interdit de quitter les chemins et de cueillir des champignons) : fx = 4.
    Aucune des dix espèces de la carte n'est protégée, limitée ou sur la Liste rouge 2007. */
 const RULES={hours:[7,20],days:[],kg:2};   // days : jours du mois interdits (aucun depuis 2025)
+// Espèces masquées avec « Cueillette responsable », par canton : id d'espèce -> motif (statut légal ou liste rouge RE/CR/EN/VU).
+// VD : RLPrPNP annexe 1 (cueillette interdite pour les espèces prioritaires OFEV et RE/CR/EN/VU) ; annexe 2 (cueillette limitée : Cèpe bronzé, Oronge, Pleurote du panicaut…) non affichée par la carte.
+// Contrôle du 21 nov. 2026 : aucune des 79 espèces actuelles n'est concernée (liste rouge 2007 ; annexe 2 VD). Ajouter ici toute espèce future menacée ou protégée, p. ex. PROTECTED_BY_CANTON.VD.xxx="Liste rouge : vulnérable (VU)".
+const PROTECTED_BY_CANTON={VD:{},FR:{}};
+// cantons couverts par chaque région (la région Riviera-Chablais comprend la Veveyse fribourgeoise)
+const ZONE_CANTONS={ple:["VD","FR"],lsn:["VD"],gdv:["VD"],nyn:["VD"],bro:["VD"],vul:["VD","FR"],chb:["VD"],pde:["VD"]};
+const protReason=sp=>{if(!state.resp||!sp)return null;for(const c of (ZONE_CANTONS[ZID]||["VD"])){const m=PROTECTED_BY_CANTON[c]&&PROTECTED_BY_CANTON[c][sp.id];if(m)return m}return null};
+const protHidden=sp=>!!protReason(sp);
 const SP_RULES={};                         // id d'espèce -> {forbid:"motif"} ou {care:"motif"} ; vide pour les dix espèces actuelles
 const RG_LAB={wr12:"réserve forestière naturelle (interventions minimales)",wr13:"réserve forestière particulière (biodiversité)",auen:"zone alluviale d'importance nationale",amph:"site de reproduction de batraciens d'importance nationale"};
 const RG_WHY={wr12:"forêt laissée à sa dynamique naturelle : bois mort, sol et mycélium non perturbés",wr13:"forêt gérée pour des espèces rares ; le piétinement hors chemins dérange la faune et la flore visées",auen:"sols humides sensibles au piétinement, faune riveraine",amph:"sols et litière où les batraciens passent l'été et l'automne"};
@@ -1821,7 +1829,7 @@ function seasonDate(){return state.mode==="now"?meteo.dates[state.d]:localToday(
 // altitude de référence pour le filtre de saison : médiane des forêts de la région chargée
 let REG_ALT=800;
 function inSeason(sp){return seasonF(sp.key,seasonDate(),REG_ALT)>=SEASON_MIN}
-const inTier=sp=>(!state.tier||sp.tier===state.tier)&&!state.hide.includes(sp.id);
+const inTier=sp=>(!state.tier||sp.tier===state.tier)&&!state.hide.includes(sp.id)&&!protHidden(sp);
 function spAlpha(L){return L.slice().sort((a,b)=>a.fr.localeCompare(b.fr,"fr",{sensitivity:"base"}))}  // listes de choix : ordre alphabétique français, sans tenir compte des accents
 function activeSpecies(){return SPECIES.filter(sp=>inTier(sp)&&(!state.seasonOnly||inSeason(sp)))}
 function render(){try{renderInner()}catch(e){console.error(e)}}
@@ -1850,7 +1858,7 @@ function renderInner(){
         for(let i=0;i<n;i++){const k=C[i];if(k===255)continue;has[i]=1;pts[i]+=MULTI_PTS[k]}});
       // seuils fixes : plus de 2, 4 et 6 points avec une catégorie, plus de 4, 6 et 8 avec « Toutes » ;
       // réduits proportionnellement quand des espèces sont décochées (au minimum 1, 2 et 3)
-      const tierAll=SPECIES.filter(s=>!state.tier||s.tier===state.tier),fr=tierAll.length?tierAll.filter(s=>!state.hide.includes(s.id)).length/tierAll.length:1,B=state.tier?[2,4,6]:[4,6,8];
+      const tierAll=SPECIES.filter(s=>(!state.tier||s.tier===state.tier)&&!protHidden(s)),fr=tierAll.length?tierAll.filter(s=>!state.hide.includes(s.id)).length/tierAll.length:1,B=state.tier?[2,4,6]:[4,6,8];
       const T3=B.map((b,k)=>Math.max(k+1,Math.round(b*fr)));T3[1]=Math.max(T3[1],T3[0]+1);T3[2]=Math.max(T3[2],T3[1]+1);
       const f1=T3[0]+1,f2=T3[1]+1,f3=T3[2]+1;
       // niveaux proportionnels : au moins les seuils ci-dessus, relevés pour ne garder que les 40 %, 15 % et 4 % de forêts les mieux notées
@@ -2133,7 +2141,7 @@ function renderSpeciesList(){
   $("season-help").textContent=`${nIn} espèce${nIn>1?"s":""} sur ${TL.length} (${TN}) de saison au ${fmtDate(date)} vers ${Math.round(REG_ALT/50)*50} m (altitude médiane des forêts affichées)${state.mode==="now"&&fcKind(state.d)?` (${fcKind(state.d)})`:""}.`.replace("..",".");
   [...el.children].forEach(b=>{
     const sp=SPECIES.find(s=>s.id===b.dataset.id);b.setAttribute("aria-pressed",sp.id===state.sp);
-    b.hidden=!inTier(sp)||(state.seasonOnly&&nIn>0&&!inSeason(sp));
+    b.hidden=protHidden(sp)||!inTier(sp)||(state.seasonOnly&&nIn>0&&!inSeason(sp));
     const s=seasonF(sp.key,date,REG_ALT),fs=fungi[sp.key],n=fsCount(fs);
     b.querySelector(".now").innerHTML=`saison ${Math.round(s*100)} %<br><span class="rel">pic vers le ${peakTxt(sp,REG_ALT)}</span>`+(LITE?"":`<br><span class="rel">${n} relevés région</span>`)});
   if(NARROW.matches){const sel=el.querySelector("[aria-pressed=\"true\"]");if(sel){const t=sel.offsetLeft-(el.clientWidth-sel.offsetWidth)/2;el.scrollLeft=Math.max(0,t)}}
@@ -2144,7 +2152,7 @@ const TIER_TXT=["Toutes les espèces","Stars : les plus recherchées","Bons come
 function showTierInfo(t){
   const el=$("tier-info");
   if(!el.hidden&&+el.dataset.tier===t){el.hidden=true;return}
-  const list=spAlpha(SPECIES.filter(sp=>!t||sp.tier===t));
+  const list=spAlpha(SPECIES.filter(sp=>(!t||sp.tier===t)&&!protHidden(sp)));
   el.dataset.tier=t;
   el.innerHTML=`<div class="ti-head"><b>${TIER_TXT[t]} (${list.length})</b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
     `<div class="ti-safe"><b>Prudence.</b> Utilisez toujours un guide de terrain. Ne cueillez que les champignons que vous avez identifiés avec certitude, et faites toujours contrôler toute votre récolte par un contrôleur officiel (VAPKO) avant de la consommer. En cas de doute ou de malaise : Tox Info Suisse, 145.</div><dl>`+
@@ -2190,14 +2198,14 @@ function menuSetup(){infoToggles();const P=[...document.querySelectorAll("#menu-
 const TIER_NAMES=["","★ Stars","Bons comestibles","Comestibles intéressants"];
 function fillSpFilter(){
   const box=$("sp-filter");if(!box)return;
-  box.innerHTML=[1,2,3].map(t=>{const L=spAlpha(SPECIES.filter(s=>s.tier===t));
+  box.innerHTML=[1,2,3].map(t=>{const L=spAlpha(SPECIES.filter(s=>s.tier===t&&!protHidden(s)));
     return `<div class="spf-tier"><div class="row"><b>${TIER_NAMES[t]} (${L.filter(s=>!state.hide.includes(s.id)).length}/${L.length})</b><span><button type="button" data-all="${t}">tout cocher</button><button type="button" data-none="${t}">tout décocher</button></span></div>`+
       L.map(s=>`<label><input type="checkbox" data-sp="${s.id}"${state.hide.includes(s.id)?"":" checked"}><span>${esc(s.fr)} <i>${esc(s.la)}</i></span></label>`).join("")+`</div>`}).join("");
   const apply=()=>{
     state.hide=[...box.querySelectorAll("[data-sp]")].filter(c=>!c.checked).map(c=>c.dataset.sp);
     if(state.sp!=="multi"&&state.hide.includes(state.sp)){const nx=SPECIES.find(x=>inTier(x)&&(!state.seasonOnly||inSeason(x)))||SPECIES.find(inTier)||SPECIES.find(x=>!state.hide.includes(x.id));if(nx){state.sp=state.lastSp=nx.id}}
     saveState();render();
-    box.querySelectorAll(".spf-tier").forEach((d,k)=>{const L=SPECIES.filter(s=>s.tier===k+1);d.querySelector("b").textContent=`${TIER_NAMES[k+1]} (${L.filter(s=>!state.hide.includes(s.id)).length}/${L.length})`})};
+    box.querySelectorAll(".spf-tier").forEach((d,k)=>{const L=SPECIES.filter(s=>s.tier===k+1&&!protHidden(s));d.querySelector("b").textContent=`${TIER_NAMES[k+1]} (${L.filter(s=>!state.hide.includes(s.id)).length}/${L.length})`})};
   box.querySelectorAll("[data-sp]").forEach(c=>c.onchange=apply);
   box.querySelectorAll("[data-all],[data-none]").forEach(b=>b.onclick=()=>{const t=+(b.dataset.all||b.dataset.none);box.querySelectorAll("[data-sp]").forEach(c=>{const sp=SPECIES.find(x=>x.id===c.dataset.sp);if(sp.tier===t)c.checked=!!b.dataset.all});apply()});
 }
@@ -2709,7 +2717,7 @@ function alRender(){
   else if(s===3)b=`<div class="cf-l">Type d'événement</div>`+rad("kind","conc",d.kind==="conc","Forte concentration d'espèces")+rad("kind","sp",d.kind==="sp","Sélection d'espèces");
   else if(s===4){
     if(d.kind==="conc")b=`<div class="cf-l">Niveau de concentration</div>`+AL_LEV.map(([k,l])=>chk("lev",k,d.lev.includes(k),l)).join("")+`<div class="cf-l" style="margin-top:8px">Catégories</div>`+[1,2,3].map(t=>chk("tiers",t,d.tiers.includes(t),AL_TIERN[t])).join("");
-    else b=`<div class="cf-l">Champignons</div><div class="al-sp">`+[1,2,3].map(t=>`<div class="sub-h">${AL_TIERN[t]}</div>`+SPECIES.filter(x=>x.tier===t).map(x=>chk("sp",x.id,d.sp.includes(x.id),`${esc(x.fr)}`)).join("")).join("")+`</div>`+
+    else b=`<div class="cf-l">Champignons</div><div class="al-sp">`+[1,2,3].map(t=>`<div class="sub-h">${AL_TIERN[t]}</div>`+SPECIES.filter(x=>x.tier===t&&!protHidden(x)).map(x=>chk("sp",x.id,d.sp.includes(x.id),`${esc(x.fr)}`)).join("")).join("")+`</div>`+
       `<div class="cf-l" style="margin-top:8px">Stade de la saison</div>`+AL_STAGE.map(([k,l])=>chk("stage",k,d.stage.includes(k),l)).join("")+
       `<div class="cf-l" style="margin-top:8px">Conditions présentes sur la carte</div>`+AL_COND.map(([k,l])=>chk("cond",k,d.cond.includes(k),l)).join("")}
   else b=`<div class="cf-l">Fréquence</div>`+rad("freq","daily",d.freq==="daily","Tous les jours")+rad("freq","weekly",d.freq==="weekly",`Une fois par semaine, le <select id="alf-wd" class="coin-sel">${[1,2,3,4,5,6,0].map(x=>`<option value="${x}"${x===d.wday?" selected":""}>${AL_DAYS[x]}</option>`).join("")}</select>`)+rad("freq","next",d.freq==="next","À la prochaine occasion (dès que les conditions sont remplies, puis l'alerte s'arrête)")+
@@ -2806,7 +2814,7 @@ window.__alertEval=async function(alerts,opt){
   for(const a of alerts){
     const res={id:a.id,sp:a.sp,thr:a.thr,where:a.t.name,days:[],best:[]};out.push(res);
     if(t0<0||t0>=meteo.dates.length){res.err="Les données météo de la carte ne couvrent pas la semaine qui vient.";continue}
-    const d0=Math.max(16,t0),d1=Math.min(meteo.dates.length-1,d0+6),ids=(a.sp==="any"?SPECIES.map(s=>s.id):[a.sp]).filter(id=>!(SP_RULES[id]&&SP_RULES[id].forbid)&&(opt.ignoreSeason||window.__seasonWindow(id,meteo.dates[d0])));
+    const d0=Math.max(16,t0),d1=Math.min(meteo.dates.length-1,d0+6),ids=(a.sp==="any"?SPECIES.map(s=>s.id):[a.sp]).filter(id=>!(SP_RULES[id]&&SP_RULES[id].forbid)&&!protHidden(SPECIES.find(x=>x.id===id))&&(opt.ignoreSeason||window.__seasonWindow(id,meteo.dates[d0])));
     const day=[];for(let d=d0;d<=d1;d++)day.push({date:meteo.dates[d],kind:fcKind(d),ha:{}});
     const Z=new Map();let haCell=zoneHa;
     state.mode="now";
@@ -3584,7 +3592,7 @@ async function boot(){
   $("o-excl").onchange=e=>{state.excl=!e.target.checked;render()};
   state.acc=$("o-acc").checked;$("o-acc").onchange=e=>{state.acc=e.target.checked;saveLay();render()};
   const respHelp=()=>{$("resp-help").textContent=""};
-  $("o-resp").checked=state.resp;respHelp();$("o-resp").onchange=e=>{state.resp=e.target.checked;saveState();respHelp();render()};
+  $("o-resp").checked=state.resp;respHelp();$("o-resp").onchange=e=>{state.resp=e.target.checked;if(state.sp!=="multi"){const cur=SPECIES.find(x=>x.id===state.sp);if(cur&&!inTier(cur)){const nx=SPECIES.find(x=>inTier(x)&&(!state.seasonOnly||inSeason(x)))||SPECIES.find(inTier);if(nx)state.sp=state.lastSp=nx.id}}saveState();respHelp();fillSpFilter();render()};
   later.aj.then(aj=>{
   accLayers={};
   const tpLines=f=>(f.properties.lines||"").split(" ").filter(Boolean);
