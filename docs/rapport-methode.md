@@ -8,7 +8,7 @@ Version du code décrite : `main` de Magichampi au commit `dcb7f7c` (PR 78 fusio
 
 ## 1. Résumé
 
-Magichampi estime, pour chaque cellule de forêt de 25 m du canton de Vaud et pour 52 espèces comestibles, une **aptitude du lieu** : un produit de facteurs écologiques entre 0 et 1, calculé dans le navigateur. Cette aptitude est transformée en **classes relatives** (faible, moyen, élevé, très élevé) par des seuils fixes par espèce et par région, puis, pour la carte « conditions du moment », combinée à un **indice météo** (saison, eau du sol, température du sol, gel).
+Magichampi estime, pour chaque cellule de forêt de 25 m du canton de Vaud et pour 79 espèces comestibles, une **aptitude du lieu** : un produit de facteurs écologiques entre 0 et 1, calculé dans le navigateur. Cette aptitude est transformée en **classes relatives** (faible, moyen, élevé, très élevé) par des seuils fixes par espèce et par région, puis, pour la carte « conditions du moment », combinée à un **indice météo** (saison, eau du sol, température du sol, gel).
 
 Ce que le modèle est : un classement relatif des forêts d'une région, utile pour décider où chercher, construit à partir de connaissances d'experts et de quelques paramètres calibrés. Ce qu'il n'est pas : une probabilité de trouver un champignon.
 
@@ -80,7 +80,7 @@ A(i,s) = HAB × HÔTE × WSL × ALT × PEUPL × PENTE × HUM × SOL × RÉGION �
 Tous les facteurs sont multiplicatifs et compris entre 0 et 1, **sauf** HUM (de 0,85 à 1,15 pour les espèces qui ont une préférence d'humidité, section 4.7) et OBS (de 0 à 0,5). L'aptitude peut donc dépasser 1 (maximum mesuré 1,15 sans bonus, 1,58 avec ; maximum théorique 1,73) : c'est voulu, un site frais est favorable, et le rang par histogramme couvre désormais 0 à 2 (D17, corrigé). Le produit n'est pas normalisé : l'aptitude absolue n'a de sens que comparée aux autres cellules.
 
 ### 4.1 Type de forêt (`habF`, `index.html:1556`)
-`HAB = T[s][h]`, où `T` est une table à dire d'expert (52 espèces × 8 types, valeurs de 0,1 à 1). Type inconnu (`h = 0`) : moyenne des 8 valeurs de l'espèce (changement du 17 novembre ; avant, 1). Poids 1.
+`HAB = T[s][h]`, où `T` est une table à dire d'expert (79 espèces × 8 types, valeurs de 0,1 à 1). Type inconnu (`h = 0`) : moyenne des 8 valeurs de l'espèce (changement du 17 novembre ; avant, 1). Poids 1.
 
 ### 4.2 Hôte : part de conifères (`hostF`, `hostW`, `index.html:1444, 1584`)
 Soit *c* la part de conifères (0 à 1 ; inconnue = 0,5) :
