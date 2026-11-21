@@ -17,7 +17,7 @@ const r=await p.evaluate(async ([VO,mode])=>{try{
   const band=Math.max(64,Math.floor(7e5/full.cols));
   for(let r0=0;r0<full.rows;r0+=band){const R={c0:0,r0,cols:full.cols,rows:Math.min(band,full.rows-r0)};await loadRegion(R);const n=G.fx.length,Z0=new Float32Array(n);
     if(mode==="inv"&&G.conif)for(let q=0;q<n;q++)if(G.conif[q]<=100)G.conif[q]=100-G.conif[q];
-    const apt=(i,sp)=>aptAt(i,sp,regionF(G.sq[i],sp.key)[0],Z0);
+    const apt=(i,sp)=>aptAt(i,sp,regionF(G.sq[i],sp.key)[0]);
     for(const sp of SPECIES){const a=V[sp.id];for(let i=0;i<n;i+=2)if(G.fx[i]>0)a.push(apt(i,sp))}
     const inb=o=>o.r>=r0&&o.r<r0+R.rows&&o.c>=0&&o.c<full.cols;
     for(const o of pres)if(inb(o)){const i=(o.r-r0)*full.cols+o.c;if(G.fx[i]>0)P.push({id:o.id,sp:o.sp,a:apt(i,byId[o.sp]),cell:o.r*full.cols+o.c,blk:Math.floor(o.r*GR.res/5000)+"_"+Math.floor(o.c*GR.res/5000),date:o.date})}

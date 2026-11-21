@@ -11,7 +11,7 @@ await p.goto(`http://local/index.html?r=${z}`);await p.waitForTimeout(8000);
 const r=await p.evaluate(async()=>{try{
   state.yr=2;const full={cols:GR.cols,rows:GR.rows},V={};SPECIES.forEach(s=>V[s.id]=[]);const band=Math.max(64,Math.floor(7e5/full.cols));
   for(let r0=0;r0<full.rows;r0+=band){const R={c0:0,r0,cols:full.cols,rows:Math.min(band,full.rows-r0)};await loadRegion(R);const n=G.fx.length,Z0=new Float32Array(n);
-    for(const sp of SPECIES){const a=V[sp.id];for(let i=0;i<n;i+=2)if(G.fx[i]>0)a.push(aptAt(i,sp,regionF(G.sq[i],sp.key)[0],Z0))}}
+    for(const sp of SPECIES){const a=V[sp.id];for(let i=0;i<n;i+=2)if(G.fx[i]>0)a.push(aptAt(i,sp,regionF(G.sq[i],sp.key)[0]))}}
   const q=(a,f)=>a[Math.min(a.length-1,Math.floor(f*a.length))],out={};
   for(const id in V){const a=Float32Array.from(V[id]).sort();out[id]=[q(a,.6),q(a,.85),q(a,.9625)].map(x=>+x.toFixed(4))}
   return out}catch(e){return String(e.stack)}});
