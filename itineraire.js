@@ -293,7 +293,7 @@ function wx(lat,lng){
   let tmin=99,tmean=99;for(let k=Math.max(0,t-1);k<=Math.min(P.length-1,t+2);k++){if(Tn&&Tn[k]!=null)tmin=Math.min(tmin,Tn[k]);if(Ta&&Ta[k]!=null)tmean=Math.min(tmean,Ta[k])}
   return {r3:sum(t-2,t),r7:sum(t-6,t),f48:sum(t+1,t+2),tmin,tmean,dem:meteo.dem[m]}}
 const wxOn=()=>typeof state!=="undefined"&&!!state&&state.mode==="now";   // la météo ne compte que en mode « Conditions du moment »
-const WX_OFF_MSG="<b>Mode Aptitude du lieu :</b> la météo et les conditions du moment ne sont pas prises en compte dans cet itinéraire (tracé, durée, tout-terrain). Vérifiez la météo (pluie, gel, neige) avant de partir, ou passez en mode « Conditions du moment ».";
+const WX_SITE_NOTE=" <i>Mode Aptitude du lieu : cet itinéraire ne tient pas compte de la météo ; vérifiez les conditions avant de partir.</i>";
 const wxWet=w=>!!w&&!w.stale&&(w.r3>=30||w.r7>=60),wxCold=w=>!!w&&!w.stale&&w.tmean<=1;   // gel ou neige possibles : tout-terrain durci, pas refusé
 function wxRefuse(w){   // pas de tout-terrain si la météo est défavorable
   if(!w)return "";if(w.stale)return "La météo de la carte n'est pas à jour : actualisez-la (Menu › Météo et outils) avant d'utiliser le tout-terrain.";
@@ -301,18 +301,20 @@ function wxRefuse(w){   // pas de tout-terrain si la météo est défavorable
   if(w.f48>=40)return "Tout-terrain déconseillé : "+Math.round(w.f48)+" mm de pluie annoncés dans les 48 h.";
   return ""}
 function wxWarn(S){
-  const out=[];if(!wxOn()){out.push(WX_OFF_MSG);return out}
+  const out=[],on=wxOn();   // hors « Conditions du moment » : avertir seulement en cas de danger, sans rien modifier au tracé
   if(typeof G==="undefined"||!G||!S.ll||!S.ll.length)return out;
   const mid=S.ll[S.ll.length>>1],w=wx(mid[0],mid[1]);
+  if(!on&&(!w||w.stale))return out;
   if(!w){out.push("Météo non disponible pour ce secteur : consultez la prévision (MétéoSuisse) avant de partir.");return out}
   if(w.stale){out.push("La météo de la carte n'est pas à jour : actualisez-la (Menu › Météo et outils) et consultez la prévision.");return out}
   let maxAlt=0;for(let i=0;i<S.ll.length;i+=5){const q=merc(S.ll[i][0],S.ll[i][1]),c=Math.floor((q[0]-meta.x0)/meta.res),r=Math.floor((meta.y1-q[1])/meta.res);
     if(c>=0&&r>=0&&c<meta.cols&&r<meta.rows)maxAlt=Math.max(maxAlt,G.dem[r*meta.cols+c])}
   const tAlt=w.tmin-.0055*(maxAlt-(w.dem||maxAlt));
-  if(wxCold(w)&&!wxWet(w))out.push(`<b>Gel ou neige possibles</b> dans les 2 jours : le tout-terrain a été durci (pente ≤ 25°, marges élargies autour des cours d'eau) ; sol glissant, neige possible en altitude.`);
-  if(wxWet(w))out.push(`<b>Sol détrempé</b> (${Math.round(w.r3)} mm en 3 jours, ${Math.round(w.r7)} mm en 7 jours) : pentes glissantes, ruisseaux gonflés, boue. Prévoyez plus de temps et de bonnes chaussures${S.off>=20?" ; le tout-terrain a été durci (pente ≤ 25°, marges élargies autour des cours d'eau)":""}.`);
+  if(wxCold(w)&&!wxWet(w))out.push(`<b>Gel ou neige possibles</b> dans les 2 jours : ${on?"le tout-terrain a été durci (pente ≤ 25°, marges élargies autour des cours d'eau) ; ":""}sol glissant, neige possible en altitude.`);
+  if(wxWet(w))out.push(`<b>Sol détrempé</b> (${Math.round(w.r3)} mm en 3 jours, ${Math.round(w.r7)} mm en 7 jours) : pentes glissantes, ruisseaux gonflés, boue. Prévoyez plus de temps et de bonnes chaussures${on&&S.off>=20?" ; le tout-terrain a été durci (pente ≤ 25°, marges élargies autour des cours d'eau)":""}.`);
   if(w.f48>=15)out.push(`Pluie annoncée : ≈ ${Math.round(w.f48)} mm dans les 48 h. Consultez la prévision avant de partir.`);
   if(tAlt<=0&&maxAlt>=900)out.push(`<b>Gel possible en altitude</b> (≈ ${Math.round(tAlt)} °C vers ${Math.round(maxAlt)} m) : sentiers verglacés, neige possible au-dessus de ≈ 1 500 m.`);
+  if(!on){if(out.length)out.push(WX_SITE_NOTE);return out}
   if(!out.length)out.push("Pas d'alerte météo dans les données de la carte (pluie, gel). Consultez toujours la prévision officielle avant de partir.");
   return out}
 

@@ -47,8 +47,11 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
    const S={ll:[[g.lat0+g.SY[0]/g.ky,g.lon0+g.SX[0]/g.kx]],off:0};
    state.mode='site';o.siteMsg=ITIN.wxWarn(S).join(' ');
    state.mode='now';o.nowMsg=ITIN.wxWarn(S).join(' ');
+   meteo.rprelimd=new Proxy(real,{get:(t,k)=>typeof k==='string'&&/^\\d+$/.test(k)?new Array(40).fill(0):t[k]});   // aucune pluie
+   state.mode='site';o.calmMsg=ITIN.wxWarn(S).join(' ');
    meteo.rprelimd=real;return o});
-  ok(/Aptitude du lieu/.test(r.siteMsg)&&!/Sol détrempé/.test(r.siteMsg),'Aptitude du lieu : message d\'avertissement, pas d\'alerte météo');
+  ok(!/durci/.test(r.siteMsg)&&(r.siteMsg===''||/Aptitude du lieu/.test(r.siteMsg)),'Aptitude du lieu + danger : avertissement sans mention de durcissement');
+  ok(r.calmMsg==='','Aptitude du lieu sans danger : aucun message');
   ok(/Sol détrempé|Météo non disponible|pas à jour/.test(r.nowMsg)&&!/Aptitude du lieu/.test(r.nowMsg),'Conditions du moment : météo prise en compte');
   await ctx.close()}
  // déclaration : sans acceptation mémorisée, le calcul attend la modale
