@@ -60,7 +60,7 @@ function snap(ll){
   for(let r=0;r<=3&&best<0;r++){for(let i=-r;i<=r;i++)for(let j=-r;j<=r;j++){if(Math.max(Math.abs(i),Math.abs(j))!==r)continue;const l=g.idx.get((cx+i)+","+(cy+j));if(!l)continue;
     for(const k of l){const d=(g.SX[k]-x)**2+(g.SY[k]-y)**2;if(d<bd){bd=d;best=k}}}}
   if(best<0||bd>300*300)return null;
-  return {e:g.SE[best],s:g.SS[best],d:Math.sqrt(bd)};
+  return {e:g.SE[best],s:g.SS[best],d:Math.sqrt(bd),k:best};
 }
 function sub(e,s0,s1){   // sous-ligne de l'arête e entre les abscisses s0 et s1 (m), en [lat,lng]
   const g=GR,pl=g.poly[e],c=g.cum[e],n=c.length,flip=s0>s1,A=Math.min(s0,s1),B=Math.max(s0,s1),out=[];
@@ -79,12 +79,15 @@ function bonusQ(){
   return q}
 
 /* ---------- plus court chemin (Dijkstra, tas binaire) ---------- */
-function route(A,B,envie,pen,qq){
+function costs(envie,pen,qq){
   const g=GR,q=qq||(envie>0?bonusQ():null),mult=e=>{const k=g.cls[e],t=g.typ[e];
     let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?3:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 3
     if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);return m};
   const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);
   for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0)}
+  return {cf,cb}}
+function route(A,B,envie,pen,qq){
+  const g=GR,{cf,cb}=costs(envie,pen,qq);
   const dist=new Float64Array(g.nN).fill(Infinity),prev=new Int32Array(g.nN).fill(-1),heap=[],push=(d,n)=>{heap.push([d,n]);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p}},
     pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){let m=i;const a=2*i+1,b=a+1;if(a<heap.length&&heap[a][0]<heap[m][0])m=a;if(b<heap.length&&heap[b][0]<heap[m][0])m=b;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m}}return t};
   const fa=A.s/Math.max(g.len[A.e],1),fb=B.s/Math.max(g.len[B.e],1);
@@ -157,6 +160,88 @@ function gpx(){
   const x=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Magichampi" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>Itinéraire Magichampi</name><time>${t}</time></metadata><trk><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><trkseg>${pts_}</trkseg></trk></gpx>`;
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([x],{type:"application/gpx+xml"}));a.download="itineraire-magichampi.gpx";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
+
+/* ---------- tout-terrain (bêta) ---------- */
+// Dijkstra sur la grille de 25 m (cellules d'environ 17 m de côté au sol) reliée au réseau de chemins : les chemins sont des arcs de cellule à cellule
+// (coût du graphe), la forêt peut être traversée hors chemin (Tobler ×1,6) seulement près d'une zone « élevé » ou mieux, et jamais dans les cellules à
+// pente ≥ 30° (25-30° ×3 plus lent), cours d'eau (tampon d'une cellule), marais, réserves et zones exclues (usable).
+const OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100;let HZ=null,HZkey="";
+async function hazards(){
+  const key=ZD+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows;if(HZ&&HZkey===key)return HZ;
+  const W=meta.cols,H=meta.rows,water=new Uint8Array(W*H),marsh=new Uint8Array(W*H);
+  const J=u=>fetch(ZD+u).then(r=>r.ok?r.json():null).catch(()=>null),[ce,rs]=await Promise.all([J("cours_eau.geojson"),J("reserves.geojson")]);
+  const cl=(lng,lat)=>{const q=merc(lat,lng);return [(q[0]-meta.x0)/meta.res,(meta.y1-q[1])/meta.res]},mark=(x,y)=>{for(const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){const c=Math.floor(x)+dx,r=Math.floor(y)+dy;if(c>=0&&r>=0&&c<W&&r<H)water[r*W+c]=1}};
+  if(ce)for(const f of ce.features){const gm=f.geometry,ls=gm.type==="LineString"?[gm.coordinates]:gm.type==="MultiLineString"?gm.coordinates:[];
+    for(const l of ls)for(let i=1;i<l.length;i++){const a=cl(l[i-1][0],l[i-1][1]),b=cl(l[i][0],l[i][1]),n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])*2));
+      if(Math.max(a[0],b[0])<0||Math.max(a[1],b[1])<0||Math.min(a[0],b[0])>W||Math.min(a[1],b[1])>H)continue;
+      for(let k=0;k<=n;k++)mark(a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n)}}
+  if(rs){const cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");x.fillStyle="#000";
+    const ring=r=>{r.forEach(([lo,la],k)=>{const q=cl(lo,la);k?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1])});x.closePath()};
+    rs.features.forEach(f=>{if(!/marais/i.test(f.properties.src||""))return;const gm=f.geometry,P=gm.type==="Polygon"?[gm.coordinates]:gm.coordinates;P.forEach(poly=>{x.beginPath();poly.forEach(ring);x.fill("evenodd")})});
+    const d=x.getImageData(0,0,W,H).data;for(let i=0;i<W*H;i++)marsh[i]=d[i*4+3]>127?1:0}
+  HZ={water,marsh};HZkey=key;return HZ}
+function dilate(m,W,H,r){   // dilatation carrée de rayon r (cellules), séparable
+  const t=new Uint8Array(W*H),o=new Uint8Array(W*H);
+  for(let y=0;y<H;y++){let last=-1e9;for(let x=0;x<W;x++){if(m[y*W+x])last=x;if(x-last<=r)t[y*W+x]=1}last=1e9;for(let x=W-1;x>=0;x--){if(m[y*W+x])last=x;if(last-x<=r)t[y*W+x]=1}}
+  for(let x=0;x<W;x++){let last=-1e9;for(let y=0;y<H;y++){if(t[y*W+x])last=y;if(y-last<=r)o[y*W+x]=1}last=1e9;for(let y=H-1;y>=0;y--){if(t[y*W+x])last=y;if(last-y<=r)o[y*W+x]=1}}
+  return o}
+async function routeOff(pA,pB,envie){
+  const g=GR,W=meta.cols,H=meta.rows,res=meta.res,gs=res*Math.cos(pA.lat*Math.PI/180);
+  if(typeof currentClass==="undefined"||!currentClass)return {error:"La carte n'affiche aucune zone : choisissez une espèce ou la forte concentration."};
+  const cOf=(lat,lng)=>{const q=merc(lat,lng);return [Math.floor((q[0]-meta.x0)/res),Math.floor((meta.y1-q[1])/res)]},a=cOf(pA.lat,pA.lng),b=cOf(pB.lat,pB.lng);
+  const ok=c=>c[0]>=0&&c[1]>=0&&c[0]<W&&c[1]<H;
+  if(!ok(a)||!ok(b))return {error:"Départ ou arrivée hors de la zone chargée : centrez la carte sur le trajet puis recommencez."};
+  const mg=Math.round(1500/gs),c0=Math.max(0,Math.min(a[0],b[0])-mg),c1=Math.min(W,Math.max(a[0],b[0])+mg+1),r0=Math.max(0,Math.min(a[1],b[1])-mg),r1=Math.min(H,Math.max(a[1],b[1])+mg+1),ww=c1-c0,hh=r1-r0,N=ww*hh;
+  if(N>450000)return {error:"Tout-terrain limité à environ 10 km entre le départ et l'arrivée."};
+  const hz=await hazards(),al=new Uint8Array(N),high=new Uint8Array(N);
+  for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(currentClass[gi]!==255&&currentClass[gi]>=3)high[li]=1}
+  const near=dilate(high,ww,hh,Math.ceil(OFF_NEAR/gs)*1);
+  for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;
+    al[li]=near[li]&&usable(gi)&&G.fx[gi]>0&&G.slope[gi]<OFF_SLOPE&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
+  // arcs de chemin (échantillons consécutifs d'une même arête), dans la fenêtre
+  const {cf,cb}=costs(envie,null,envie>0?bonusQ():null),cnt=new Int32Array(N+1),arcs=[];
+  const lc=k=>{const X=g.SM[2*k],Y=g.SM[2*k+1],c=Math.floor((X-meta.x0)/res)-c0,r=Math.floor((meta.y1-Y)/res)-r0;return c>=0&&r>=0&&c<ww&&r<hh?r*ww+c:-1};
+  for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1])continue;const u=lc(k),v=lc(k+1);if(u<0||v<0||u===v)continue;const e=g.SE[k],f=(g.SS[k+1]-g.SS[k])/Math.max(g.len[e],1);
+    arcs.push([u,v,cf[e]*f,k*2],[v,u,cb[e]*f,k*2+1]);cnt[u+1]++;cnt[v+1]++}
+  for(let i=0;i<N;i++)cnt[i+1]+=cnt[i];const fill=cnt.slice(),aTo=new Int32Array(arcs.length),aC=new Float32Array(arcs.length),aId=new Int32Array(arcs.length);
+  for(const [u,v,c,id] of arcs){const q=fill[u]++;aTo[q]=v;aC[q]=c;aId[q]=id}
+  const onPath=i=>cnt[i+1]>cnt[i];
+  // départ / arrivée : la cellule touchée si elle est utilisable, sinon le point de chemin le plus proche
+  const pick=(p,c)=>{const li=(c[1]-r0)*ww+(c[0]-c0);if(al[li]||onPath(li))return li;const s=snap(L.latLng(p.lat,p.lng));if(!s)return -1;return lc(s.k)};
+  const S0=pick(pA,a),T0=pick(pB,b);if(S0<0||T0<0)return {error:"Le départ ou l'arrivée est à plus de 300 m d'un chemin et hors zone utilisable."};
+  // tas binaire typé
+  let cap=1<<20,hk=new Float64Array(cap),hv=new Int32Array(cap),hn=0;
+  const hpush=(k,v)=>{if(hn===cap){cap*=2;const a1=new Float64Array(cap),b1=new Int32Array(cap);a1.set(hk);b1.set(hv);hk=a1;hv=b1}let i=hn++;while(i>0){const p=(i-1)>>1;if(hk[p]<=k)break;hk[i]=hk[p];hv[i]=hv[p];i=p}hk[i]=k;hv[i]=v};
+  const hpop=()=>{const v=hv[0],k0=hk[0],k=hk[--hn],w=hv[hn];let i=0;for(;;){let c=2*i+1;if(c>=hn)break;if(c+1<hn&&hk[c+1]<hk[c])c++;if(hk[c]>=k)break;hk[i]=hk[c];hv[i]=hv[c];i=c}hk[i]=k;hv[i]=w;popK=k0;return v};let popK=0;
+  const dist=new Float64Array(N).fill(Infinity),prev=new Int32Array(N).fill(-1),via=new Int32Array(N).fill(-1),dm=G.dem,sl=G.slope;
+  dist[S0]=0;hpush(0,S0);
+  const tob=(L_,g_)=>L_/(6000/3600*Math.exp(-3.5*Math.abs(g_+.05)));
+  while(hn){const u=hpop(),d=popK;if(d>dist[u])continue;if(u===T0)break;
+    for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],w=d+aC[k];if(w<dist[v]){dist[v]=w;prev[v]=u;via[v]=aId[k];hpush(w,v)}}
+    const ux=u%ww,uy=(u/ww)|0,ug=(r0+uy)*W+c0+ux;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const x=ux+dx,y=uy+dy;if(x<0||y<0||x>=ww||y>=hh)continue;const v=y*ww+x;
+      if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
+      if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
+      const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_;
+      let t=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1);const cw=currentClass[vg];if(envie>0&&cw!==255&&cw<5)t*=1-Math.min(.6,.2*envie*WGW[cw]);
+      const w=d+t;if(w<dist[v]){dist[v]=w;prev[v]=u;via[v]=-1;hpush(w,v)}}}
+  if(!isFinite(dist[T0]))return {error:"Aucun passage trouvé en tout-terrain : essayez sans cette option ou changez de point."};
+  // reconstruction
+  const cells=[];for(let v=T0;v!==S0;v=prev[v])cells.push(v);cells.push(S0);cells.reverse();
+  const ll=li=>{const x=c0+(li%ww)+.5,y=r0+((li/ww)|0)+.5,X=meta.x0+x*res,Y=meta.y1-y*res;return [(2*Math.atan(Math.exp(Y/R_E))-Math.PI/2)*180/Math.PI,X/R_E*180/Math.PI]};
+  const seq=[],pl=[],off={len:0,up:0,dn:0,sec:0};let cur=null;
+  const flush=()=>{if(cur&&cur.ll.length>1)pl.push(cur);cur=null};
+  for(let i=1;i<cells.length;i++){const v=cells[i],u=cells[i-1],id=via[v];
+    if(id>=0){const k=id>>1,fw=!(id&1),kk=fw?k:k+1,k2=fw?k+1:k,e=g.SE[k];
+      const P=[g.lat0+g.SY[kk]/g.ky,g.lon0+g.SX[kk]/g.kx],Q=[g.lat0+g.SY[k2]/g.ky,g.lon0+g.SX[k2]/g.kx],kind=g.cls[e];
+      if(!cur||cur.k!==kind){flush();cur={k:kind,ll:[P]}}cur.ll.push(Q);
+      const last=seq[seq.length-1];if(last&&last[0]===e&&last[2]===g.SS[kk])last[2]=g.SS[k2];else seq.push([e,g.SS[kk],g.SS[k2]])}
+    else{if(!cur||cur.k!=="o"){flush();cur={k:"o",ll:[ll(u)]}}cur.ll.push(ll(v));
+      const ug=(r0+((u/ww)|0))*W+c0+(u%ww),vg=(r0+((v/ww)|0))*W+c0+(v%ww),dx=(v%ww)-(u%ww),dy=((v/ww)|0)-((u/ww)|0),L_=gs*(dx&&dy?1.4142:1),dz=dm[vg]-dm[ug];
+      off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
+  flush();
+  return {seq,off,pl,cost:dist[T0]}}
+
 /* ---------- statistiques et difficulté ---------- */
 function summarize(R){
   const g=GR;let len=0,up=0,dn=0,sec=0,c2=0,cross=0,un=0,bm=0,al=0,hd=0,smax=0,smaxE=-1;const lines=[];
@@ -171,6 +256,7 @@ function summarize(R){
     if(g.smax[e]>smax&&L_>=40){smax=g.smax[e];smaxE=e}
     lines.push({e,s0,s1,k});
   }
+  const OF=R.off||{len:0,up:0,dn:0,sec:0};len+=OF.len;up+=OF.up;dn+=OF.dn;sec+=OF.sec;
   const h=sec/3600,gain=up;
   // niveau « effort » (durée, dénivelé positif) et niveau « technique » (pente, type de chemin, zone difficile d'accès)
   const lt=h<=1?0:h<=2.5?1:h<=4.5?2:h<=7?3:4,lg=gain<=100?0:gain<=300?1:gain<=700?2:gain<=1200?3:4,effort=Math.max(lt,lg);
@@ -180,12 +266,13 @@ function summarize(R){
   else if(bm>=100){lty=3;why="sentier de montagne sur "+km(bm)}
   else if(hd>=100){lty=3;why="zone difficile d'accès (pente ≥ 30° en forêt) sur "+km(hd)}
   else if(un>=150){lty=2;why="sentier non balisé de "+km(un)}
+  if(OF.len>=20){lty=Math.max(lty,3);why="tout-terrain : "+km(OF.len)+" hors chemin"}
   const tech=Math.max(ls,lty),lvl=Math.max(effort,tech);
   let reason;
   if(tech>=effort&&tech>0){reason=ls>=lty?"pente de "+smax+"° soutenue sur ≈ 100 m":why}
   else reason=lt>=lg?"durée de marche d'environ "+dur(sec):"dénivelé positif de "+Math.round(gain)+" m";
   if(lvl===0)reason="peu de montée, chemins faciles";
-  return {len,up,dn,sec,c2,cross,lvl,reason,lines,smax}
+  return {len,up,dn,sec,c2,cross,lvl,reason,lines,smax,off:OF.len}
 }
 const km=m=>m>=950?(m/1000).toFixed(1).replace(".",",")+" km":Math.round(m/10)*10+" m";
 function dur(s){const m=Math.round(s/300)*5,h=Math.floor(m/60),r=m%60;return h?h+" h"+(r?" "+String(r).padStart(2,"0"):""):r+" min"}
@@ -206,14 +293,15 @@ function clearRoute(all){
 function draw(S,R){
   if(!map.getPane("itineraire")){const p=map.createPane("itineraire");p.style.zIndex=450}
   layer=L.layerGroup().addTo(map);const g=GR,pl=[];
-  for(const [e,s0,s1] of R.seq){if(s0===s1)continue;const k=g.cls[e],ll=sub(e,s0,s1);pl.push({ll,k})}
+  if(R.pl)R.pl.forEach(p=>pl.push(p));else for(const [e,s0,s1] of R.seq){if(s0===s1)continue;const k=g.cls[e],ll=sub(e,s0,s1);pl.push({ll,k})}
   pl.forEach(p=>L.polyline(p.ll,{pane:"itineraire",color:"#fff",weight:8,opacity:.9,lineCap:"round",interactive:false}).addTo(layer));
-  pl.forEach(p=>L.polyline(p.ll,p.k===1?{pane:"itineraire",color:"#c62828",weight:5,dashArray:"4 6",interactive:false}:p.k===2?{pane:"itineraire",color:"#e8731f",weight:5,dashArray:"10 6",interactive:false}:{pane:"itineraire",color:"#1565c0",weight:5,lineCap:"round",interactive:false}).addTo(layer));
+  pl.forEach(p=>L.polyline(p.ll,p.k==="o"?{pane:"itineraire",color:"#6a1b9a",weight:5,dashArray:"2 7",lineCap:"round",interactive:false}:p.k===1?{pane:"itineraire",color:"#c62828",weight:5,dashArray:"4 6",interactive:false}:p.k===2?{pane:"itineraire",color:"#e8731f",weight:5,dashArray:"10 6",interactive:false}:{pane:"itineraire",color:"#1565c0",weight:5,lineCap:"round",interactive:false}).addTo(layer));
   const all=pl.flatMap(p=>p.ll);S.ll=all;if(all.length)map.fitBounds(L.latLngBounds(all),{padding:[40,40],maxZoom:17});
 }
 function show(S){
   const d=DIFF[S.lvl],c=DCOL[S.lvl],w=[];
   if(S.c2>=20)w.push(`<b>Bord de route : attention à la circulation</b> sur ${km(S.c2)} (tracé orange tireté).`);
+  if(S.off>=20)w.push(`<b>Tout-terrain (bêta)</b> : ${km(S.off)} hors chemin (tracé violet pointillé), en forêt près d'une zone favorable. Pas de balisage, terrain, ruisseaux non cartographiés et fossés possibles : vous êtes seul responsable du passage ; renoncez si le terrain vous semble dangereux.`);
   if(S.cross)w.push(`${S.cross} traversée${S.cross>1?"s":""} de route large (tracé rouge pointillé, ≤ 30 m) : traversez avec prudence, aux endroits sûrs.`);
   $("it-res").innerHTML=`<div class="it-card"><div class="it-big">${dur(S.sec)} <span class="it-sub">de marche · ${km(S.len)}</span></div>
    <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b></div>
@@ -252,7 +340,11 @@ async function compute(){
   try{g=await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
   const A=snap(pts.A),B=snap(pts.B);
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
-  const R=route(A,B,+$("it-env").value);
+  let R;
+  if($("it-off").checked&&!isLoop()){
+    if(!$("it-offok").checked){msg.textContent="Cochez « Je comprends » pour utiliser le tout-terrain.";return}
+    R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){msg.textContent=R.error;return}
+  }else R=route(A,B,+$("it-env").value);
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=summarize(R);draw(S,R);show(S);last=S;
@@ -278,16 +370,16 @@ function init(){
     if(typeof LOC!=="undefined"&&LOC.ll){use(LOC.ll);return}
     if(!navigator.geolocation){$("it-msg").textContent="Position GPS indisponible ici : choisissez le départ sur la carte.";return}
     navigator.geolocation.getCurrentPosition(p=>use([p.coords.latitude,p.coords.longitude]),()=>{$("it-msg").textContent="Position refusée ou introuvable : choisissez le départ sur la carte."},{enableHighAccuracy:true,timeout:15000})};
-  const modeUI=()=>{const l=isLoop();$("it-b").hidden=l;$("it-swap").hidden=l;$("it-loopbox").hidden=!l;$("it-a").textContent=l?"Départ de la boucle":"Départ (A)";
+  const modeUI=()=>{const l=isLoop();$("it-b").hidden=l;$("it-swap").hidden=l;$("it-loopbox").hidden=!l;$("it-offrow").hidden=l;$("it-a").textContent=l?"Départ de la boucle":"Départ (A)";
     if(l&&mk.B){map.removeLayer(mk.B);mk.B=null;pts.B=null}clearRouteKeep();$("it-vars").innerHTML=""};
-  $("it-mode").onchange=modeUI;
+  $("it-mode").onchange=modeUI;$("it-off").onchange=()=>{$("it-offbox").hidden=!$("it-off").checked};$("it-offbox").hidden=true;
   const lmUI=()=>{const d=$("it-lm").value==="len",r=$("it-lt");r.min=d?2:30;r.max=d?20:360;r.step=d?1:15;r.value=d?8:120;r.oninput()};
   $("it-lm").onchange=lmUI;$("it-lt").oninput=()=>{const d=$("it-lm").value==="len",v=+$("it-lt").value;$("it-ltl").textContent=d?v+" km":dur(v*60)};
   lmUI();modeUI();
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
-  window.ITIN={loadGraph,snap,route,summarize,compute,setPt,loopRoutes,get graph(){return GR}};   // pour les tests
+  window.ITIN={loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR}};   // pour les tests
 }
 init();
 })();
