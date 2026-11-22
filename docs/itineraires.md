@@ -36,3 +36,10 @@ Menu ☰ › Itinéraire › Type « Balade en boucle » : un départ, une cible
 - Les variantes à plus de 35 % de la cible sont écartées s'il en reste d'autres.
 - Export GPX (trace sans altitude) pour tout itinéraire, A→B ou boucle.
 - Pas encore pris en compte : zones de chasse (pénalité), météo (PR suivantes).
+
+## Tout-terrain (bêta, PR 3 sur 4)
+Case « Tout-terrain » dans Itinéraire (A→B seulement), désactivée par défaut, avec avertissement et case « Je comprends » obligatoires avant tout calcul (texte à relire par un juriste avant publication publique).
+- Dijkstra sur la grille de 25 m (≈ 17 m au sol) de la fenêtre chargée, reliée au réseau de chemins (les chemins sont des arcs cellule à cellule au coût du graphe). Fenêtre = départ/arrivée + 1,5 km, ≤ 450 000 cellules (≈ 10 km) ; temps de calcul 0,06 à 0,2 s.
+- Hors chemin seulement : en forêt utilisable (réserves et zones exclues déjà gérées par `usable`), à ≤ 100 m d'une cellule « élevé » ou mieux du mode affiché ; Tobler ×1,6 ; pente 25-30° ×3, ≥ 30° refusée ; cours d'eau (`cours_eau.geojson`, tampon d'une cellule) et marais (`reserves.geojson`) refusés. Franchissement d'un cours d'eau seulement par un chemin du réseau.
+- Tracé violet pointillé, difficulté d'office au moins « difficile », longueur hors chemin affichée.
+- Limites : ruisseaux non cartographiés et fossés non vus ; ponts non distingués ; chasse (hachures) non pénalisée ; pas de météo (durcissement automatique : PR 4) ; pas de tout-terrain pour les boucles.
