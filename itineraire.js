@@ -193,11 +193,12 @@ async function routeOff(pA,pB,envie){
   if(!ok(a)||!ok(b))return {error:"Départ ou arrivée hors de la zone chargée : centrez la carte sur le trajet puis recommencez."};
   const mg=Math.round(1500/gs),c0=Math.max(0,Math.min(a[0],b[0])-mg),c1=Math.min(W,Math.max(a[0],b[0])+mg+1),r0=Math.max(0,Math.min(a[1],b[1])-mg),r1=Math.min(H,Math.max(a[1],b[1])+mg+1),ww=c1-c0,hh=r1-r0,N=ww*hh;
   if(N>450000)return {error:"Tout-terrain limité à environ 10 km entre le départ et l'arrivée."};
-  const hz=await hazards(),al=new Uint8Array(N),high=new Uint8Array(N);
+  const w0=wx(pA.lat,pA.lng),ref=wxRefuse(w0);if(ref)return {error:ref};
+  const wet=wxWet(w0),slopeMax=wet?25:OFF_SLOPE,hz0=await hazards(),hz=wet?{water:dilate(hz0.water,W,H,1),marsh:hz0.marsh}:hz0,al=new Uint8Array(N),high=new Uint8Array(N);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(currentClass[gi]!==255&&currentClass[gi]>=3)high[li]=1}
   const near=dilate(high,ww,hh,Math.ceil(OFF_NEAR/gs)*1);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;
-    al[li]=near[li]&&usable(gi)&&G.fx[gi]>0&&G.slope[gi]<OFF_SLOPE&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
+    al[li]=near[li]&&usable(gi)&&G.fx[gi]>0&&G.slope[gi]<slopeMax&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
   // arcs de chemin (échantillons consécutifs d'une même arête), dans la fenêtre
   const {cf,cb}=costs(envie,null,envie>0?bonusQ():null),cnt=new Int32Array(N+1),arcs=[];
   const lc=k=>{const X=g.SM[2*k],Y=g.SM[2*k+1],c=Math.floor((X-meta.x0)/res)-c0,r=Math.floor((meta.y1-Y)/res)-r0;return c>=0&&r>=0&&c<ww&&r<hh?r*ww+c:-1};
@@ -241,6 +242,39 @@ async function routeOff(pA,pB,envie){
       off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
   flush();
   return {seq,off,pl,cost:dist[T0]}}
+
+
+/* ---------- météo des 7 jours : avertissements et durcissement du tout-terrain ---------- */
+// Données déjà dans la page (meteo.rprelimd, tmind, tabsd, maille G.midx). Seuils estimés, à caler : sol détrempé = ≥ 30 mm en 3 jours ou ≥ 60 mm en 7 jours.
+function wx(lat,lng){
+  if(typeof meteo==="undefined"||typeof G==="undefined"||!G||!G.midx||typeof todayIdx!=="function")return null;
+  const q=merc(lat,lng),c=Math.floor((q[0]-meta.x0)/meta.res),r=Math.floor((meta.y1-q[1])/meta.res);
+  if(c<0||r<0||c>=meta.cols||r>=meta.rows)return null;
+  const m=G.midx[r*meta.cols+c],P=meteo.rprelimd[m],Tn=meteo.tmind[m],Ta=meteo.tabsd[m];if(!P)return null;
+  const t=todayIdx();if(t<0||t>=meteo.dates.length)return {stale:true};
+  const sum=(a,b)=>{let x=0;for(let k=Math.max(0,a);k<=Math.min(P.length-1,b);k++)x+=P[k]||0;return x};
+  let tmin=99,tmean=99;for(let k=Math.max(0,t-1);k<=Math.min(P.length-1,t+2);k++){if(Tn&&Tn[k]!=null)tmin=Math.min(tmin,Tn[k]);if(Ta&&Ta[k]!=null)tmean=Math.min(tmean,Ta[k])}
+  return {r3:sum(t-2,t),r7:sum(t-6,t),f48:sum(t+1,t+2),tmin,tmean,dem:meteo.dem[m]}}
+const wxWet=w=>!!w&&!w.stale&&(w.r3>=30||w.r7>=60);
+function wxRefuse(w){   // pas de tout-terrain si la météo est défavorable
+  if(!w)return "";if(w.stale)return "La météo de la carte n'est pas à jour : actualisez-la (Menu › Météo et outils) avant d'utiliser le tout-terrain.";
+  if(w.r3>=50)return "Tout-terrain déconseillé : "+Math.round(w.r3)+" mm de pluie en 3 jours (sol saturé, ruisseaux gonflés).";
+  if(w.f48>=40)return "Tout-terrain déconseillé : "+Math.round(w.f48)+" mm de pluie annoncés dans les 48 h.";
+  if(w.tmean<=1)return "Tout-terrain déconseillé : gel ou neige possibles dans les 2 jours.";
+  return ""}
+function wxWarn(S){
+  const out=[];if(typeof G==="undefined"||!G||!S.ll||!S.ll.length)return out;
+  const mid=S.ll[S.ll.length>>1],w=wx(mid[0],mid[1]);
+  if(!w){out.push("Météo non disponible pour ce secteur : consultez la prévision (MétéoSuisse) avant de partir.");return out}
+  if(w.stale){out.push("La météo de la carte n'est pas à jour : actualisez-la (Menu › Météo et outils) et consultez la prévision.");return out}
+  let maxAlt=0;for(let i=0;i<S.ll.length;i+=5){const q=merc(S.ll[i][0],S.ll[i][1]),c=Math.floor((q[0]-meta.x0)/meta.res),r=Math.floor((meta.y1-q[1])/meta.res);
+    if(c>=0&&r>=0&&c<meta.cols&&r<meta.rows)maxAlt=Math.max(maxAlt,G.dem[r*meta.cols+c])}
+  const tAlt=w.tmin-.0055*(maxAlt-(w.dem||maxAlt));
+  if(wxWet(w))out.push(`<b>Sol détrempé</b> (${Math.round(w.r3)} mm en 3 jours, ${Math.round(w.r7)} mm en 7 jours) : pentes glissantes, ruisseaux gonflés, boue. Prévoyez plus de temps et de bonnes chaussures${S.off>=20?" ; le tout-terrain a été durci (pente ≤ 25°, marges élargies autour des cours d'eau)":""}.`);
+  if(w.f48>=15)out.push(`Pluie annoncée : ≈ ${Math.round(w.f48)} mm dans les 48 h. Consultez la prévision avant de partir.`);
+  if(tAlt<=0&&maxAlt>=900)out.push(`<b>Gel possible en altitude</b> (≈ ${Math.round(tAlt)} °C vers ${Math.round(maxAlt)} m) : sentiers verglacés, neige possible au-dessus de ≈ 1 500 m.`);
+  if(!out.length)out.push("Pas d'alerte météo dans les données de la carte (pluie, gel). Consultez toujours la prévision officielle avant de partir.");
+  return out}
 
 /* ---------- statistiques et difficulté ---------- */
 function summarize(R){
@@ -302,13 +336,15 @@ function show(S){
   const d=DIFF[S.lvl],c=DCOL[S.lvl],w=[];
   if(S.c2>=20)w.push(`<b>Bord de route : attention à la circulation</b> sur ${km(S.c2)} (tracé orange tireté).`);
   if(S.off>=20)w.push(`<b>Tout-terrain (bêta)</b> : ${km(S.off)} hors chemin (tracé violet pointillé), en forêt près d'une zone favorable. Pas de balisage, terrain, ruisseaux non cartographiés et fossés possibles : vous êtes seul responsable du passage ; renoncez si le terrain vous semble dangereux.`);
+  wxWarn(S).forEach(x=>w.push(x));
   if(S.cross)w.push(`${S.cross} traversée${S.cross>1?"s":""} de route large (tracé rouge pointillé, ≤ 30 m) : traversez avec prudence, aux endroits sûrs.`);
   $("it-res").innerHTML=`<div class="it-card"><div class="it-big">${dur(S.sec)} <span class="it-sub">de marche · ${km(S.len)}</span></div>
    <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b></div>
    <div class="it-row">Difficulté : <span class="pill" style="background:${c};color:#fff">${d}</span> <span class="it-sub">${esc(S.reason)}</span></div>
    ${w.map(x=>`<div class="it-warn">${x}</div>`).join("")}
    <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button></div>
-   <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux.</p></div>`;
+   <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux. <a href="#" id="it-decl">Déclaration de responsabilité</a></p></div>`;
+  $("it-decl").onclick=e=>{e.preventDefault();declare(false)};
   $("it-gpx").onclick=gpx}
 const isLoop=()=>$("it-mode").value==="loop";
 function showVars(V,k){
@@ -320,6 +356,7 @@ async function computeLoop(){
   const msg=$("it-msg");$("it-vars").innerHTML="";
   if(!pts.A){msg.textContent="Choisissez le départ de la boucle (A).";return}
   if(typeof OV!=="undefined"&&OV){msg.textContent="Zoomez sur une région (zoom 12 ou plus) : le réseau de chemins n'existe pas pour la vue d'ensemble du canton.";return}
+  if(!await declare(true)){msg.textContent="Déclaration non acceptée : l'itinéraire n'est pas calculé.";return}
   msg.textContent="Calcul des boucles…";
   try{await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
   const A=snap(pts.A);if(!A){msg.textContent="Le départ est à plus de 300 m d'un chemin de cette région : déplacez le marqueur.";clearRoute();return}
@@ -336,6 +373,7 @@ async function compute(){
   const msg=$("it-msg");msg.textContent="";
   if(!pts.A||!pts.B){msg.textContent="Choisissez le départ et l'arrivée.";return}
   if(typeof OV!=="undefined"&&OV){msg.textContent="Zoomez sur une région (zoom 12 ou plus) : le réseau de chemins n'existe pas pour la vue d'ensemble du canton.";return}
+  if(!await declare(true)){msg.textContent="Déclaration non acceptée : l'itinéraire n'est pas calculé.";return}
   msg.textContent="Calcul…";let g;
   try{g=await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
   const A=snap(pts.A),B=snap(pts.B);
@@ -350,6 +388,15 @@ async function compute(){
   const S=summarize(R);draw(S,R);show(S);last=S;
   msg.textContent=(A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"";
 }
+
+
+/* ---------- déclaration de responsabilité (acceptation mémorisée en local) ---------- */
+const DECL_KEY="itin-decl-v1";
+function declOk(){try{return localStorage.getItem(DECL_KEY)==="1"}catch(e){return false}}
+function declare(need){   // retourne une promesse : true si accepté
+  return new Promise(res=>{const m=$("it-decl-modal");if(need&&declOk())return res(true);
+    m.hidden=false;const done=v=>{m.hidden=true;if(v){try{localStorage.setItem(DECL_KEY,"1")}catch(e){}}res(v)};
+    $("it-decl-ok").onclick=()=>done(true);$("it-decl-no").onclick=()=>done(false)})}
 
 /* ---------- interface ---------- */
 function banner(t){let b=$("it-banner");if(!t){if(b)b.hidden=true;return}
@@ -379,7 +426,7 @@ function init(){
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
-  window.ITIN={loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR}};   // pour les tests
+  window.ITIN={wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR}};   // pour les tests
 }
 init();
 })();
