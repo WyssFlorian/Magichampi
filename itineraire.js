@@ -165,7 +165,7 @@ function gpx(){
 // Dijkstra sur la grille de 25 m (cellules d'environ 17 m de côté au sol) reliée au réseau de chemins : les chemins sont des arcs de cellule à cellule
 // (coût du graphe), la forêt peut être traversée hors chemin (Tobler ×1,6) seulement près d'une zone « élevé » ou mieux, et jamais dans les cellules à
 // pente ≥ 30° (25-30° ×3 plus lent), cours d'eau (tampon d'une cellule), marais, réserves et zones exclues (usable).
-const OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100,DETOUR_CAP=[1,1.3,1.8,2.6];   // plafond de durée par cran du curseur de détour
+const REWK=.55,OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100,DETOUR_CAP=[1,1.3,1.8,2.6];   // plafond de durée par cran du curseur de détour
 let HZ=null,HZkey="";
 async function hazards(){
   const key=ZD+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows;if(HZ&&HZkey===key)return HZ;
@@ -195,7 +195,7 @@ async function routeOff(pA,pB,envie){
   const mg=Math.round(1500/gs),c0=Math.max(0,Math.min(a[0],b[0])-mg),c1=Math.min(W,Math.max(a[0],b[0])+mg+1),r0=Math.max(0,Math.min(a[1],b[1])-mg),r1=Math.min(H,Math.max(a[1],b[1])+mg+1),ww=c1-c0,hh=r1-r0,N=ww*hh;
   if(N>450000)return {error:"Tout-terrain limité à environ 10 km entre le départ et l'arrivée."};
   const w0=wx(pA.lat,pA.lng),ref=wxRefuse(w0);if(ref)return {error:ref};
-  const wet=wxWet(w0),slopeMax=wet?25:OFF_SLOPE,hz0=await hazards(),hz=wet?{water:dilate(hz0.water,W,H,1),marsh:hz0.marsh}:hz0,al=new Uint8Array(N),high=new Uint8Array(N);
+  const wet=wxWet(w0)||wxCold(w0),slopeMax=wet?25:OFF_SLOPE,hz0=await hazards(),hz=wet?{water:dilate(hz0.water,W,H,1),marsh:hz0.marsh}:hz0,al=new Uint8Array(N),high=new Uint8Array(N);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(currentClass[gi]!==255&&currentClass[gi]>=3)high[li]=1}
   const near=dilate(high,ww,hh,Math.ceil(OFF_NEAR/gs)*1);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;
@@ -217,12 +217,12 @@ async function routeOff(pA,pB,envie){
   const hpop=()=>{const v=hv[0],k0=hk[0],k=hk[--hn],w=hv[hn];let i=0;for(;;){let c=2*i+1;if(c>=hn)break;if(c+1<hn&&hk[c+1]<hk[c])c++;if(hk[c]>=k)break;hk[i]=hk[c];hv[i]=hv[c];i=c}hk[i]=k;hv[i]=w;popK=k0;return v};let popK=0;
   const dm=G.dem,sl=G.slope,tob=(L_,g_)=>L_/(6000/3600*Math.exp(-3.5*Math.abs(g_+.05)));
   // Dijkstra à force de récompense str (0 = plus rapide ; 1 = envie choisie) ; rt = durée réelle (s) sans récompense.
-  const solve=str=>{
-    const e1=envie*str,{cf,cb}=costs(e1,null,e1>0?qq:null),R0=costs(0,null,null),
+  const cc=new Map(),solve=(str,S0,T0)=>{
+    const e1=envie*str,{cf,cb}=cc.get(str)||(cc.set(str,costs(e1,null,e1>0?qq:null)),cc.get(str)),R0=cc.get(0)||(cc.set(0,costs(0,null,null)),cc.get(0)),
       dist=new Float64Array(N).fill(Infinity),rt=new Float64Array(N),prev=new Int32Array(N).fill(-1),via=new Int32Array(N).fill(-1);
     hn=0;dist[S0]=0;hpush(0,S0);
     // récompense hors chemin : bien plus forte que sur chemin (jusqu'à ×0,1 dans une cellule très élevée avec « grand détour »)
-    const rew=cw=>cw!==255&&cw<5&&e1>0?1-Math.min(.9,.3*e1*WGW[cw]):1;
+    const rew=cw=>cw!==255&&cw<5&&e1>0?1-Math.min(.97,REWK*e1*WGW[cw]):1;
     while(hn){const u=hpop(),d=popK;if(d>dist[u])continue;if(u===T0)break;
       for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],e=aE[k],w=d+(aD[k]?cb[e]:cf[e])*aF[k];if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+(aD[k]?R0.cb[e]:R0.cf[e])*aF[k];prev[v]=u;via[v]=aId[k];hpush(w,v)}}
       const ux=u%ww,uy=(u/ww)|0,ug=(r0+uy)*W+c0+ux;
@@ -233,18 +233,43 @@ async function routeOff(pA,pB,envie){
         const w=d+t;if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+t0;prev[v]=u;via[v]=-1;hpush(w,v)}}}
     return {dist,rt,prev,via}};
   // plafond de durée : la durée réelle ne dépasse pas CAP[envie] × celle du trajet le plus rapide ; sinon la récompense est réduite par paliers
-  let sol=solve(1),detour=1;
-  if(envie>0&&isFinite(sol.dist[T0])){const base=solve(0);if(isFinite(base.dist[T0])){const cap=base.rt[T0]*DETOUR_CAP[envie];
-    for(const str of [1,.7,.45,.25,.1]){if(str<1)sol=solve(str);if(sol.rt[T0]<=cap){break}}
-    detour=base.rt[T0]>0?sol.rt[T0]/base.rt[T0]:1}}
-  const {dist,prev,via}=sol;
+  let sol=solve(1,S0,T0),detour=1,strF=1,bt=0;
+  if(envie>0&&isFinite(sol.dist[T0])){const base=solve(0,S0,T0);if(isFinite(base.dist[T0])){bt=base.rt[T0];const cap=bt*DETOUR_CAP[envie];
+    for(const str of [1,.7,.45,.25,.1]){strF=str;if(str<1)sol=solve(str,S0,T0);if(sol.rt[T0]<=cap){break}}
+    detour=bt>0?sol.rt[T0]/bt:1}}
+  const {dist}=sol;
   if(!isFinite(dist[T0]))return {error:"Aucun passage trouvé en tout-terrain : essayez sans cette option ou changez de point."};
-  // reconstruction
-  const cells=[];for(let v=T0;v!==S0;v=prev[v])cells.push(v);cells.push(S0);cells.reverse();
+  const recon=(sl,s_,t_)=>{const c=[],vv=[];for(let v=t_;v!==s_;v=sl.prev[v]){c.push(v);vv.push(sl.via[v])}c.push(s_);vv.push(-1);return {cells:c.reverse(),vias:vv.reverse(),rt:sl.rt[t_],cost:sl.dist[t_]}};
+  let legs=[recon(sol,S0,T0)];
+  // zones fortes : le plus court chemin pondéré ne s'écarte pas de sa route ; on ajoute donc des étapes dans les grandes zones fortes accessibles, tant que la durée reste sous le plafond
+  const maxWP=[0,1,3,6][envie]||0;
+  if(maxWP&&bt>0){
+    const cap=bt*DETOUR_CAP[envie],sa=new Uint8Array(N);for(let i=0;i<N;i++)sa[i]=high[i]&&al[i]?1:0;
+    const lab=new Int32Array(N),blobs=[];let nl=0;
+    for(let i0=0;i0<N;i0++){if(!sa[i0]||lab[i0])continue;const id=++nl,st=[i0],mem=[];lab[i0]=id;
+      while(st.length){const u=st.pop();mem.push(u);const ux=u%ww,uy=(u/ww)|0;
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=ux+dx,y=uy+dy;if(x<0||y<0||x>=ww||y>=hh)continue;const v=y*ww+x;if(sa[v]&&!lab[v]){lab[v]=id;st.push(v)}}}
+      if(mem.length>=25){let mx=0,my=0;for(const u of mem){mx+=u%ww;my+=(u/ww)|0}mx/=mem.length;my/=mem.length;let rep_=mem[0],bd=1e18;for(const u of mem){const d=(u%ww-mx)**2+(((u/ww)|0)-my)**2;if(d<bd){bd=d;rep_=u}}
+        blobs.push({id,n:mem.length,rep:rep_,x:mx,y:my})}}
+    const route0=legs[0].cells,seen=new Set(route0),cross=new Map();for(const u of route0)if(lab[u])cross.set(lab[u],(cross.get(lab[u])||0)+1);
+    const smp=[];for(let i=0;i<route0.length;i+=4)smp.push(i);
+    for(const bl of blobs){let bd=1e18,bi=0;for(const i of smp){const u=route0[i],d=(u%ww-bl.x)**2+(((u/ww)|0)-bl.y)**2;if(d<bd){bd=d;bi=i}}bl.d=Math.sqrt(bd)*gs;bl.pos=bi;bl.gain=bl.n-(cross.get(bl.id)||0)*3;bl.sc=bl.gain/(300+2*bl.d)}
+    const cand=blobs.filter(b=>b.gain>=20).sort((a,b)=>b.sc-a.sc).slice(0,maxWP+4);
+    const key=(a,b)=>a*(N+1)+b,lc_=new Map(),getLeg=(a,b)=>{const k=key(a,b);let l=lc_.get(k);if(!l){const sl=solve(strF,a,b);l=isFinite(sl.dist[b])?recon(sl,a,b):null;lc_.set(k,l||0)}return lc_.get(k)};
+    let chosen=[],curLegs=legs;
+    for(const bl of cand){if(chosen.length>=maxWP)break;
+      const tryW=[...chosen,bl].sort((a,b)=>a.pos-b.pos),pts_=[S0,...tryW.map(w=>w.rep),T0],L2=[];let ok=true,tot=0;
+      for(let i=0;i+1<pts_.length;i++){const l=getLeg(pts_[i],pts_[i+1]);if(!l){ok=false;break}L2.push(l);tot+=l.rt}
+      if(ok&&tot<=cap){chosen=tryW;curLegs=L2}}
+    legs=curLegs;
+    let rtT=0;for(const l of legs)rtT+=l.rt;detour=rtT/bt}
+  const cells=[],vias=[];legs.forEach((l,k)=>{l.cells.forEach((c,i)=>{if(k>0&&i===0)return;cells.push(c);vias.push(i===0?-1:l.vias[i])})});
+  const costT=legs.reduce((a,l)=>a+l.cost,0);
+  // reconstruction (cells, vias construits ci-dessus)
   const ll=li=>{const x=c0+(li%ww)+.5,y=r0+((li/ww)|0)+.5,X=meta.x0+x*res,Y=meta.y1-y*res;return [(2*Math.atan(Math.exp(Y/R_E))-Math.PI/2)*180/Math.PI,X/R_E*180/Math.PI]};
   const seq=[],pl=[],off={len:0,up:0,dn:0,sec:0};let cur=null;
   const flush=()=>{if(cur&&cur.ll.length>1)pl.push(cur);cur=null};
-  for(let i=1;i<cells.length;i++){const v=cells[i],u=cells[i-1],id=via[v];
+  for(let i=1;i<cells.length;i++){const v=cells[i],u=cells[i-1],id=vias[i];
     if(id>=0){const k=id>>1,fw=!(id&1),kk=fw?k:k+1,k2=fw?k+1:k,e=g.SE[k];
       const P=[g.lat0+g.SY[kk]/g.ky,g.lon0+g.SX[kk]/g.kx],Q=[g.lat0+g.SY[k2]/g.ky,g.lon0+g.SX[k2]/g.kx],kind=g.cls[e];
       if(!cur||cur.k!==kind){flush();cur={k:kind,ll:[P]}}cur.ll.push(Q);
@@ -253,7 +278,7 @@ async function routeOff(pA,pB,envie){
       const ug=(r0+((u/ww)|0))*W+c0+(u%ww),vg=(r0+((v/ww)|0))*W+c0+(v%ww),dx=(v%ww)-(u%ww),dy=((v/ww)|0)-((u/ww)|0),L_=gs*(dx&&dy?1.4142:1),dz=dm[vg]-dm[ug];
       off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
   flush();
-  return {seq,off,pl,cost:dist[T0],detour}}
+  return {seq,off,pl,cost:costT,detour}}
 
 
 /* ---------- météo des 7 jours : avertissements et durcissement du tout-terrain ---------- */
@@ -267,12 +292,11 @@ function wx(lat,lng){
   const sum=(a,b)=>{let x=0;for(let k=Math.max(0,a);k<=Math.min(P.length-1,b);k++)x+=P[k]||0;return x};
   let tmin=99,tmean=99;for(let k=Math.max(0,t-1);k<=Math.min(P.length-1,t+2);k++){if(Tn&&Tn[k]!=null)tmin=Math.min(tmin,Tn[k]);if(Ta&&Ta[k]!=null)tmean=Math.min(tmean,Ta[k])}
   return {r3:sum(t-2,t),r7:sum(t-6,t),f48:sum(t+1,t+2),tmin,tmean,dem:meteo.dem[m]}}
-const wxWet=w=>!!w&&!w.stale&&(w.r3>=30||w.r7>=60);
+const wxWet=w=>!!w&&!w.stale&&(w.r3>=30||w.r7>=60),wxCold=w=>!!w&&!w.stale&&w.tmean<=1;   // gel ou neige possibles : tout-terrain durci, pas refusé
 function wxRefuse(w){   // pas de tout-terrain si la météo est défavorable
   if(!w)return "";if(w.stale)return "La météo de la carte n'est pas à jour : actualisez-la (Menu › Météo et outils) avant d'utiliser le tout-terrain.";
   if(w.r3>=50)return "Tout-terrain déconseillé : "+Math.round(w.r3)+" mm de pluie en 3 jours (sol saturé, ruisseaux gonflés).";
   if(w.f48>=40)return "Tout-terrain déconseillé : "+Math.round(w.f48)+" mm de pluie annoncés dans les 48 h.";
-  if(w.tmean<=1)return "Tout-terrain déconseillé : gel ou neige possibles dans les 2 jours.";
   return ""}
 function wxWarn(S){
   const out=[];if(typeof G==="undefined"||!G||!S.ll||!S.ll.length)return out;
@@ -282,6 +306,7 @@ function wxWarn(S){
   let maxAlt=0;for(let i=0;i<S.ll.length;i+=5){const q=merc(S.ll[i][0],S.ll[i][1]),c=Math.floor((q[0]-meta.x0)/meta.res),r=Math.floor((meta.y1-q[1])/meta.res);
     if(c>=0&&r>=0&&c<meta.cols&&r<meta.rows)maxAlt=Math.max(maxAlt,G.dem[r*meta.cols+c])}
   const tAlt=w.tmin-.0055*(maxAlt-(w.dem||maxAlt));
+  if(wxCold(w)&&!wxWet(w))out.push(`<b>Gel ou neige possibles</b> dans les 2 jours : le tout-terrain a été durci (pente ≤ 25°, marges élargies autour des cours d'eau) ; sol glissant, neige possible en altitude.`);
   if(wxWet(w))out.push(`<b>Sol détrempé</b> (${Math.round(w.r3)} mm en 3 jours, ${Math.round(w.r7)} mm en 7 jours) : pentes glissantes, ruisseaux gonflés, boue. Prévoyez plus de temps et de bonnes chaussures${S.off>=20?" ; le tout-terrain a été durci (pente ≤ 25°, marges élargies autour des cours d'eau)":""}.`);
   if(w.f48>=15)out.push(`Pluie annoncée : ≈ ${Math.round(w.f48)} mm dans les 48 h. Consultez la prévision avant de partir.`);
   if(tAlt<=0&&maxAlt>=900)out.push(`<b>Gel possible en altitude</b> (≈ ${Math.round(tAlt)} °C vers ${Math.round(maxAlt)} m) : sentiers verglacés, neige possible au-dessus de ≈ 1 500 m.`);
@@ -392,8 +417,9 @@ async function compute(){
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
   let R;
   if($("it-off").checked&&!isLoop()){
-    if(!$("it-offok").checked){msg.textContent="Cochez « Je comprends » pour utiliser le tout-terrain.";return}
-    R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){msg.textContent=R.error;return}
+    $("it-offbox").hidden=false;
+    if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer. (Le tracé affiché plus haut, s'il y en avait un, n'était pas en tout-terrain.)";return}
+    R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){clearRoute();msg.textContent=R.error;return}
   }else R=route(A,B,+$("it-env").value);
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
@@ -438,7 +464,7 @@ function init(){
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
-  window.ITIN={wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR}};   // pour les tests
+  window.ITIN={wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
 }
 init();
 })();
