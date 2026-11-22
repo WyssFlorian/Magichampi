@@ -79,12 +79,12 @@ function bonusQ(){
   return q}
 
 /* ---------- plus court chemin (Dijkstra, tas binaire) ---------- */
-function route(A,B,envie){
-  const g=GR,q=envie>0?bonusQ():null,mult=e=>{const k=g.cls[e],t=g.typ[e];
+function route(A,B,envie,pen,qq){
+  const g=GR,q=qq||(envie>0?bonusQ():null),mult=e=>{const k=g.cls[e],t=g.typ[e];
     let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?3:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 3
     if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);return m};
   const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);
-  for(let e=0;e<g.nE;e++){const m=mult(e);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0)}
+  for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0)}
   const dist=new Float64Array(g.nN).fill(Infinity),prev=new Int32Array(g.nN).fill(-1),heap=[],push=(d,n)=>{heap.push([d,n]);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p}},
     pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){let m=i;const a=2*i+1,b=a+1;if(a<heap.length&&heap[a][0]<heap[m][0])m=a;if(b<heap.length&&heap[b][0]<heap[m][0])m=b;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m}}return t};
   const fa=A.s/Math.max(g.len[A.e],1),fb=B.s/Math.max(g.len[B.e],1);
@@ -112,6 +112,50 @@ function route(A,B,envie){
   }
   return {seq,cost:best}
 }
+
+
+/* ---------- balade en boucle ---------- */
+// Triangle départ A → W1 → W2 → A (W1, W2 à distance r de A, 60° d'écart) ; les arêtes déjà utilisées coûtent ×6 pour ne pas repasser aux mêmes endroits.
+// Les waypoints sont choisis dans les secteurs où le mode affiché est le meilleur ; r est ajusté jusqu'à ±10 % de la cible.
+function nodeSnap(u){const g=GR,c=g.adj[g.deg[u]],e=c>>1;return {e,s:(c&1)?g.len[e]:0,d:0}}
+function loopOnce(A,ax,ay,th,r,envie,q,nq,cand){
+  const g=GR,pickW=ang=>{   // meilleurs noeuds près de (r, ang)
+    const tx=ax+r*Math.cos(ang),ty=ay+r*Math.sin(ang),L=[];
+    for(const u of cand){const dx=(g.lon[u]-g.lon0)*g.kx-tx,dy=(g.lat[u]-g.lat0)*g.ky-ty,d=Math.hypot(dx,dy);if(d<r*.3)L.push([d/r-.6*nq[u],u])}
+    return L.sort((a,b)=>a[0]-b[0]).slice(0,4).map(x=>x[1])};
+  const C1=pickW(th),C2=pickW(th+Math.PI/3);
+  for(const w1 of C1)for(const w2 of C2){if(w1===w2)continue;
+    const pen=new Float32Array(g.nE).fill(1),seq=[];let ok=true,P=A;
+    for(const w of [nodeSnap(w1),nodeSnap(w2),A]){
+      const R=route(P,w,envie,pen,q);if(!R){ok=false;break}
+      seq.push(...R.seq);for(const [e] of R.seq)pen[e]=6;P=w}
+    if(ok)return {seq}}
+  return null}
+async function loopRoutes(A,pt,metric,target,envie){
+  const g=GR,q=envie>0?bonusQ():null,nq=new Float32Array(g.nN),cand=[];
+  if(q)for(let e=0;e<g.nE;e++){nq[g.a[e]]=Math.max(nq[g.a[e]],q[e]);nq[g.b[e]]=Math.max(nq[g.b[e]],q[e])}
+  for(let u=0;u<g.nN;u++){for(let k=g.deg[u];k<g.deg[u+1];k++){const e=g.adj[k]>>1;if(g.cls[e]>=3){cand.push(u);break}}}
+  const ax=(pt.lng-g.lon0)*g.kx,ay=(pt.lat-g.lat0)*g.ky,out=[];
+  // secteurs : 12 directions, score = somme des meilleurs noeuds des deux fenêtres ; on garde 3 directions écartées d'au moins 90°
+  const sc=[];for(let i=0;i<12;i++){const th=i*Math.PI/6;let v=0;for(const u of cand){const x=(g.lon[u]-g.lon0)*g.kx-ax,y=(g.lat[u]-g.lat0)*g.ky-ay,an=Math.atan2(y,x),d=Math.hypot(x,y);
+      const da=Math.abs(((an-th-Math.PI/6+3*Math.PI)%(2*Math.PI))-Math.PI);if(da<Math.PI/4&&d>500&&d<8000)v+=nq[u]}sc.push([v,th])}
+  sc.sort((a,b)=>b[0]-a[0]);const ths=[];for(const [,t] of sc){if(ths.every(u=>{const d=Math.abs(((t-u+3*Math.PI)%(2*Math.PI))-Math.PI);return d>=Math.PI/2}))ths.push(t);if(ths.length===3)break}
+  while(ths.length<3)ths.push(ths.length*2*Math.PI/3);
+  for(const th of ths){
+    let r=Math.min(8000,metric==="len"?target/4:target/3600*4000/4),best=null;
+    for(let it=0;it<9;it++){
+      const R=loopOnce(A,ax,ay,th,r,envie,q,nq,cand);if(!R)break;
+      const S=summarize(R),M=metric==="len"?S.len:S.sec,err=Math.abs(M-target)/target;
+      if(!best||err<best.err)best={R,S,err};
+      if(err<=.1)break;r=Math.min(8000,Math.max(300,r*Math.pow(target/M,it<4?.9:.6)*(1+(it>=4?(Math.random()-.5)*.15:0))))}
+    if(best)out.push(best);
+    await new Promise(r=>setTimeout(r,0))}
+  const ok=out.filter(x=>x.err<=.35);return ok.length?ok:out}
+function gpx(){
+  if(!last||!last.ll)return;
+  const t=new Date().toISOString(),pts_=last.ll.map(p=>`<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}"/>`).join("");
+  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Magichampi" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>Itinéraire Magichampi</name><time>${t}</time></metadata><trk><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><trkseg>${pts_}</trkseg></trk></gpx>`;
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([x],{type:"application/gpx+xml"}));a.download="itineraire-magichampi.gpx";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
 /* ---------- statistiques et difficulté ---------- */
 function summarize(R){
@@ -154,6 +198,7 @@ function setPt(t,ll){
   else{mk[t]=L.marker(ll,{icon:icon(t),draggable:true,zIndexOffset:900,keyboard:false}).addTo(map);
     mk[t].on("dragend",()=>{pts[t]=mk[t].getLatLng();compute()})}
 }
+function clearRouteKeep(){if(layer){map.removeLayer(layer);layer=null}last=null;$("it-res").innerHTML=""}
 function clearRoute(all){
   if(layer){map.removeLayer(layer);layer=null}last=null;$("it-res").innerHTML="";
   if(all){["A","B"].forEach(t=>{if(mk[t]){map.removeLayer(mk[t]);mk[t]=null}pts[t]=null});$("it-msg").textContent=""}
@@ -164,7 +209,7 @@ function draw(S,R){
   for(const [e,s0,s1] of R.seq){if(s0===s1)continue;const k=g.cls[e],ll=sub(e,s0,s1);pl.push({ll,k})}
   pl.forEach(p=>L.polyline(p.ll,{pane:"itineraire",color:"#fff",weight:8,opacity:.9,lineCap:"round",interactive:false}).addTo(layer));
   pl.forEach(p=>L.polyline(p.ll,p.k===1?{pane:"itineraire",color:"#c62828",weight:5,dashArray:"4 6",interactive:false}:p.k===2?{pane:"itineraire",color:"#e8731f",weight:5,dashArray:"10 6",interactive:false}:{pane:"itineraire",color:"#1565c0",weight:5,lineCap:"round",interactive:false}).addTo(layer));
-  const all=pl.flatMap(p=>p.ll);if(all.length)map.fitBounds(L.latLngBounds(all),{padding:[40,40],maxZoom:17});
+  const all=pl.flatMap(p=>p.ll);S.ll=all;if(all.length)map.fitBounds(L.latLngBounds(all),{padding:[40,40],maxZoom:17});
 }
 function show(S){
   const d=DIFF[S.lvl],c=DCOL[S.lvl],w=[];
@@ -174,9 +219,32 @@ function show(S){
    <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b></div>
    <div class="it-row">Difficulté : <span class="pill" style="background:${c};color:#fff">${d}</span> <span class="it-sub">${esc(S.reason)}</span></div>
    ${w.map(x=>`<div class="it-warn">${x}</div>`).join("")}
+   <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button></div>
    <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux.</p></div>`;
-}
+  $("it-gpx").onclick=gpx}
+const isLoop=()=>$("it-mode").value==="loop";
+function showVars(V,k){
+  if(layer){map.removeLayer(layer);layer=null}
+  const v=V[k];draw(v.S,v.R);show(v.S);last=v.S;
+  $("it-vars").innerHTML=V.map((x,i)=>`<button type="button" class="btn${i===k?" primary":""}" data-k="${i}">Boucle ${i+1} · ${km(x.S.len)} · ${dur(x.S.sec)} · ${DIFF[x.S.lvl]}</button>`).join("");
+  $("it-vars").querySelectorAll("button").forEach(b=>b.onclick=()=>showVars(V,+b.dataset.k))}
+async function computeLoop(){
+  const msg=$("it-msg");$("it-vars").innerHTML="";
+  if(!pts.A){msg.textContent="Choisissez le départ de la boucle (A).";return}
+  if(typeof OV!=="undefined"&&OV){msg.textContent="Zoomez sur une région (zoom 12 ou plus) : le réseau de chemins n'existe pas pour la vue d'ensemble du canton.";return}
+  msg.textContent="Calcul des boucles…";
+  try{await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
+  const A=snap(pts.A);if(!A){msg.textContent="Le départ est à plus de 300 m d'un chemin de cette région : déplacez le marqueur.";clearRoute();return}
+  const dm=$("it-lm").value==="len",v=+$("it-lt").value,target=dm?v*1000:v*60;
+  const V=await loopRoutes(A,pts.A,dm?"len":"sec",target,+$("it-env").value);
+  if(!V.length){clearRoute();msg.textContent="Aucune boucle trouvée depuis ce départ : le réseau y est trop morcelé ou trop court. Essayez un autre point de départ.";return}
+  V.sort((a,b)=>a.err-b.err);V.forEach(x=>x.S=x.S);
+  const W=V.map(x=>({S:x.S,R:x.R}));showVars(W,0);
+  const off=V.filter(x=>x.err>.1).length;
+  msg.textContent=off?off+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s), à ±10 % de la cible."}
 async function compute(){
+  if(isLoop()){clearRouteKeep();return computeLoop()}
+  $("it-vars").innerHTML="";
   const msg=$("it-msg");msg.textContent="";
   if(!pts.A||!pts.B){msg.textContent="Choisissez le départ et l'arrivée.";return}
   if(typeof OV!=="undefined"&&OV){msg.textContent="Zoomez sur une région (zoom 12 ou plus) : le réseau de chemins n'existe pas pour la vue d'ensemble du canton.";return}
@@ -210,10 +278,16 @@ function init(){
     if(typeof LOC!=="undefined"&&LOC.ll){use(LOC.ll);return}
     if(!navigator.geolocation){$("it-msg").textContent="Position GPS indisponible ici : choisissez le départ sur la carte.";return}
     navigator.geolocation.getCurrentPosition(p=>use([p.coords.latitude,p.coords.longitude]),()=>{$("it-msg").textContent="Position refusée ou introuvable : choisissez le départ sur la carte."},{enableHighAccuracy:true,timeout:15000})};
+  const modeUI=()=>{const l=isLoop();$("it-b").hidden=l;$("it-swap").hidden=l;$("it-loopbox").hidden=!l;$("it-a").textContent=l?"Départ de la boucle":"Départ (A)";
+    if(l&&mk.B){map.removeLayer(mk.B);mk.B=null;pts.B=null}clearRouteKeep();$("it-vars").innerHTML=""};
+  $("it-mode").onchange=modeUI;
+  const lmUI=()=>{const d=$("it-lm").value==="len",r=$("it-lt");r.min=d?2:30;r.max=d?20:360;r.step=d?1:15;r.value=d?8:120;r.oninput()};
+  $("it-lm").onchange=lmUI;$("it-lt").oninput=()=>{const d=$("it-lm").value==="len",v=+$("it-lt").value;$("it-ltl").textContent=d?v+" km":dur(v*60)};
+  lmUI();modeUI();
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
-  window.ITIN={loadGraph,snap,route,summarize,compute,setPt,get graph(){return GR}};   // pour les tests
+  window.ITIN={loadGraph,snap,route,summarize,compute,setPt,loopRoutes,get graph(){return GR}};   // pour les tests
 }
 init();
 })();

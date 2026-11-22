@@ -1265,10 +1265,12 @@ details.more[open]>summary{margin-bottom:4px}
       </div>
       <div class="menu-page" data-t="Itinéraire" id="menu-it"><h3>Itinéraire à pied (bêta)</h3>
         <p class="it-intro">Trace un itinéraire sur les chemins entre deux points, avec temps de marche, dénivelé et difficulté. Les routes larges sont évitées ; les routes de 4 m sont possibles mais fortement pénalisées et signalées.</p>
+        <label class="it-lab">Type : <select id="it-mode" class="coin-sel"><option value="ab">Itinéraire de A à B</option><option value="loop">Balade en boucle</option></select></label>
         <div class="it-btns"><button class="btn" type="button" id="it-a">Départ (A)</button><button class="btn" type="button" id="it-b">Arrivée (B)</button><button class="btn" type="button" id="it-loc">A = ma position</button><button class="btn" type="button" id="it-swap" title="Inverser">⇅</button></div>
+        <div id="it-loopbox" hidden><label class="it-lab">Cible : <select id="it-lm" class="coin-sel"><option value="len">distance</option><option value="dur">durée de marche</option></select> <b id="it-ltl"></b><input type="range" id="it-lt" min="2" max="20" step="1" value="8"></label></div>
         <label class="it-lab">Envie de détour vers les zones favorables : <b id="it-envl"></b><input type="range" id="it-env" min="0" max="3" step="1" value="0"></label>
         <div class="it-btns"><button class="btn primary" type="button" id="it-go">Calculer</button><button class="btn" type="button" id="it-clr">Effacer</button></div>
-        <div id="it-msg" class="it-msg" role="status"></div><div id="it-res"></div>
+        <div id="it-msg" class="it-msg" role="status"></div><div id="it-vars" class="it-btns"></div><div id="it-res"></div>
       </div>
       <div class="menu-page" data-t="Calcul du score" id="menu-score"><h3>Comment le score est calculé</h3>
       <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue. Elle ne dépend pas de la météo.</p>
