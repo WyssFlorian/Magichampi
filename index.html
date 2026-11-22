@@ -1094,11 +1094,12 @@ details.more[open]>summary{margin-bottom:4px}
         <button id="m-site" aria-pressed="true">Aptitude du lieu</button>
         <button id="m-now" aria-pressed="false">Conditions du moment</button>
       </div>
-      <details class="info"><summary>Informations sur les conditions du moment</summary>
+      <details class="info" id="now-info"><summary>Informations sur les conditions du moment</summary>
         <p class="small">En mode « conditions du moment », la couleur indique le pourcentage de l'aptitude maximale du lieu (saison et météo optimales) : jaune au-dessus de 45 %, rose 60 %, orange 75 %, bleu 90 %. Rien n'est coloré en dessous. Seules les forêts sont colorées. Cliquez un point pour voir le détail du calcul.</p>
-        <p class="small" id="stats" style="font-variant-numeric:tabular-nums"></p>
       </details>
+      <p class="small" id="stats" style="font-variant-numeric:tabular-nums"></p>
       <p class="small" id="mode-help"></p>
+      <div class="row" id="q-row" style="gap:8px;flex-wrap:wrap;margin-top:4px"><span style="flex:1 1 100%">Période visée : seuls les champignons dont le milieu de saison (pic) tombe dans la période</span><div class="seg" id="q-seg" role="group" aria-label="Saison visée par trimestre" style="flex:1 1 100%"><button data-q="" title="Pas de filtre par période">Tous</button><button data-q="q0" title="Mars à mai">Printemps</button><button data-q="q1" title="Juin à août">Été</button><button data-q="q2" title="Septembre à novembre">Automne</button><button data-q="q3" title="Décembre à février">Hiver</button></div><div class="seg" id="mo-seg" role="group" aria-label="Mois visé" style="flex:1 1 100%;flex-wrap:wrap"><button data-q="m0" title="janvier">Jan</button><button data-q="m1" title="février">Fév</button><button data-q="m2" title="mars">Mar</button><button data-q="m3" title="avril">Avr</button><button data-q="m4" title="mai">Mai</button><button data-q="m5" title="juin">Juin</button><button data-q="m6" title="juillet">Juil</button><button data-q="m7" title="août">Août</button><button data-q="m8" title="septembre">Sep</button><button data-q="m9" title="octobre">Oct</button><button data-q="m10" title="novembre">Nov</button><button data-q="m11" title="décembre">Déc</button></div></div>
       <div id="date-box">
         <div class="row" style="justify-content:space-between"><span>Date de référence</span><span class="date" id="date-lab"></span></div>
         <input type="range" id="date" min="0" max="0" step="1" aria-label="Date de référence">
@@ -1172,6 +1173,19 @@ details.more[open]>summary{margin-bottom:4px}
       </details>
     </details>
 
+    <details class="panel-det" id="sec-itin"><summary>Itinéraire découverte (bêta)</summary>
+        <p class="it-intro">Trace un itinéraire sur les chemins entre deux points, avec temps de marche, dénivelé et difficulté. Les routes larges sont évitées ; les routes de 4 m sont possibles mais fortement pénalisées et signalées.</p>
+        <label class="it-lab">Type : <select id="it-mode" class="coin-sel"><option value="ab">Itinéraire de A à B</option><option value="loop">Balade en boucle</option></select></label>
+        <div class="it-btns"><button class="btn" type="button" id="it-a">Départ (A)</button><button class="btn" type="button" id="it-b">Arrivée (B)</button><button class="btn" type="button" id="it-loc">A = ma position</button><button class="btn" type="button" id="it-swap" title="Inverser">⇅</button></div>
+        <div id="it-loopbox" hidden><label class="it-lab">Cible : <select id="it-lm" class="coin-sel"><option value="len">distance</option><option value="dur">durée de marche</option></select> <b id="it-ltl"></b><input type="range" id="it-lt" min="2" max="20" step="1" value="8"></label></div>
+        <label class="it-lab">Envie de détour vers les zones favorables : <b id="it-envl"></b><input type="range" id="it-env" min="0" max="3" step="1" value="0"></label>
+        <div id="it-offrow"><label class="chk"><input type="checkbox" id="it-off"> <span>Tout-terrain (bêta, désactivé par défaut)</span></label>
+        <div id="it-offbox" class="it-warn" hidden><p style="margin:0 0 6px">Le tracé peut quitter le chemin et traverser la forêt près des zones à forte concentration. Il évite pentes ≥ 30°, falaises, cours d'eau, marais et réserves, mais pas les ruisseaux non cartographiés, fossés, clôtures, propriétés privées ni la chasse. Pas de balisage ; ne l'utilisez pas par mauvais temps ni de nuit. Texte à relire par un juriste avant publication publique.</p>
+        <label class="chk"><input type="checkbox" id="it-offok"> <span>Je comprends et je reste seul responsable du passage.</span></label></div></div>
+        <div class="it-btns"><button class="btn primary" type="button" id="it-go">Calculer</button><button class="btn" type="button" id="it-clr">Effacer</button></div>
+        <div id="it-msg" class="it-msg" role="status"></div><div id="it-vars" class="it-btns"></div><div id="it-res"></div>
+    </details>
+
 
   </aside>
   <div class="mapwrap">
@@ -1192,7 +1206,6 @@ details.more[open]>summary{margin-bottom:4px}
       <p class="small" id="resp-help" hidden></p>
       <div class="sub-h">Espèces et relevés</div>
       <div class="row" style="gap:8px;flex-wrap:nowrap"><span style="flex:1">Seulement les champignons de saison</span><div class="seg" id="season-seg" role="group" aria-label="Seulement les champignons de saison" style="flex:none"><button data-sea="on" title="Toujours">Oui</button><button data-sea="off" title="Jamais">Non</button><button data-sea="auto" title="Oui en « Conditions du moment », non en « Aptitude du lieu »">Auto</button></div><input type="checkbox" id="o-season" hidden></div>
-      <div class="row" id="q-row" style="gap:8px;flex-wrap:wrap;margin-top:4px"><span style="flex:1 1 100%">Période visée, en « Aptitude du lieu » : seuls les champignons dont le milieu de saison (pic) tombe dans la période</span><div class="seg" id="q-seg" role="group" aria-label="Saison visée par trimestre" style="flex:1 1 100%"><button data-q="" title="Pas de filtre par période">Tous</button><button data-q="q0" title="Mars à mai">Printemps</button><button data-q="q1" title="Juin à août">Été</button><button data-q="q2" title="Septembre à novembre">Automne</button><button data-q="q3" title="Décembre à février">Hiver</button></div><div class="seg" id="mo-seg" role="group" aria-label="Mois visé" style="flex:1 1 100%;flex-wrap:wrap"><button data-q="m0" title="janvier">Jan</button><button data-q="m1" title="février">Fév</button><button data-q="m2" title="mars">Mar</button><button data-q="m3" title="avril">Avr</button><button data-q="m4" title="mai">Mai</button><button data-q="m5" title="juin">Juin</button><button data-q="m6" title="juillet">Juil</button><button data-q="m7" title="août">Août</button><button data-q="m8" title="septembre">Sep</button><button data-q="m9" title="octobre">Oct</button><button data-q="m10" title="novembre">Nov</button><button data-q="m11" title="décembre">Déc</button></div></div>
       <p class="small" id="season-help" style="margin:2px 0 10px"></p>
       <div style="margin-bottom:10px" class="lite-hide">
         <div class="row" style="justify-content:space-between"><label for="yr">Relevés SwissFungi pris en compte</label><span class="date" id="yr-lab"></span></div>
@@ -1263,18 +1276,6 @@ details.more[open]>summary{margin-bottom:4px}
         <h4 style="margin:14px 0 4px">Régions hors ligne</h4>
         <p class="small" style="margin:0 0 6px">Chaque région se télécharge séparément ; elles se recouvrent d'au moins 1 km, pour passer de l'une à l'autre sans trou.</p>
         <div id="off-zones"></div>
-      </div>
-      <div class="menu-page" data-t="Itinéraire" id="menu-it"><h3>Itinéraire à pied (bêta)</h3>
-        <p class="it-intro">Trace un itinéraire sur les chemins entre deux points, avec temps de marche, dénivelé et difficulté. Les routes larges sont évitées ; les routes de 4 m sont possibles mais fortement pénalisées et signalées.</p>
-        <label class="it-lab">Type : <select id="it-mode" class="coin-sel"><option value="ab">Itinéraire de A à B</option><option value="loop">Balade en boucle</option></select></label>
-        <div class="it-btns"><button class="btn" type="button" id="it-a">Départ (A)</button><button class="btn" type="button" id="it-b">Arrivée (B)</button><button class="btn" type="button" id="it-loc">A = ma position</button><button class="btn" type="button" id="it-swap" title="Inverser">⇅</button></div>
-        <div id="it-loopbox" hidden><label class="it-lab">Cible : <select id="it-lm" class="coin-sel"><option value="len">distance</option><option value="dur">durée de marche</option></select> <b id="it-ltl"></b><input type="range" id="it-lt" min="2" max="20" step="1" value="8"></label></div>
-        <label class="it-lab">Envie de détour vers les zones favorables : <b id="it-envl"></b><input type="range" id="it-env" min="0" max="3" step="1" value="0"></label>
-        <div id="it-offrow"><label class="chk"><input type="checkbox" id="it-off"> <span>Tout-terrain (bêta, désactivé par défaut)</span></label>
-        <div id="it-offbox" class="it-warn" hidden><p style="margin:0 0 6px">Le tracé peut quitter le chemin et traverser la forêt près des zones à forte concentration. Il évite pentes ≥ 30°, falaises, cours d'eau, marais et réserves, mais pas les ruisseaux non cartographiés, fossés, clôtures, propriétés privées ni la chasse. Pas de balisage ; ne l'utilisez pas par mauvais temps ni de nuit. Texte à relire par un juriste avant publication publique.</p>
-        <label class="chk"><input type="checkbox" id="it-offok"> <span>Je comprends et je reste seul responsable du passage.</span></label></div></div>
-        <div class="it-btns"><button class="btn primary" type="button" id="it-go">Calculer</button><button class="btn" type="button" id="it-clr">Effacer</button></div>
-        <div id="it-msg" class="it-msg" role="status"></div><div id="it-vars" class="it-btns"></div><div id="it-res"></div>
       </div>
       <div class="menu-page" data-t="Calcul du score" id="menu-score"><h3>Comment le score est calculé</h3>
       <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue. Elle ne dépend pas de la météo.</p>
@@ -3782,7 +3783,7 @@ async function boot(){
 
   let booted=false;const rerender=()=>{if(booted)render()};
   const setMode=m=>{state.mode=m;saveState();$("m-now").setAttribute("aria-pressed",m==="now");$("m-site").setAttribute("aria-pressed",m==="site");
-    $("date-box").hidden=m!=="now";$("q-row").hidden=m==="now";modeSeason(m);
+    $("date-box").hidden=m!=="now";$("q-row").hidden=m==="now";$("now-info").hidden=m!=="now";modeSeason(m);
     $("mode-help").textContent=m==="now"?"Lieux favorables ET météo favorable : où chercher ces jours-ci.":"Lieux favorables quelle que soit la météo : pour comparer avec vos coins habituels.";rerender()};
   const SEA={p:"auto"};try{const v=localStorage.getItem("champi-season");if(v==="on"||v==="off")SEA.p=v}catch(e){}const seaVal=m=>SEA.p==="auto"?m==="now":SEA.p==="on";const modeSeason=m=>{state.seasonOnly=seaVal(m)||(m!=="now"&&state.q!=null);$("o-season").checked=state.seasonOnly};$("m-now").onclick=()=>{modeSeason("now");setMode("now")};$("m-site").onclick=()=>{modeSeason("site");setMode("site")};
   // noms des communes sur la photo aérienne quand on dézoome (zoom 14 ou moins)

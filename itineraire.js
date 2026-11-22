@@ -476,7 +476,7 @@ function init(){
     if(!arm)return;e.stopPropagation();e.preventDefault();
     const dg=map.dragging&&map.dragging._draggable&&map.dragging._draggable._moved;if(dg)return;
     const ll=map.mouseEventToLatLng(e),t=arm;arm=null;banner(null);setPt(t,ll);
-    if(typeof openMenu==="function")openMenu(true,"menu-it");
+    {const d=$("sec-itin");if(d){d.open=true;setTimeout(()=>d.scrollIntoView({behavior:"smooth",block:"nearest"}),50)}}
     if(pts.A&&pts.B)compute();else $("it-msg").textContent=t==="A"?"Départ placé. Choisissez maintenant l'arrivée.":"Arrivée placée. Choisissez maintenant le départ."},true);
   $("it-a").onclick=()=>start("A");$("it-b").onclick=()=>start("B");
   $("it-loc").onclick=()=>{
