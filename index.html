@@ -675,7 +675,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 :root{
   --bg:#f4f5f0; --panel:#fbfbf8; --fg:#1f2620; --muted:#5d6a5f; --line:#d9ddd2;
   --accent:#2f5d3a; --accent-soft:#e3ece2;
-  --s-low:#f2c3e4; --s-mid:#c63d8f; --s-high:#5a0c5e; --s-top:#261ebe;
+  --s-low:#dccdf5; --s-mid:#a877e0; --s-high:#6b30b8; --s-top:#3a0d7e;
   --warn-bg:#fff4dc; --warn-fg:#6b4a00;
   --font-display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -1183,6 +1183,7 @@ details.more[open]>summary{margin-bottom:4px}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <label class="chk"><input type="checkbox" id="o-score" checked> Score</label>
+        <label class="chk"><input type="checkbox" id="o-blocks" checked> Score en carrés (taille selon le zoom)</label>
         <label class="chk">Transparence <input type="range" id="o-alpha" min="20" max="130" value="130" style="max-width:140px" aria-label="Opacité du score"></label>
         <p class="small" style="margin:-4px 0 0">Le score s'éclaircit aussi automatiquement en zoomant, pour voir la forêt dessous.</p>
         <label class="chk lite-hide"><input type="checkbox" id="o-sq"> Mailles SwissFungi 5 km</label>
@@ -1497,7 +1498,7 @@ let D,G,meta,meteo,fungi,sqNeighbours={};
 const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tier:1,hide:[]};
 try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if([0,1,2,3].includes(s.tier))state.tier=s.tier;{const c=SPECIES.find(x=>x.id===state.sp);if(c&&state.tier&&c.tier!==state.tier)state.tier=c.tier}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
-const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-coins","o-sq","o-hard","o-contour"];
+const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-coins","o-sq","o-hard","o-contour","o-blocks"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
 function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
@@ -1786,8 +1787,8 @@ async function refreshData(){
   }catch(e){console.warn(e);bt.textContent="Échec, réessayer";bt.disabled=false}
 }
 /* ---------- rendering ---------- */
-const COLORS=[null,[246,190,225,125],[214,58,152,218],[128,26,160,240],[40,70,235,252]];
-let canvas,ctx,imgData,overlay,map,currentClass,stats=[0,0,0,0,0];
+const COLORS=[null,[220,205,245,150],[168,119,224,215],[107,48,184,238],[58,13,126,252]];  // espèce : dégradé de violet
+let canvas,ctx,imgData,overlay,blockLayer,map,currentClass,stats=[0,0,0,0,0];
 function classAt(i,sp,st,season){
   const a=st.SC[i];if(a===255)return 255;
   if(state.mode!=="now")return a;
@@ -1820,7 +1821,7 @@ function classesFor(sp){
   }
   return {C,zone:{W:zW,cls:zcls}};
 }
-const MULTI_COLORS=[null,null,[255,214,0,165],[255,110,0,215],[225,0,190,255]];
+const MULTI_COLORS=[null,null,[252,174,140,175],[226,45,38,225],[120,0,18,255]];  // concentration : dégradé de rouge
 const MULTI_LAB=["","","Concentration moyenne","Forte concentration","Très forte concentration"];
 // forte concentration : chaque espèce affichée rapporte 3 points en très élevé, 2 en élevé et 1 en moyen ;
 // les niveaux sont fixés sur la somme des points des forêts chargées (4 %, 15 % et 40 % les mieux notés, comme pour une espèce)
@@ -1845,7 +1846,7 @@ function renderInner(){
   stats=[0,0,0,0,0];
   const blk=blockReason(multi?null:state.sp);
   if(blk){currentClass=new Uint8Array(n).fill(255);multiCls=null;$("stats").textContent="Carte vide : "+blk+(state.resp?" (option « Cueillette responsable » activée ; décochez-la pour voir les zones quand même.)":"");
-    updateLegend();ctx.putImageData(img,0,0);renderObs();renderSquares();renderCoins();renderSpeciesList();updateUrbanBus();updateBest();huntUpdate();hardUpdate();return}
+    updateLegend();ctx.putImageData(img,0,0);if(typeof blockLayer!=="undefined"&&blockLayer)blockLayer.redraw();renderObs();renderSquares();renderCoins();renderSpeciesList();updateUrbanBus();updateBest();huntUpdate();hardUpdate();return}
   if(!multi){
     const sp=SPECIES.find(s=>s.id===state.sp);const r=classesFor(sp);zoneNow=r.zone;multiCls=null;
     const C=currentClass=r.C;
@@ -1881,9 +1882,50 @@ function renderInner(){
   }
   updateLegend();
   
-  ctx.putImageData(img,0,0);
+  ctx.putImageData(img,0,0);if(typeof blockLayer!=="undefined"&&blockLayer)blockLayer.redraw();
   renderObs();renderSquares();renderCoins();renderSpeciesList();updateUrbanBus();updateBest();huntUpdate();hardUpdate();
 }
+
+/* ---------- score en carrés : taille des carrés selon le zoom (agrégation côté navigateur, mêmes classes que la grille) ---------- */
+// Chaque carré fait au moins ~10 px à l'écran : 1, 2, 4, 8… cellules de côté (alignées sur la grille complète). Sa couleur suit la classe moyenne
+// des cellules de forêt qu'il contient (dégradé continu entre les classes).
+const BLOCK_PX=MOBILE?11:9;
+const BlockLayer=L.Layer.extend({
+  initialize(){this._op=1},
+  onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";this._c.style.opacity=this._op;m.getPane("overlayPane").appendChild(this._c);
+    m.on("moveend zoomend resize",this.redraw,this);this.redraw()},
+  onRemove(m){m.off("moveend zoomend resize",this.redraw,this);L.DomUtil.remove(this._c)},
+  setOpacity(o){this._op=o;if(this._c)this._c.style.opacity=o},
+  setBounds(){},
+  redraw(){const m=this._map;if(!m||!G||!currentClass)return;
+    const s=m.getSize(),dpr=window.devicePixelRatio||1,c=this._c,W=s.x,H=s.y;
+    c.width=W*dpr;c.height=H*dpr;c.style.width=W+"px";c.style.height=H+"px";L.DomUtil.setPosition(c,m.containerPointToLayerPoint([0,0]));
+    const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);
+    const cols=meta.cols,rows=meta.rows,cls=currentClass,z=m.getZoom();
+    const p=meta.res*256*Math.pow(2,z)/40075016.68557849;           // pixels par cellule
+    let b=1;while(b*p<BLOCK_PX)b*=2;                                  // cellules par côté de carré
+    const o=m.latLngToContainerPoint(regionLL().getNorthWest()),bp=b*p;
+    const now=state.mode==="now",multi=state.sp==="multi",minK=(multi&&!now)?2:1;
+    const PAL=now?NOW_COLORS:(multi?MULTI_COLORS:COLORS);
+    // table de couleurs par classe moyenne (pas de 1/16)
+    const lut=[];for(let q=0;q<=64;q++){const mean=q/16;let col=null;
+      if(mean>minK-.99){const k=Math.min(4,Math.floor(Math.max(mean,minK))),f=Math.max(0,Math.min(1,mean-k)),A=PAL[k],B=PAL[Math.min(4,k+1)];
+        let a=A[3]+(B[3]-A[3])*f;if(mean<minK)a*=Math.max(.25,mean-(minK-1));   // sous la classe minimale : se fond dans la forêt
+        col=`rgba(${Math.round(A[0]+(B[0]-A[0])*f)},${Math.round(A[1]+(B[1]-A[1])*f)},${Math.round(A[2]+(B[2]-A[2])*f)},${Math.min(1,a*ALPHA_BOOST/255).toFixed(3)})`}
+      lut.push(col)}
+    // blocs visibles (indices de blocs alignés sur la grille complète)
+    const g0=REG?REG.c0:0,h0=REG?REG.r0:0;
+    const cMin=Math.max(0,Math.floor(-o.x/p)),cMax=Math.min(cols,Math.ceil((W-o.x)/p)),rMin=Math.max(0,Math.floor(-o.y/p)),rMax=Math.min(rows,Math.ceil((H-o.y)/p));
+    if(cMax<=cMin||rMax<=rMin)return;
+    const bc0=Math.floor((g0+cMin)/b),bc1=Math.floor((g0+cMax-1)/b),br0=Math.floor((h0+rMin)/b),br1=Math.floor((h0+rMax-1)/b);
+    const gap=bp>=7?1:0;
+    for(let br=br0;br<=br1;br++){const ra=Math.max(0,br*b-h0),rb=Math.min(rows,(br+1)*b-h0);
+      for(let bc=bc0;bc<=bc1;bc++){const ca=Math.max(0,bc*b-g0),cb=Math.min(cols,(bc+1)*b-g0);
+        let sum=0,n=0;
+        for(let r=ra;r<rb;r++){const ro=r*cols;for(let cc=ca;cc<cb;cc++){const v=cls[ro+cc];if(v===255)continue;n++;if(v>=minK)sum+=v}}
+        if(!n)continue;const col=lut[Math.round(sum/n*16)];if(!col)continue;
+        x.fillStyle=col;x.fillRect(o.x+(bc*b-g0)*p+gap/2,o.y+(br*b-h0)*p+gap/2,bp-gap,bp-gap)}}}
+});
 
 /* ---------- arrêts urbains : affichés si une forêt propice est à moins de 1 km ---------- */
 let busUrban=null,busUrbanAll=[];
@@ -3569,7 +3611,7 @@ async function boot(){
   const bases={carte:baseFor("carte"),ortho:baseFor("ortho")};
   bases[state.base].addTo(map);
   await loadRegion(regionAround(map.getBounds()));
-  overlay=new CanvasOverlay(canvas,regionLL(),{opacity:1,interactive:false}).addTo(map);
+  overlay=new CanvasOverlay(canvas,regionLL(),{opacity:1,interactive:false});blockLayer=new BlockLayer();
   coverLayer=L.layerGroup(areasOf().map(a=>L.rectangle(a.bounds,{color:"#5d6a5f",weight:1,dashArray:"2 6",fill:false,interactive:false}))).addTo(map);
   regionLayer=L.rectangle(regionLL(),{color:"#2f5d3a",weight:2,dashArray:"8 6",fill:false,interactive:false}).addTo(map);
   const RegionCtl=L.Control.extend({options:{position:"topright"},onAdd(){const d=L.DomUtil.create("div","region-ctl");
@@ -3701,11 +3743,14 @@ async function boot(){
    document.querySelectorAll("#season-seg [data-sea]").forEach(b=>b.onclick=()=>{SEA.p=b.dataset.sea;try{localStorage.setItem("champi-season",SEA.p)}catch(e){}seaBtns();modeSeason(state.mode);saveState();render()})}
   const yrLab=()=>{$("yr-lab").textContent=YR_SHORT[state.yr]};$("yr").value=String(state.yr);yrLab();
   let tmr3;$("yr").oninput=e=>{state.yr=+e.target.value;yrLab();saveState();clearTimeout(tmr3);tmr3=setTimeout(render,80)};
-  $("o-score").onchange=e=>e.target.checked?overlay.addTo(map):map.removeLayer(overlay);
+  const syncScore=()=>{const on=$("o-score").checked,bl=$("o-blocks").checked;
+    [[overlay,on&&!bl],[blockLayer,on&&bl]].forEach(([l,v])=>{if(v&&!map.hasLayer(l))l.addTo(map);else if(!v&&map.hasLayer(l))map.removeLayer(l)});
+    if(on&&bl)blockLayer.redraw();applyAlpha()};
+  $("o-score").onchange=syncScore;$("o-blocks").onchange=()=>{saveLay();syncScore()};
   // plus on zoome, plus le score devient transparent pour laisser voir la forêt dessous
   const zoomAlpha=z=>z<=13?1:z===14?.8:z===15?.6:z===16?.5:.42;
-  const applyAlpha=()=>overlay.setOpacity($("o-alpha").value/130*zoomAlpha(Math.round(map.getZoom())));
-  $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();
+  function applyAlpha(){const o=$("o-alpha").value/130*zoomAlpha(Math.round(map.getZoom()));overlay.setOpacity(o);blockLayer.setOpacity(o)}
+  $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();syncScore();
   $("o-sq").onchange=()=>{saveLay();renderSquares()};
   setupCoinForm();setupPhotoImport();setupShare();try{seSetup()}catch(e){console.warn(e)}setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
   document.querySelectorAll("[data-act=tour]").forEach(b=>b.onclick=tourStart);
