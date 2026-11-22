@@ -726,6 +726,7 @@ details.info p{margin:6px 0 0}
 .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{flex:1;border:0;background:none;color:inherit;font:inherit;padding:7px 8px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel);font-weight:600}
+#mo-seg button{flex:0 0 16.66%}
 .tiers{display:flex;gap:6px}
 .tiers .tchk{flex:1;position:relative;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:8px;padding:7px 22px 7px 7px;font-size:12.5px;cursor:pointer;line-height:1.2}
 .tiers .tchk:has(input:checked){background:var(--accent);color:var(--panel);font-weight:600}
@@ -1187,6 +1188,7 @@ details.more[open]>summary{margin-bottom:4px}
       <p class="small" id="resp-help" hidden></p>
       <div class="sub-h">Espèces et relevés</div>
       <div class="row" style="gap:8px;flex-wrap:nowrap"><span style="flex:1">Seulement les champignons de saison</span><div class="seg" id="season-seg" role="group" aria-label="Seulement les champignons de saison" style="flex:none"><button data-sea="on" title="Toujours">Oui</button><button data-sea="off" title="Jamais">Non</button><button data-sea="auto" title="Oui en « Conditions du moment », non en « Aptitude du lieu »">Auto</button></div><input type="checkbox" id="o-season" hidden></div>
+      <div class="row" id="q-row" style="gap:8px;flex-wrap:wrap;margin-top:4px"><span style="flex:1 1 100%">Période visée, en « Aptitude du lieu » : seuls les champignons dont le milieu de saison (pic) tombe dans la période</span><div class="seg" id="q-seg" role="group" aria-label="Saison visée par trimestre" style="flex:1 1 100%"><button data-q="" title="Pas de filtre par période">Tous</button><button data-q="q0" title="Mars à mai">Printemps</button><button data-q="q1" title="Juin à août">Été</button><button data-q="q2" title="Septembre à novembre">Automne</button><button data-q="q3" title="Décembre à février">Hiver</button></div><div class="seg" id="mo-seg" role="group" aria-label="Mois visé" style="flex:1 1 100%;flex-wrap:wrap"><button data-q="m0" title="janvier">Jan</button><button data-q="m1" title="février">Fév</button><button data-q="m2" title="mars">Mar</button><button data-q="m3" title="avril">Avr</button><button data-q="m4" title="mai">Mai</button><button data-q="m5" title="juin">Juin</button><button data-q="m6" title="juillet">Juil</button><button data-q="m7" title="août">Août</button><button data-q="m8" title="septembre">Sep</button><button data-q="m9" title="octobre">Oct</button><button data-q="m10" title="novembre">Nov</button><button data-q="m11" title="décembre">Déc</button></div></div>
       <p class="small" id="season-help" style="margin:2px 0 10px"></p>
       <div style="margin-bottom:10px" class="lite-hide">
         <div class="row" style="justify-content:space-between"><label for="yr">Relevés SwissFungi pris en compte</label><span class="date" id="yr-lab"></span></div>
@@ -1519,8 +1521,9 @@ function trap(v,[a,b,c,d]){if(v<=a||v>=d)return 0;if(v<b)return (v-a)/(b-a);if(v
 const CLS_LAB=["Très faible","Faible","Moyen","Élevé","Très élevé"];
 
 let D,G,meta,meteo,fungi,sqNeighbours={};
-const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tiers:[1],hide:[]};
+const state={q:null,lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tiers:[1],hide:[]};
 try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if(Array.isArray(s.tiers)){const a=[1,2,3].filter(t=>s.tiers.includes(t));if(a.length)state.tiers=a}else if([0,1,2,3].includes(s.tier))state.tiers=s.tier?[s.tier]:[1,2,3];{const c=SPECIES.find(x=>x.id===state.sp);if(c&&!state.tiers.includes(c.tier))state.tiers=[...state.tiers,c.tier].sort()}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
+try{const q=localStorage.getItem("champi-quarter");if(/^[qm]\d+$/.test(q||"")&&(q[0]==="q"?+q.slice(1)<4:+q.slice(1)<12))state.q=q}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
 const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-coins","o-sq","o-hard","o-contour","o-blocks"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
@@ -1857,7 +1860,16 @@ const ALPHA_BOOST=1.3; // couleurs rendues 30 % plus opaques ; le curseur (20-13
 function seasonDate(){return state.mode==="now"?meteo.dates[state.d]:localToday()}
 // altitude de référence pour le filtre de saison : médiane des forêts de la région chargée
 let REG_ALT=800;
-function inSeason(sp){return seasonF(sp.key,seasonDate(),REG_ALT)>=SEASON_MIN}
+// période visée (mode « Aptitude du lieu ») : trimestre météorologique ou mois ; state.q = "q0".."q3" ou "m0".."m11" (janvier = m0), null = pas de filtre
+const QTR=[{n:"Printemps",m:"mars à mai",mo:[2,3,4]},{n:"Été",m:"juin à août",mo:[5,6,7]},{n:"Automne",m:"septembre à novembre",mo:[8,9,10]},{n:"Hiver",m:"décembre à février",mo:[11,0,1]}];
+const MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const quarterOn=()=>state.mode!=="now"&&!!state.q;
+const perMonths=()=>state.q[0]==="q"?QTR[+state.q.slice(1)].mo:[+state.q.slice(1)];
+const perLabel=()=>state.q[0]==="q"?`${QTR[+state.q.slice(1)].n.toLowerCase()} (${QTR[+state.q.slice(1)].m})`:MOIS[+state.q.slice(1)];
+// le « milieu de saison » (pic de fréquence des relevés, décalé selon l'altitude) doit tomber dans la période
+const inPeriod=sp=>perMonths().includes(+peakDay(sp,REG_ALT).slice(5,7)-1);
+const seasonVal=sp=>quarterOn()?(inPeriod(sp)?1:0):seasonF(sp.key,seasonDate(),REG_ALT);
+function inSeason(sp){return seasonVal(sp)>=SEASON_MIN}
 const inTier=sp=>state.tiers.includes(sp.tier)&&!state.hide.includes(sp.id)&&!protHidden(sp);
 function spAlpha(L){return L.slice().sort((a,b)=>a.fr.localeCompare(b.fr,"fr",{sensitivity:"base"}))}  // listes de choix : ordre alphabétique français, sans tenir compte des accents
 function activeSpecies(){return SPECIES.filter(sp=>inTier(sp)&&(!state.seasonOnly||inSeason(sp)))}
@@ -1865,7 +1877,7 @@ function render(){try{renderInner()}catch(e){console.error(e)}}
 function renderInner(){
   try{nightBanner()}catch(e){console.warn(e)}
   if(state.seasonOnly&&state.sp!=="multi"){const sp=SPECIES.find(s=>s.id===state.sp);
-    if(!inSeason(sp)&&SPECIES.some(x=>inTier(x)&&inSeason(x))){const best=SPECIES.filter(inTier).sort((a,b)=>seasonF(b.key,seasonDate(),REG_ALT)-seasonF(a.key,seasonDate(),REG_ALT))[0];state.sp=state.lastSp=best.id}}
+    if(!inSeason(sp)&&SPECIES.some(x=>inTier(x)&&inSeason(x))){const best=SPECIES.filter(inTier).sort((a,b)=>seasonVal(b)-seasonVal(a))[0];state.sp=state.lastSp=best.id}}
   const multi=state.sp==="multi";
   const img=imgData,px=img.data,n=meta.rows*meta.cols;px.fill(0);
   stats=[0,0,0,0,0];
@@ -1880,7 +1892,7 @@ function renderInner(){
     const tot=stats.reduce((a,b)=>a+b,0)||1;
     $("stats").textContent=`Forêts de la région chargée : ${Math.round(100*stats[4]/tot)} % en très élevé, ${Math.round(100*(stats[3]+stats[4])/tot)} % en élevé ou très élevé, ${Math.round(100*stats[2]/tot)} % en moyen (sur tout le canton : 4 %, 15 % et 25 %, seuils identiques dans chaque région).`;
   }else{
-    const key=[state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly,state.tiers.join(""),state.hide.join(",")].join("|");
+    const key=[state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly,quarterOn()?state.q:"",state.tiers.join(""),state.hide.join(",")].join("|");
     if(!multiCache||multiCache.key!==key){
       const per={},pts=new Uint16Array(n),cnt=new Uint8Array(n).fill(255);let has=new Uint8Array(n);
       activeSpecies().forEach(sp=>{const C=classesFor(sp).C;per[sp.id]=C;
@@ -1976,7 +1988,7 @@ function propiceArrays(){return state.sp==="multi"?Object.values(multiCls||{}):[
 let urbanKey="";
 function updateUrbanBus(){
   if(!busUrban||!currentClass)return;
-  const key=[state.sp,state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly].join("|");if(key===urbanKey)return;urbanKey=key;
+  const key=[state.sp,state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly,quarterOn()?state.q:""].join("|");if(key===urbanKey)return;urbanKey=key;
   const cols=meta.cols,rows=meta.rows,bc=Math.ceil(cols/BLK),br=Math.ceil(rows/BLK),has=new Uint8Array(bc*br);
   propiceArrays().forEach(C=>{for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const v=C[r*cols+c];if(v!==255&&v>=(state.sp==="multi"?MULTI_MIN:2))has[((r/BLK)|0)*bc+((c/BLK)|0)]=1}});
   const lat=(meta.bounds[0][0]+meta.bounds[1][0])/2,R=URB_KM*1000/(meta.res*Math.cos(lat*Math.PI/180)); // rayon en cellules
@@ -2231,11 +2243,11 @@ function renderSpeciesList(){
   document.querySelectorAll("#tiers input[data-tier]").forEach(b=>{b.checked=state.tiers.includes(+b.dataset.tier)});
   const TL=SPECIES.filter(inTier),nIn=TL.filter(inSeason).length;
   $("tier-off").hidden=!(state.seasonOnly&&nIn===0&&state.sp!=="multi");
-  $("season-help").textContent=`${nIn} espèce${nIn>1?"s":""} sur ${TL.length} (${TN}) de saison au ${fmtDate(date)} vers ${Math.round(REG_ALT/50)*50} m (altitude médiane des forêts affichées)${state.mode==="now"&&fcKind(state.d)?` (${fcKind(state.d)})`:""}.`.replace("..",".");
+  $("season-help").textContent=`${nIn} espèce${nIn>1?"s":""} sur ${TL.length} (${TN}) ${quarterOn()?`dont le pic tombe en ${perLabel()}`:`au ${fmtDate(date)}`} vers ${Math.round(REG_ALT/50)*50} m (altitude médiane des forêts affichées)${state.mode==="now"&&fcKind(state.d)?` (${fcKind(state.d)})`:""}.`.replace("..",".");
   [...el.children].forEach(b=>{
     const sp=SPECIES.find(s=>s.id===b.dataset.id);b.setAttribute("aria-pressed",sp.id===state.sp);
     b.hidden=protHidden(sp)||!inTier(sp)||(state.seasonOnly&&nIn>0&&!inSeason(sp));
-    const s=seasonF(sp.key,date,REG_ALT),fs=fungi[sp.key],n=fsCount(fs);
+    const s=seasonVal(sp),fs=fungi[sp.key],n=fsCount(fs);
     b.querySelector(".now").innerHTML=`saison ${Math.round(s*100)} %<br><span class="rel">pic vers le ${peakTxt(sp,REG_ALT)}</span>`+(LITE?"":`<br><span class="rel">${n} relevés région</span>`)});
   if(NARROW.matches){const sel=el.querySelector("[aria-pressed=\"true\"]");if(sel){const t=sel.offsetLeft-(el.clientWidth-sel.offsetWidth)/2;el.scrollLeft=Math.max(0,t)}}
 }
@@ -3753,9 +3765,9 @@ async function boot(){
 
   let booted=false;const rerender=()=>{if(booted)render()};
   const setMode=m=>{state.mode=m;saveState();$("m-now").setAttribute("aria-pressed",m==="now");$("m-site").setAttribute("aria-pressed",m==="site");
-    $("date-box").hidden=m!=="now";
+    $("date-box").hidden=m!=="now";$("q-row").hidden=m==="now";modeSeason(m);
     $("mode-help").textContent=m==="now"?"Lieux favorables ET météo favorable : où chercher ces jours-ci.":"Lieux favorables quelle que soit la météo : pour comparer avec vos coins habituels.";rerender()};
-  const SEA={p:"auto"};try{const v=localStorage.getItem("champi-season");if(v==="on"||v==="off")SEA.p=v}catch(e){}const seaVal=m=>SEA.p==="auto"?m==="now":SEA.p==="on";const modeSeason=m=>{state.seasonOnly=seaVal(m);$("o-season").checked=state.seasonOnly};$("m-now").onclick=()=>{modeSeason("now");setMode("now")};$("m-site").onclick=()=>{modeSeason("site");setMode("site")};
+  const SEA={p:"auto"};try{const v=localStorage.getItem("champi-season");if(v==="on"||v==="off")SEA.p=v}catch(e){}const seaVal=m=>SEA.p==="auto"?m==="now":SEA.p==="on";const modeSeason=m=>{state.seasonOnly=seaVal(m)||(m!=="now"&&state.q!=null);$("o-season").checked=state.seasonOnly};$("m-now").onclick=()=>{modeSeason("now");setMode("now")};$("m-site").onclick=()=>{modeSeason("site");setMode("site")};
   // noms des communes sur la photo aérienne quand on dézoome (zoom 14 ou moins)
   // noms des localités selon le zoom : grandes villes de loin, puis villes moyennes, petites villes, villages.
   // Sur la carte, à partir du zoom 14 les noms viennent de la carte nationale elle-même.
@@ -3825,7 +3837,9 @@ async function boot(){
     if(state.sp!=="multi"){const cur=SPECIES.find(x=>x.id===state.sp);if(cur&&!inTier(cur)){const nx=SPECIES.find(x=>inTier(x)&&(!state.seasonOnly||inSeason(x)))||SPECIES.find(inTier);if(nx)state.sp=state.lastSp=nx.id}}
     saveState();render()});
   document.querySelectorAll("#tiers .ti").forEach(x=>{const t=+x.closest(".tchk").querySelector("input").dataset.tier;x.onclick=e=>{e.preventDefault();e.stopPropagation();showTierInfo(t)};x.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();x.click()}}});
-  state.seasonOnly=seaVal(state.mode);$("o-season").checked=state.seasonOnly;
+  modeSeason(state.mode);
+  {const qBtns=()=>document.querySelectorAll("#q-seg [data-q],#mo-seg [data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===(state.q||"")));qBtns();
+   document.querySelectorAll("#q-seg [data-q],#mo-seg [data-q]").forEach(b=>b.onclick=()=>{state.q=b.dataset.q||null;try{localStorage.setItem("champi-quarter",state.q||"")}catch(e){}qBtns();modeSeason(state.mode);multiCache=null;saveState();render()})}
   {const seaBtns=()=>document.querySelectorAll("#season-seg [data-sea]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sea===SEA.p));seaBtns();
    document.querySelectorAll("#season-seg [data-sea]").forEach(b=>b.onclick=()=>{SEA.p=b.dataset.sea;try{localStorage.setItem("champi-season",SEA.p)}catch(e){}seaBtns();modeSeason(state.mode);saveState();render()})}
   const yrLab=()=>{$("yr-lab").textContent=YR_SHORT[state.yr]};$("yr").value=String(state.yr);yrLab();
