@@ -25,7 +25,7 @@ Lecture : sans la classe 2, le réseau est très fragmenté (Lausanne, Vully, Gr
 
 ## Calcul dans la page (`itineraire.js`, menu ☰ › Itinéraire)
 - Temps de marche : fonction de Tobler appliquée au dénivelé brut de chaque arête, ×1,3 sentier de montagne, ×1,6 sentier alpin ; arrondi à 5 min, annoncé ±10 min.
-- Coût = temps × facteur de réseau : chemins 4-5 : 1 ; sentier balisé : 0,7 ; classe 3 : 3,5 ; classe 2 (bord de route) : 6 (3 si balisé) ; traversée de classe 1 : ×12 + 2 min. « Envie de détour » (0 à 3) : jusqu'à −60 % de coût sur les arêtes qui traversent des cellules classées élevé / très élevé dans le mode affiché.
+- Coût = temps × facteur de réseau : chemins 4-5 : 1 ; sentier balisé : 0,7 ; classe 3 : 1,6 ; classe 2 (bord de route) : 3,5 (2 si balisé) ; traversée de classe 1 : ×12 + 2 min. « Envie de détour » (0 à 3) : jusqu'à −60 % de coût sur les arêtes qui traversent des cellules classées élevé / très élevé dans le mode affiché.
 - Difficulté, 5 niveaux (très facile … très difficile) : maximum du niveau « effort » (durée, dénivelé positif) et du niveau « technique » (pente soutenue, sentier de montagne / alpin, sentier non balisé, zone difficile d'accès), avec la raison affichée. Seuils estimés, à caler sur des parcours connus.
 - Les tronçons de classe 2 sont tracés en orange tireté avec « Bord de route : attention à la circulation » ; les traversées en rouge pointillé.
 - Limites : une seule région à la fois (les régions se recouvrent d'1 km) ; pas de météo ni de chasse dans le calcul (PR suivantes) ; la déclaration de responsabilité formelle viendra dans la PR « avertissements ».
@@ -50,3 +50,8 @@ Case « Tout-terrain » dans Itinéraire (A→B seulement), désactivée par dé
 - **Déclaration de responsabilité** : fenêtre affichée avant le premier calcul (acceptation mémorisée en local, rappelée par un lien sur chaque itinéraire) ; paragraphe dans « Sources et limites ». **Texte à relire par un juriste avant publication publique.**
 - **Hors ligne** : `graphe.json` est dans le `files.json` de chaque région et `itineraire.js` dans le cache de l'application ; le tout-terrain lit `cours_eau.geojson` et `reserves.geojson`, déjà hors ligne.
 - **Tests** : `node tools/tests/itineraires.test.js [région …]` (Playwright, iPhone 13, sans réseau) : graphe, A→B, boucle, tout-terrain, météo, déclaration, sur les huit régions.
+
+## Ajustements du 22 nov. (routes, bande de 20 m, détours utiles)
+- Routes relevées d'un cran : classe 2 ×6 → ×3,5 (balisé ×3 → ×2), classe 3 ×3,5 → ×1,6. Classe 1 inchangée. Simple message d'attention « Bord de route » jusqu'à la classe 2.
+- Tout-terrain : pas de pas hors chemin dans une bande de 20 m le long des routes de classe 2 (on suit la route, par ses arcs). Les chemins qui traversent la bande restent praticables.
+- Envie de détour : le bonus ne vise plus que les zones « moyen » ou mieux (poids 0 pour « faible »). Un détour (A→B comme tout-terrain) n'est gardé que s'il apporte au moins 100 m de zones « moyen » ou mieux ET au moins 20 % de la distance ajoutée ; sinon le trajet le plus court est gardé (message affiché).
