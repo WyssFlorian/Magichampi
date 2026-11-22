@@ -1911,12 +1911,12 @@ function renderInner(){
         for(let i=0;i<n;i++){const k=C[i];if(k===255)continue;has[i]=1;if(k>=MULTI_MIN)pts[i]+=MULTI_PTS[k]}});
       // seuils fixes : plus de 2, 4 et 6 points avec une catégorie, plus de 4, 6 et 8 avec « Toutes » ;
       // réduits proportionnellement quand des espèces sont décochées (au minimum 1, 2 et 3)
-      const tierAll=SPECIES.filter(s=>state.tiers.includes(s.tier)&&!protHidden(s)),fr=tierAll.length?tierAll.filter(s=>!state.hide.includes(s.id)).length/tierAll.length:1,B=[[2,4,6],[3,5,7],[4,6,8]][state.tiers.length-1];
+      const tierAll=SPECIES.filter(s=>state.tiers.includes(s.tier)&&!protHidden(s)),fr=tierAll.length?Math.min(1,activeSpecies().length/tierAll.length):1,B=[[2,4,6],[3,5,7],[4,6,8]][state.tiers.length-1];
       const T3=B.map((b,k)=>Math.max(k+1,Math.round(b*fr)));T3[1]=Math.max(T3[1],T3[0]+1);T3[2]=Math.max(T3[2],T3[1]+1);
       const f1=T3[0]+1,f2=T3[1]+1,f3=T3[2]+1;
       // niveaux ABSOLUS : au moins les seuils ci-dessus, relevés au niveau du canton entier (4 %, 15 % et 40 % des forêts du canton les mieux notées,
-      // avec toutes les espèces des catégories cochées) ; réduits proportionnellement si des espèces sont décochées ou hors saison. Ne dépend pas des forêts chargées.
-      let qa;const ref=MULTI_REF&&MULTI_REF[state.tiers.slice().sort().join("")];
+      // avec toutes les espèces des catégories cochées) ; réduits proportionnellement si des espèces sont décochées ou hors saison (ou hors de la période visée) ; une table par réglage « Relevés SwissFungi pris en compte ». Ne dépend pas des forêts chargées.
+      let qa;const ref=MULTI_REF&&(MULTI_REF[state.yr]||MULTI_REF)[state.tiers.slice().sort().join("")]; // table par période de relevés (0 = 1-2 ans, 1 = moins de 5 ans, 2 = tous) : les points baissent quand on retient moins de relevés
       if(ref)qa=ref.map(v=>Math.max(2,Math.round(v*fr)));
       else{ // repli (région sans table de référence) : quantiles des forêts chargées
         let mx=0;for(let i=0;i<n;i++)if(has[i]&&pts[i]>mx)mx=pts[i];
