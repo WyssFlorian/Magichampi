@@ -812,6 +812,8 @@ a{color:var(--accent)}
 body.lite .lite-hide{display:none!important}
 /* vue d'ensemble du canton (zone vd) : couches fines et vue par zone indisponibles (résolution 250 m) */
 html.ov .ov-hide{display:none!important}
+.sat-reg{color:#fff;font:600 12px/1 system-ui,sans-serif;text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap;transform:translate(-50%,-50%);width:auto}
+#sat-note{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:1000;background:#000a;color:#fff;font:13px system-ui,sans-serif;padding:5px 10px;border-radius:14px;pointer-events:none;white-space:nowrap}
 .view-btns{position:absolute;left:50%;transform:translateX(-50%);bottom:24px;z-index:800;display:flex;gap:5px;white-space:nowrap}
 .view-btns .btn{font-size:11.5px;padding:3px 8px;min-height:0;line-height:1.3;box-shadow:0 1px 4px rgba(0,0,0,.35)}
 .view-btns .btn[aria-pressed="true"]{background:#ffd000;color:#3a2a00;border-color:#b38f00}
@@ -1810,7 +1812,7 @@ async function refreshData(){
 }
 /* ---------- rendering ---------- */
 const COLORS=[null,[220,205,245,150],[168,119,224,215],[107,48,184,238],[58,13,126,252]];  // espèce : dégradé de violet
-let canvas,ctx,imgData,overlay,blockLayer,map,currentClass,stats=[0,0,0,0,0];
+let WIDE=false,canvas,ctx,imgData,overlay,blockLayer,map,currentClass,stats=[0,0,0,0,0];
 function classAt(i,sp,st,season){
   const a=st.SC[i];if(a===255)return 255;
   if(state.mode!=="now")return a;
@@ -3828,7 +3830,7 @@ async function boot(){
    document.querySelectorAll("#season-seg [data-sea]").forEach(b=>b.onclick=()=>{SEA.p=b.dataset.sea;try{localStorage.setItem("champi-season",SEA.p)}catch(e){}seaBtns();modeSeason(state.mode);saveState();render()})}
   const yrLab=()=>{$("yr-lab").textContent=YR_SHORT[state.yr]};$("yr").value=String(state.yr);yrLab();
   let tmr3;$("yr").oninput=e=>{state.yr=+e.target.value;yrLab();saveState();clearTimeout(tmr3);tmr3=setTimeout(render,80)};
-  const syncScore=()=>{const on=$("o-score").checked,bl=$("o-blocks").checked;
+  const syncScore=()=>{const on=$("o-score").checked&&!WIDE,bl=$("o-blocks").checked;
     [[overlay,on&&!bl],[blockLayer,on&&bl]].forEach(([l,v])=>{if(v&&!map.hasLayer(l))l.addTo(map);else if(!v&&map.hasLayer(l))map.removeLayer(l)});
     if(on&&bl)blockLayer.redraw();applyAlpha()};
   $("o-score").onchange=syncScore;$("o-blocks").onchange=()=>{saveLay();syncScore()};
@@ -3838,6 +3840,22 @@ async function boot(){
   const blockAlpha=z=>z<=12?.8:z===13?.7:z===14?.6:z===15?.52:z===16?.45:.38;
   function applyAlpha(){const v=$("o-alpha").value/130,z=Math.round(map.getZoom());overlay.setOpacity(v*zoomAlpha(z));blockLayer.setOpacity(v*blockAlpha(z))}
   $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();syncScore();
+  // 3 niveaux de zoom les plus larges (zoom minimal 8 à 10) : plus de couleurs de score, mais la vue satellite swisstopo (tuiles distantes, rien dans le dépôt)
+  // avec le pourtour des cantons (swissBOUNDARIES, tuiles distantes) et des régions de Vaud (rectangles de ZONES). Hors ligne : on garde les couleurs.
+  {const SW="https://wmts.geo.admin.ch/1.0.0/",TO={maxNativeZoom:18,maxZoom:18,minZoom:8,crossOrigin:true,keepBuffer:1,updateWhenZooming:false};
+   const ps=map.createPane("sat");ps.style.zIndex=210;ps.style.pointerEvents="none";const pk=map.createPane("satlim");pk.style.zIndex=407;pk.style.pointerEvents="none";
+   const satL=L.tileLayer(SW+"ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg",Object.assign({pane:"sat",attribution:'Vue aérienne © <a href="https://www.swisstopo.admin.ch" target="_blank" rel="noopener">swisstopo</a> (SWISSIMAGE)'},TO));
+   const kanL=L.tileLayer(SW+"ch.swisstopo.swissboundaries3d-kanton-flaeche.fill/default/current/3857/{z}/{x}/{y}.png",Object.assign({pane:"satlim",opacity:.95},TO));
+   const regL=L.layerGroup(ZONES.filter(z=>z.ok&&!z.ov).map(z=>{const b=z.nominal||z.bbox,r=L.rectangle([[b[0],b[1]],[b[2],b[3]]],{pane:"satlim",color:"#fff",weight:2,dashArray:"6 5",fill:false,interactive:false});
+     return L.layerGroup([r,L.marker([(b[0]+b[2])/2,(b[1]+b[3])/2],{pane:"satlim",interactive:false,keyboard:false,icon:L.divIcon({className:"sat-reg",html:esc(z.nom.replace(/ \(.*\)$/,"")),iconSize:[0,0]})})])}));
+   WIDE=false;
+   const syncWide=()=>{const w=map.getZoom()<=OV_Z0&&navigator.onLine!==false;
+     if(w===WIDE)return;WIDE=w;
+     [satL,kanL,regL].forEach(l=>{if(w&&!map.hasLayer(l))l.addTo(map);else if(!w&&map.hasLayer(l))map.removeLayer(l)});
+     if(!OV)[coverLayer,regionLayer].forEach(l=>{if(w&&map.hasLayer(l))map.removeLayer(l);else if(!w&&!map.hasLayer(l))l.addTo(map)});
+     syncScore();const lg=$("legend");if(lg)lg.style.display=w?"none":"";
+     let n=$("sat-note");if(w&&!n){n=document.createElement("div");n.id="sat-note";n.textContent="Vue satellite · zoomez pour voir les zones à champignons";document.getElementById("map").appendChild(n)}if(n)n.hidden=!w};
+   map.on("zoomend",syncWide);window.addEventListener("online",syncWide);window.addEventListener("offline",syncWide);syncWide()}
   $("o-sq").onchange=()=>{saveLay();renderSquares()};
   setupCoinForm();setupPhotoImport();setupShare();try{seSetup()}catch(e){console.warn(e)}setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
   document.querySelectorAll("[data-act=tour]").forEach(b=>b.onclick=tourStart);
