@@ -36,6 +36,21 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   ok(errs.length===0,'aucune erreur de script'+(errs.length?' : '+errs[0]:''));
   await ctx.close();
  }
+ // météo : ignorée en « Aptitude du lieu » (avertissement), appliquée en « Conditions du moment »
+ {const ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});const p=await ctx.newPage();
+  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));
+   if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
+  await p.goto('https://loc.test/index.html?r=pde');await p.waitForFunction(()=>window.ITIN&&typeof currentClass!=='undefined'&&currentClass,null,{timeout:90000});
+  const r=await p.evaluate(async()=>{
+   await ITIN.loadGraph();const g=ITIN.graph,o={};
+   const real=meteo.rprelimd;meteo.rprelimd=new Proxy(real,{get:(t,k)=>typeof k==='string'&&/^\d+$/.test(k)?new Array(40).fill(60):t[k]});   // pluie extrême partout
+   const S={ll:[[g.lat0+g.SY[0]/g.ky,g.lon0+g.SX[0]/g.kx]],off:0};
+   state.mode='site';o.siteMsg=ITIN.wxWarn(S).join(' ');
+   state.mode='now';o.nowMsg=ITIN.wxWarn(S).join(' ');
+   meteo.rprelimd=real;return o});
+  ok(/Aptitude du lieu/.test(r.siteMsg)&&!/Sol détrempé/.test(r.siteMsg),'Aptitude du lieu : message d\'avertissement, pas d\'alerte météo');
+  ok(/Sol détrempé|Météo non disponible|pas à jour/.test(r.nowMsg)&&!/Aptitude du lieu/.test(r.nowMsg),'Conditions du moment : météo prise en compte');
+  await ctx.close()}
  // déclaration : sans acceptation mémorisée, le calcul attend la modale
  const ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});const p=await ctx.newPage();
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));

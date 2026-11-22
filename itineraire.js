@@ -194,7 +194,7 @@ async function routeOff(pA,pB,envie){
   if(!ok(a)||!ok(b))return {error:"Départ ou arrivée hors de la zone chargée : centrez la carte sur le trajet puis recommencez."};
   const mg=Math.round(1500/gs),c0=Math.max(0,Math.min(a[0],b[0])-mg),c1=Math.min(W,Math.max(a[0],b[0])+mg+1),r0=Math.max(0,Math.min(a[1],b[1])-mg),r1=Math.min(H,Math.max(a[1],b[1])+mg+1),ww=c1-c0,hh=r1-r0,N=ww*hh;
   if(N>450000)return {error:"Tout-terrain limité à environ 10 km entre le départ et l'arrivée."};
-  const w0=wx(pA.lat,pA.lng),ref=wxRefuse(w0);if(ref)return {error:ref};
+  const w0=wxOn()?wx(pA.lat,pA.lng):null,ref=wxRefuse(w0);if(ref)return {error:ref};
   const wet=wxWet(w0)||wxCold(w0),slopeMax=wet?25:OFF_SLOPE,hz0=await hazards(),hz=wet?{water:dilate(hz0.water,W,H,1),marsh:hz0.marsh}:hz0,al=new Uint8Array(N),high=new Uint8Array(N);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(currentClass[gi]!==255&&currentClass[gi]>=3)high[li]=1}
   const near=dilate(high,ww,hh,Math.ceil(OFF_NEAR/gs)*1);
@@ -292,6 +292,8 @@ function wx(lat,lng){
   const sum=(a,b)=>{let x=0;for(let k=Math.max(0,a);k<=Math.min(P.length-1,b);k++)x+=P[k]||0;return x};
   let tmin=99,tmean=99;for(let k=Math.max(0,t-1);k<=Math.min(P.length-1,t+2);k++){if(Tn&&Tn[k]!=null)tmin=Math.min(tmin,Tn[k]);if(Ta&&Ta[k]!=null)tmean=Math.min(tmean,Ta[k])}
   return {r3:sum(t-2,t),r7:sum(t-6,t),f48:sum(t+1,t+2),tmin,tmean,dem:meteo.dem[m]}}
+const wxOn=()=>typeof state!=="undefined"&&!!state&&state.mode==="now";   // la météo ne compte que en mode « Conditions du moment »
+const WX_OFF_MSG="<b>Mode Aptitude du lieu :</b> la météo et les conditions du moment ne sont pas prises en compte dans cet itinéraire (tracé, durée, tout-terrain). Vérifiez la météo (pluie, gel, neige) avant de partir, ou passez en mode « Conditions du moment ».";
 const wxWet=w=>!!w&&!w.stale&&(w.r3>=30||w.r7>=60),wxCold=w=>!!w&&!w.stale&&w.tmean<=1;   // gel ou neige possibles : tout-terrain durci, pas refusé
 function wxRefuse(w){   // pas de tout-terrain si la météo est défavorable
   if(!w)return "";if(w.stale)return "La météo de la carte n'est pas à jour : actualisez-la (Menu › Météo et outils) avant d'utiliser le tout-terrain.";
@@ -299,7 +301,8 @@ function wxRefuse(w){   // pas de tout-terrain si la météo est défavorable
   if(w.f48>=40)return "Tout-terrain déconseillé : "+Math.round(w.f48)+" mm de pluie annoncés dans les 48 h.";
   return ""}
 function wxWarn(S){
-  const out=[];if(typeof G==="undefined"||!G||!S.ll||!S.ll.length)return out;
+  const out=[];if(!wxOn()){out.push(WX_OFF_MSG);return out}
+  if(typeof G==="undefined"||!G||!S.ll||!S.ll.length)return out;
   const mid=S.ll[S.ll.length>>1],w=wx(mid[0],mid[1]);
   if(!w){out.push("Météo non disponible pour ce secteur : consultez la prévision (MétéoSuisse) avant de partir.");return out}
   if(w.stale){out.push("La météo de la carte n'est pas à jour : actualisez-la (Menu › Météo et outils) et consultez la prévision.");return out}
@@ -464,7 +467,7 @@ function init(){
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
-  window.ITIN={wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
+  window.ITIN={wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
 }
 init();
 })();
