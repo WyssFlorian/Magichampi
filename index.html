@@ -726,7 +726,10 @@ details.info p{margin:6px 0 0}
 .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{flex:1;border:0;background:none;color:inherit;font:inherit;padding:7px 8px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel);font-weight:600}
-.tiers button{font-size:12.5px;padding:6px 4px}
+.tiers{display:flex;gap:6px}
+.tiers .tchk{flex:1;position:relative;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:8px;padding:7px 22px 7px 7px;font-size:12.5px;cursor:pointer;line-height:1.2}
+.tiers .tchk:has(input:checked){background:var(--accent);color:var(--panel);font-weight:600}
+.tiers .tchk input{margin:0;flex:none}
 .sp .weak{display:inline-block;margin-left:4px;font-size:10.5px;font-weight:600;color:#9a5b00;background:#fff1d6;border-radius:4px;padding:0 4px;vertical-align:1px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .date{font-variant-numeric:tabular-nums;font-weight:600}
@@ -942,7 +945,6 @@ details.more[open]>summary{margin-bottom:4px}
 .loc-help-card ol,.loc-help-card ul{padding-left:20px;margin:4px 0}.loc-help-card li{margin:3px 0}
 .loc-help-card .x{position:absolute;top:6px;right:8px;border:0;background:none;color:var(--fg);font-size:24px;cursor:pointer}
 .leaflet-bar .loc-panel a:not(.btn){width:auto;height:auto;line-height:inherit;display:inline;background:none;border:0;text-decoration:underline;color:var(--accent)}
-.tiers button{position:relative;padding-right:18px!important}
 .tiers .ti{position:absolute;top:2px;right:3px;width:15px;height:15px;border-radius:50%;border:1px solid currentColor;font:italic 600 10px/13px Georgia,serif;text-align:center;opacity:.75;cursor:pointer}
 .tiers .ti:hover,.tiers .ti:focus{opacity:1}
 .tiers .ti::before{content:"";position:absolute;inset:-8px}
@@ -1062,7 +1064,7 @@ details.more[open]>summary{margin-bottom:4px}
         <button id="t-multi" aria-pressed="false">Forte concentration</button>
         <button id="t-sp" aria-pressed="true">Par espèce</button>
       </div>
-      <div class="seg tiers" id="tiers" role="group" aria-label="Catégorie" style="margin-top:8px"><button data-tier="1">★ Stars<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button><button data-tier="2">Bons<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button><button data-tier="3">Intéressants<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button><button data-tier="0">Toutes<span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></button></div>
+      <div class="tiers" id="tiers" role="group" aria-label="Catégories prises en compte" style="margin-top:8px"><label class="tchk"><input type="checkbox" data-tier="1"><span>★ Stars</span><span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></label><label class="tchk"><input type="checkbox" data-tier="2"><span>Bons</span><span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></label><label class="tchk"><input type="checkbox" data-tier="3"><span>Intéressants</span><span class="ti" role="button" tabindex="0" aria-label="Comestibilité et goût de la catégorie">i</span></label></div>
       <div id="tier-info" class="tier-info" hidden></div>
       <p class="small" id="tier-off" hidden style="margin:4px 0 0;color:#6b4000">Aucune espèce de cette catégorie n'est de saison en ce moment : elles sont toutes affichées, mais leurs forêts ne donneront probablement rien avant la prochaine saison.</p>
       <div id="sp-box" style="margin-top:8px">
@@ -1267,7 +1269,7 @@ details.more[open]>summary{margin-bottom:4px}
       <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
       <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
       <p><b>Validation</b> (20.11.2026) : sur 247 paires (relevé, carte) pour 185 relevés précis distincts, le modèle place un relevé en moyenne au 66ᵉ rang sur 100 parmi les forêts de la carte (50 = hasard ; intervalle à 95 % de 61 à 72). Le modèle reste peu discriminant et les relevés viennent surtout de lieux très visités : vos coins permettront de le caler.</p>
-      <p><b>Forte concentration</b> : chaque espèce affichée rapporte 3 points en « très élevé », 2 en « élevé » et 1 en « moyen ». Seuils minimaux : plus de 2, 4 et 6 points pour une catégorie (stars, bons ou intéressants), plus de 4, 6 et 8 pour toutes, réduits proportionnellement si vous décochez des espèces (au minimum 1, 2 et 3 points). Pour que la carte reste lisible, ces seuils sont relevés au besoin afin que la concentration très forte, forte et moyenne ne couvrent que les 4 %, 15 % et 40 % de forêts les mieux notées. En « conditions du moment », une espèce à moins de 30 % de saison n'est jamais en « très élevé ».</p>
+      <p><b>Forte concentration</b> : seules les présences fortes comptent : chaque espèce affichée rapporte 3 points en « très élevé » et 2 en « élevé » ; les présences « moyen » et plus faibles ne comptent pas. Les catégories (stars, bons, intéressants) se cochent séparément ; « toutes » = les trois cochées. Seuils minimaux : plus de 2, 4 et 6 points avec une catégorie, plus de 3, 5 et 7 avec deux, plus de 4, 6 et 8 avec les trois, réduits proportionnellement si vous décochez des espèces (au minimum 1, 2 et 3 points). Pour que la carte reste lisible, ces seuils sont relevés au besoin afin que la concentration très forte, forte et moyenne ne couvrent que les 4 %, 15 % et 40 % de forêts les mieux notées. En « conditions du moment », une espèce à moins de 30 % de saison n'est jamais en « très élevé ».</p>
 </div>
       <div class="menu-page" data-t="Sources et limites"><h3>Sources et limites</h3>
       <ul>
@@ -1495,13 +1497,13 @@ function trap(v,[a,b,c,d]){if(v<=a||v>=d)return 0;if(v<b)return (v-a)/(b-a);if(v
 const CLS_LAB=["Très faible","Faible","Moyen","Élevé","Très élevé"];
 
 let D,G,meta,meteo,fungi,sqNeighbours={};
-const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tier:1,hide:[]};
-try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if([0,1,2,3].includes(s.tier))state.tier=s.tier;{const c=SPECIES.find(x=>x.id===state.sp);if(c&&state.tier&&c.tier!==state.tier)state.tier=c.tier}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
+const state={lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tiers:[1],hide:[]};
+try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if(Array.isArray(s.tiers)){const a=[1,2,3].filter(t=>s.tiers.includes(t));if(a.length)state.tiers=a}else if([0,1,2,3].includes(s.tier))state.tiers=s.tier?[s.tier]:[1,2,3];{const c=SPECIES.find(x=>x.id===state.sp);if(c&&!state.tiers.includes(c.tier))state.tiers=[...state.tiers,c.tier].sort()}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
 const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-coins","o-sq","o-hard","o-contour","o-blocks"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
-function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tier:state.tier,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
+function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tiers:state.tiers,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
 function saveCoins(){try{localStorage.setItem("pleiades-coins",JSON.stringify(state.coins));localStorage.setItem("champi-coins-mod",String(Date.now()))}catch(e){}try{const sg=state.coins.filter(c=>c.sp).map(c=>c.sp+c.lat.toFixed(4)+c.lng.toFixed(4)).sort().join(";");if(window.__coinSig!==undefined&&window.__coinSig!==sg){multiCache=null;SCR=null;render()}window.__coinSig=sg}catch(e){}if(typeof bkInfo==="function")bkInfo();if(typeof cloudSoon==="function")cloudSoon();const b=document.getElementById("share-box");if(b&&!b.hidden)fillShare()}
 
 /* ---------- factors ---------- */
@@ -1825,7 +1827,8 @@ const MULTI_COLORS=[null,null,[252,174,140,175],[226,45,38,225],[120,0,18,255]];
 const MULTI_LAB=["","","Concentration moyenne","Forte concentration","Très forte concentration"];
 // forte concentration : chaque espèce affichée rapporte 3 points en très élevé, 2 en élevé et 1 en moyen ;
 // les niveaux sont fixés sur la somme des points des forêts chargées (4 %, 15 % et 40 % les mieux notés, comme pour une espèce)
-const MULTI_PTS=[0,0,1,2,3],MULTI_Q=[.6,.85,.96];
+const MULTI_MIN=3;  // forte concentration : seules les présences fortes (élevé, très élevé) comptent ; faible et moyen valent 0
+const MULTI_PTS=[0,0,0,2,3],MULTI_Q=[.6,.85,.96];
 const MULTI_MAX=4;
 const SEASON_MIN=.35;
 const ALPHA_BOOST=1.3; // couleurs rendues 30 % plus opaques ; le curseur (20-130) divise par 1,3 pour retrouver l'ancien rendu à 100
@@ -1833,7 +1836,7 @@ function seasonDate(){return state.mode==="now"?meteo.dates[state.d]:localToday(
 // altitude de référence pour le filtre de saison : médiane des forêts de la région chargée
 let REG_ALT=800;
 function inSeason(sp){return seasonF(sp.key,seasonDate(),REG_ALT)>=SEASON_MIN}
-const inTier=sp=>(!state.tier||sp.tier===state.tier)&&!state.hide.includes(sp.id)&&!protHidden(sp);
+const inTier=sp=>state.tiers.includes(sp.tier)&&!state.hide.includes(sp.id)&&!protHidden(sp);
 function spAlpha(L){return L.slice().sort((a,b)=>a.fr.localeCompare(b.fr,"fr",{sensitivity:"base"}))}  // listes de choix : ordre alphabétique français, sans tenir compte des accents
 function activeSpecies(){return SPECIES.filter(sp=>inTier(sp)&&(!state.seasonOnly||inSeason(sp)))}
 function render(){try{renderInner()}catch(e){console.error(e)}}
@@ -1855,14 +1858,14 @@ function renderInner(){
     const tot=stats.reduce((a,b)=>a+b,0)||1;
     $("stats").textContent=`Forêts de la région chargée : ${Math.round(100*stats[4]/tot)} % en très élevé, ${Math.round(100*(stats[3]+stats[4])/tot)} % en élevé ou très élevé, ${Math.round(100*stats[2]/tot)} % en moyen (sur toute la carte : 4 %, 15 % et 25 %).`;
   }else{
-    const key=[state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly,state.tier,state.hide.join(",")].join("|");
+    const key=[state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly,state.tiers.join(""),state.hide.join(",")].join("|");
     if(!multiCache||multiCache.key!==key){
       const per={},pts=new Uint16Array(n),cnt=new Uint8Array(n).fill(255);let has=new Uint8Array(n);
       activeSpecies().forEach(sp=>{const C=classesFor(sp).C;per[sp.id]=C;
-        for(let i=0;i<n;i++){const k=C[i];if(k===255)continue;has[i]=1;pts[i]+=MULTI_PTS[k]}});
+        for(let i=0;i<n;i++){const k=C[i];if(k===255)continue;has[i]=1;if(k>=MULTI_MIN)pts[i]+=MULTI_PTS[k]}});
       // seuils fixes : plus de 2, 4 et 6 points avec une catégorie, plus de 4, 6 et 8 avec « Toutes » ;
       // réduits proportionnellement quand des espèces sont décochées (au minimum 1, 2 et 3)
-      const tierAll=SPECIES.filter(s=>(!state.tier||s.tier===state.tier)&&!protHidden(s)),fr=tierAll.length?tierAll.filter(s=>!state.hide.includes(s.id)).length/tierAll.length:1,B=state.tier?[2,4,6]:[4,6,8];
+      const tierAll=SPECIES.filter(s=>state.tiers.includes(s.tier)&&!protHidden(s)),fr=tierAll.length?tierAll.filter(s=>!state.hide.includes(s.id)).length/tierAll.length:1,B=[[2,4,6],[3,5,7],[4,6,8]][state.tiers.length-1];
       const T3=B.map((b,k)=>Math.max(k+1,Math.round(b*fr)));T3[1]=Math.max(T3[1],T3[0]+1);T3[2]=Math.max(T3[2],T3[1]+1);
       const f1=T3[0]+1,f2=T3[1]+1,f3=T3[2]+1;
       // niveaux proportionnels : au moins les seuils ci-dessus, relevés pour ne garder que les 40 %, 15 % et 4 % de forêts les mieux notées
@@ -1878,7 +1881,7 @@ function renderInner(){
     for(let i=0;i<n;i++){const c=cnt[i];if(c===255)continue;tot++;if(c>=3)h3++;if(c>=4)h5++;
       if(c>=(state.mode==='now'?1:2)){const col=(state.mode==='now'?NOW_COLORS:MULTI_COLORS)[c],o=i*4;px[o]=col[0];px[o+1]=col[1];px[o+2]=col[2];px[o+3]=Math.min(255,col[3]*ALPHA_BOOST)}}
     const pc=v=>(100*v/(tot||1)).toFixed(1).replace(".",","),T=multiCache.thr;
-    $("stats").textContent=`Points par forêt : 3 par espèce en très élevé, 2 en élevé, 1 en moyen. Plus de ${T[2]-1} points : très forte concentration ; plus de ${T[1]-1} : forte ; plus de ${T[0]-1} : moyenne (${pc(h5)} % et ${pc(h3)} % des forêts chargées en très forte et forte).`;
+    $("stats").textContent=`Points par forêt : 3 par espèce en très élevé, 2 en élevé (moyen et faible ne comptent pas). Plus de ${T[2]-1} points : très forte concentration ; plus de ${T[1]-1} : forte ; plus de ${T[0]-1} : moyenne (${pc(h5)} % et ${pc(h3)} % des forêts chargées en très forte et forte).`;
   }
   updateLegend();
   
@@ -1941,14 +1944,14 @@ const BlockLayer=L.Layer.extend({
 /* ---------- arrêts urbains : affichés si une forêt propice est à moins de 1 km ---------- */
 let busUrban=null,busUrbanAll=[];
 const URB_KM=1,BLK=4;
-// propice = au moins une espèce en classe moyenne ou élevée (espèce choisie, ou n'importe quelle espèce affichée en mode concentration)
+// propice = au moins une espèce en classe moyenne ou élevée (espèce choisie) ; en mode concentration, au moins une espèce en classe élevée ou très élevée
 function propiceArrays(){return state.sp==="multi"?Object.values(multiCls||{}):[currentClass]}
 let urbanKey="";
 function updateUrbanBus(){
   if(!busUrban||!currentClass)return;
   const key=[state.sp,state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly].join("|");if(key===urbanKey)return;urbanKey=key;
   const cols=meta.cols,rows=meta.rows,bc=Math.ceil(cols/BLK),br=Math.ceil(rows/BLK),has=new Uint8Array(bc*br);
-  propiceArrays().forEach(C=>{for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const v=C[r*cols+c];if(v!==255&&v>=2)has[((r/BLK)|0)*bc+((c/BLK)|0)]=1}});
+  propiceArrays().forEach(C=>{for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const v=C[r*cols+c];if(v!==255&&v>=(state.sp==="multi"?MULTI_MIN:2))has[((r/BLK)|0)*bc+((c/BLK)|0)]=1}});
   const lat=(meta.bounds[0][0]+meta.bounds[1][0])/2,R=URB_KM*1000/(meta.res*Math.cos(lat*Math.PI/180)); // rayon en cellules
   busUrban.clearLayers();let n=0;
   busUrbanAll.forEach(st=>{let ok=false;const s={m:st.m,c:(st.x-meta.x0)/meta.res,r:(meta.y1-st.y)/meta.res};
@@ -2162,7 +2165,7 @@ function multiPopup(i,latlng){
   h+=`<div class="tot"><span>${state.mode==="now"?"Conditions au "+fmtDate(meteo.dates[state.d])+(fcKind(state.d)?` (${fcKind(state.d)})`:""):"Aptitude du lieu"}${state.view==="zone"?"<br><span class='small'>valeurs de la zone de forêt</span>":""}</span><span class="pill" style="background:${c>=2?`rgb(${MULTI_COLORS[c].slice(0,3)})`:"var(--line)"};color:${c>=4?"#fff":"#3a2a00"}">${["Faible","Faible","Moyenne","Forte","Très forte"][c]} (${multiCache.pts[i]} points)</span></div>`;
   h+=rgBox(i,state.view==="zone"?G.zone[i]:0);
   const rows=SPECIES.filter(sp=>multiCls[sp.id]).map(sp=>({sp,k:multiCls[sp.id][i]})).sort((a,b)=>b.k-a.k);
-  const LST=`<div class="fx" style="grid-template-columns:1fr auto">`+rows.map(r=>`<span class="lab">${r.sp.fr}</span><span class="pill c${r.k===255?0:r.k}">${r.k===255?"—":CLS_LAB[r.k]}</span>`).join("")+`</div>`;h+=LST;
+  const LST=`<div class="fx" style="grid-template-columns:1fr auto">`+rows.map(r=>`<span class="lab"${r.k!==255&&r.k<MULTI_MIN?' style="opacity:.55" title="Présence trop faible : ne compte pas"':""}>${r.sp.fr}</span><span class="pill c${r.k===255?0:r.k}"${r.k!==255&&r.k<MULTI_MIN?' style="opacity:.55"':""}>${r.k===255?"—":CLS_LAB[r.k]}</span>`).join("")+`</div>`;h+=LST;
   const short=S0+LST+rgBox(i,state.view==="zone"?G.zone[i]:0)+huntBox(i)+DET_BTN;
   h+=`<p class="small" style="margin:8px 0 0">Choisissez une espèce dans la liste pour voir le détail de son calcul ici.</p>`;
   h+=`<div class="look"><b>Rappel :</b> plusieurs espèces au même endroit veut aussi dire plus de sosies possibles. Faites contrôler toute la récolte.</div>`;
@@ -2191,9 +2194,9 @@ function renderSpeciesList(){
   }
   const date=seasonDate(),multi=state.sp==="multi";
   $("sp-box").hidden=multi;$("t-multi").setAttribute("aria-pressed",multi);$("t-sp").setAttribute("aria-pressed",!multi);
-  const TN=["toutes catégories","stars","bons comestibles","comestibles intéressants"][state.tier];
-  $("t-help").textContent=multi?`Concentration d'espèces (${TN}) au même endroit : 3 points par espèce en très élevé, 2 en élevé, 1 en moyen.`:"Choisissez une espèce pour voir ses forêts favorables.";
-  document.querySelectorAll("#tiers [data-tier]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.tier===state.tier));
+  const TNN=["","stars","bons comestibles","comestibles intéressants"],TN=state.tiers.length===3?"toutes catégories":state.tiers.map(t=>TNN[t]).join(" + ");
+  $("t-help").textContent=multi?`Concentration d'espèces (${TN}) au même endroit : seules les présences fortes comptent, 3 points par espèce en très élevé et 2 en élevé.`:"Choisissez une espèce pour voir ses forêts favorables.";
+  document.querySelectorAll("#tiers input[data-tier]").forEach(b=>{b.checked=state.tiers.includes(+b.dataset.tier)});
   const TL=SPECIES.filter(inTier),nIn=TL.filter(inSeason).length;
   $("tier-off").hidden=!(state.seasonOnly&&nIn===0&&state.sp!=="multi");
   $("season-help").textContent=`${nIn} espèce${nIn>1?"s":""} sur ${TL.length} (${TN}) de saison au ${fmtDate(date)} vers ${Math.round(REG_ALT/50)*50} m (altitude médiane des forêts affichées)${state.mode==="now"&&fcKind(state.d)?` (${fcKind(state.d)})`:""}.`.replace("..",".");
@@ -2206,11 +2209,11 @@ function renderSpeciesList(){
 }
 
 // « i » des onglets : comestibilité, goût et sosies de chaque espèce de la catégorie, avec les règles de prudence
-const TIER_TXT=["Toutes les espèces","Stars : les plus recherchées","Bons comestibles","Comestibles intéressants"];
+const TIER_TXT=["","Stars : les plus recherchées","Bons comestibles","Comestibles intéressants"];
 function showTierInfo(t){
   const el=$("tier-info");
   if(!el.hidden&&+el.dataset.tier===t){el.hidden=true;return}
-  const list=spAlpha(SPECIES.filter(sp=>(!t||sp.tier===t)&&!protHidden(sp)));
+  const list=spAlpha(SPECIES.filter(sp=>sp.tier===t&&!protHidden(sp)));
   el.dataset.tier=t;
   el.innerHTML=`<div class="ti-head"><b>${TIER_TXT[t]} (${list.length})</b><button class="ti-x" type="button" aria-label="Fermer">×</button></div>`+
     `<div class="ti-safe"><b>Prudence.</b> Utilisez toujours un guide de terrain. Ne cueillez que les champignons que vous avez identifiés avec certitude, et faites toujours contrôler toute votre récolte par un contrôleur officiel (VAPKO) avant de la consommer. En cas de doute ou de malaise : Tox Info Suisse, 145.</div><dl>`+
@@ -3745,10 +3748,13 @@ async function boot(){
   setInterval(()=>{if(state.resp&&state.mode==="now")render()},5*60*1000);
   $("t-multi").onclick=()=>{state.sp="multi";saveState();render()};
   $("t-sp").onclick=()=>{if(state.sp!=="multi")return;state.sp=state.lastSp;saveState();render()};
-  document.querySelectorAll("#tiers [data-tier]").forEach(b=>b.onclick=e=>{const info=e.target.closest(".ti");if(!info&&!$("tier-info").hidden&&+$("tier-info").dataset.tier!==+b.dataset.tier)$("tier-info").hidden=true;state.tier=+b.dataset.tier;if(info)showTierInfo(state.tier);
+  document.querySelectorAll("#tiers input[data-tier]").forEach(b=>b.onchange=()=>{const t=+b.dataset.tier,on=b.checked;
+    if(!on&&state.tiers.length===1){b.checked=true;return}   // au moins une catégorie reste cochée
+    state.tiers=[1,2,3].filter(x=>x===t?on:state.tiers.includes(x));
+    if(!$("tier-info").hidden&&$("tier-info").dataset.tier)$("tier-info").hidden=true;
     if(state.sp!=="multi"){const cur=SPECIES.find(x=>x.id===state.sp);if(cur&&!inTier(cur)){const nx=SPECIES.find(x=>inTier(x)&&(!state.seasonOnly||inSeason(x)))||SPECIES.find(inTier);if(nx)state.sp=state.lastSp=nx.id}}
     saveState();render()});
-  document.querySelectorAll("#tiers .ti").forEach(x=>x.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();x.click()}});
+  document.querySelectorAll("#tiers .ti").forEach(x=>{const t=+x.closest(".tchk").querySelector("input").dataset.tier;x.onclick=e=>{e.preventDefault();e.stopPropagation();showTierInfo(t)};x.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();x.click()}}});
   state.seasonOnly=seaVal(state.mode);$("o-season").checked=state.seasonOnly;
   {const seaBtns=()=>document.querySelectorAll("#season-seg [data-sea]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sea===SEA.p));seaBtns();
    document.querySelectorAll("#season-seg [data-sea]").forEach(b=>b.onclick=()=>{SEA.p=b.dataset.sea;try{localStorage.setItem("champi-season",SEA.p)}catch(e){}seaBtns();modeSeason(state.mode);saveState();render()})}
