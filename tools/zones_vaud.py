@@ -30,11 +30,14 @@ if __name__=="__main__":
         t=open(old).read(); j=json.loads(t[t.index("var ZONES=")+10:t.rindex(";")]); ready=set(ready)|{z["id"] for z in j if z.get("ok") and z["id"] in {i for i,_,_ in NEW}}; mbs={z["id"]:z["mb"] for z in j}
     else: mbs={}
     z=zones(ready)
+    # vue d'ensemble du canton (zoom éloigné), données produites par tools/vue_canton.py ; ov=1 : pas une région au sens du découpage
+    ov=dict(id="vd",nom="Vue d'ensemble du canton (zoom éloigné)",bbox=[46.17094,6.04694,46.99914,7.27314],mb="≈ 4 Mo",ok=1,ov=1)
     for q in z:
         if mbs.get(q["id"]): q["mb"]=mbs[q["id"]]
+    z.append(ov)
     open("zones.js","w").write("// Régions du canton de Vaud (généré par tools/zones_vaud.py). bbox = [sud, ouest, nord, est] des données (bande de 1 km comprise) ; ok=1 : données publiées dans <id>/\nvar ZONES=[\n"+",\n".join(json.dumps(q,ensure_ascii=False,separators=(",",":")) for q in z)+"\n];\n")
     if "--check" in sys.argv:
         from shapely.geometry import shape,box; from shapely.ops import unary_union
         vd=unary_union([shape(f["geometry"]) for f in json.load(open("limites/canton.geojson"))["features"]])
-        u=unary_union([box(q["bbox"][1],q["bbox"][0],q["bbox"][3],q["bbox"][2]) for q in z]); r=vd.difference(u)
+        u=unary_union([box(q["bbox"][1],q["bbox"][0],q["bbox"][3],q["bbox"][2]) for q in z if not q.get("ov")]); r=vd.difference(u)
         print("canton non couvert : %.1f km²"%(r.area*71*111))

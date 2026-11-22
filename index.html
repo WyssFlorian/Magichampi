@@ -810,6 +810,8 @@ a{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.tour-mush,.tour-mush .eye,.tour-bub{animation:none!important}.tour-ring,.tour-card{transition:none}}
 .lite-banner{margin:8px 0 0;padding:6px 8px;border-radius:8px;background:#e8f0ff;color:#16336b;font-size:12px}
 body.lite .lite-hide{display:none!important}
+/* vue d'ensemble du canton (zone vd) : couches fines et vue par zone indisponibles (résolution 250 m) */
+html.ov .ov-hide{display:none!important}
 .view-btns{position:absolute;left:50%;transform:translateX(-50%);bottom:24px;z-index:800;display:flex;gap:5px;white-space:nowrap}
 .view-btns .btn{font-size:11.5px;padding:3px 8px;min-height:0;line-height:1.3;box-shadow:0 1px 4px rgba(0,0,0,.35)}
 .view-btns .btn[aria-pressed="true"]{background:#ffd000;color:#3a2a00;border-color:#b38f00}
@@ -1311,14 +1313,21 @@ details.more[open]>summary{margin-bottom:4px}
 <script>
 // Région : ?r=<id d'une région de zones.js>, sinon la dernière utilisée, sinon Riviera-Chablais
 // Carte unique « Canton de Vaud » : les données sont préparées par région ; la région chargée est celle de la vue (dernière position, ou ?r=ple|lsn|gdv)
-var ZBOX={},ZNAME={};ZONES.forEach(function(z){if(z.ok){ZBOX[z.id]=z.bbox;ZNAME[z.id]=z.nom}});
+// Vue d'ensemble du canton (zone « vd », ov=1) : jeu de données léger (blocs de 250 m) affiché aux zooms éloignés, à la place des régions (voir tools/vue_canton.py)
+var ZBOX={},ZNAME={},ZOV="",OV_Z0=10,OV_Z1=12;ZONES.forEach(function(z){if(z.ok&&z.ov)ZOV=z.id;else if(z.ok){ZBOX[z.id]=z.bbox;ZNAME[z.id]=z.nom}});
 function zoneAt(la,lo,pref){var k,c=[];for(k in ZBOX){var z=ZBOX[k];if(la>=z[0]&&la<=z[2]&&lo>=z[1]&&lo<=z[3])c.push(k)}return c.indexOf(pref)>=0?pref:(c[0]||"")}
 var ZID=(new URLSearchParams(location.search).get("r"))||"",SAVED_VIEW=null;
 try{SAVED_VIEW=JSON.parse(localStorage.getItem("champi-view-pos")||"null")}catch(e){}
-if(!ZBOX[ZID]){var zs="";try{zs=localStorage.getItem("champi-zone")||""}catch(e){}
-  ZID=(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],zs))||(ZBOX[zs]?zs:"ple")}
+var ZREG="";try{ZREG=localStorage.getItem("champi-zone-reg")||""}catch(e){}   // dernière région (hors vue d'ensemble)
+if(!ZBOX[ZID]&&!(ZOV&&ZID===ZOV)){var zs="";try{zs=localStorage.getItem("champi-zone")||""}catch(e){}
+  if(!ZBOX[ZREG])ZREG=ZBOX[zs]?zs:"ple";
+  // vue d'ensemble : zoom 10 ou moins, ou zoom 11 si c'était déjà la vue d'ensemble ; régions à partir du zoom 12
+  if(ZOV&&SAVED_VIEW&&(SAVED_VIEW[2]<=OV_Z0||(SAVED_VIEW[2]<OV_Z1&&zs===ZOV)))ZID=ZOV;
+  else ZID=(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],ZREG))||ZREG}
 else SAVED_VIEW=null;
-try{localStorage.setItem("champi-zone",ZID)}catch(e){}
+var OV=!!ZOV&&ZID===ZOV;
+try{localStorage.setItem("champi-zone",ZID);if(!OV)localStorage.setItem("champi-zone-reg",ZID)}catch(e){}
+if(OV)document.documentElement.classList.add("ov");
 var ZD=ZID+"/";document.write('<script src="'+ZD+'zone.js"><\/script>');
 </script>
 <script>document.title="Champignons – Canton de Vaud";document.querySelector("h1").textContent="Champignons – Canton de Vaud";document.querySelector(".sub").textContent="Zones de forêt favorables du canton de Vaud (la région se charge selon la partie de la carte affichée)";
@@ -1587,7 +1596,7 @@ const RULES={hours:[7,20],days:[],kg:2};   // days : jours du mois interdits (au
 // Contrôle du 21 nov. 2026 : aucune des 79 espèces actuelles n'est concernée (liste rouge 2007 ; annexe 2 VD). Ajouter ici toute espèce future menacée ou protégée, p. ex. PROTECTED_BY_CANTON.VD.xxx="Liste rouge : vulnérable (VU)".
 const PROTECTED_BY_CANTON={VD:{},FR:{}};
 // cantons couverts par chaque région (la région Riviera-Chablais comprend la Veveyse fribourgeoise)
-const ZONE_CANTONS={ple:["VD","FR"],lsn:["VD"],gdv:["VD"],nyn:["VD"],bro:["VD"],vul:["VD","FR"],chb:["VD"],pde:["VD"]};
+const ZONE_CANTONS={ple:["VD","FR"],lsn:["VD"],gdv:["VD"],nyn:["VD"],bro:["VD"],vul:["VD","FR"],chb:["VD"],pde:["VD"],vd:["VD","FR"]};
 const protReason=sp=>{if(!state.resp||!sp)return null;for(const c of (ZONE_CANTONS[ZID]||["VD"])){const m=PROTECTED_BY_CANTON[c]&&PROTECTED_BY_CANTON[c][sp.id];if(m)return m}return null};
 const protHidden=sp=>!!protReason(sp);
 const SP_RULES={};                         // id d'espèce -> {forbid:"motif"} ou {care:"motif"} ; vide pour les dix espèces actuelles
@@ -3317,7 +3326,7 @@ function hardUpdate(){if(!map||!G)return;const cb=$("o-hard");if(!cb)return;
     if(!map.hasLayer(hardLayer))hardLayer.addTo(map);else hardLayer._draw()}
   else if(hardLayer&&map.hasLayer(hardLayer))map.removeLayer(hardLayer)}
 function huntUpdate(){if(!map||!G)return;try{huntBuild();exclUpdate()}catch(e){console.warn(e)}
-  const on=($("o-hunt")&&$("o-hunt").checked)||($("o-hunti")&&$("o-hunti").checked);if(!huntLayer){map.createPane("hunt").style.zIndex=415;map.getPane("hunt").style.pointerEvents="none";huntLayer=new HuntLayer()}
+  const on=!OV&&(($("o-hunt")&&$("o-hunt").checked)||($("o-hunti")&&$("o-hunti").checked));if(!huntLayer){map.createPane("hunt").style.zIndex=415;map.getPane("hunt").style.pointerEvents="none";huntLayer=new HuntLayer()}
   if(on&&!map.hasLayer(huntLayer))huntLayer.addTo(map);else if(!on&&map.hasLayer(huntLayer))map.removeLayer(huntLayer);else if(on)huntLayer._draw();
   const el=$("hunt-day");if(el&&huntMask){const ds=huntDay,c={VD:[],FR:[]},K=huntMask.cants;["VD","FR"].forEach(k=>{if(K.has(k))c[k]=huntOn(k,ds)});
     huntBadge(ds,c);
@@ -3587,7 +3596,7 @@ async function loadRegion(R){
   for(let j=Math.floor(R.r0/cs);j<=Math.floor((R.r0+R.rows-1)/cs);j++)for(let i=Math.floor(R.c0/cs);i<=Math.floor((R.c0+R.cols-1)/cs);i++)if(HAVE.has(i+"_"+j))need.push([i,j]);
   const tiles=await Promise.all(need.map(([i,j])=>loadChunk(i,j).then(t=>({i,j,t}))));
   const n=R.cols*R.rows,NG={};
-  const T={dem:Int16Array,midx:Uint16Array,fx:Uint8Array,slope:Uint8Array,aspect:Uint8Array,conif:Uint8Array,vhm:Uint8Array,tpi:Int8Array,edge:Uint8Array,sq:Uint8Array,zone:Uint16Array,hab:Uint8Array,mi:Int8Array,ca:Uint8Array,rg:Uint8Array,wsl:Uint8Array};
+  const T={dem:Int16Array,midx:Uint16Array,fx:Uint8Array,slope:Uint8Array,aspect:Uint8Array,conif:Uint8Array,vhm:Uint8Array,tpi:Int8Array,edge:Uint8Array,sq:Uint16Array,zone:Uint16Array,hab:Uint8Array,mi:Int8Array,ca:Uint8Array,rg:Uint8Array,wsl:Uint8Array};
   for(const k in T)NG[k]=new T[k](n);
   tiles.forEach(({i,j,t})=>{
     const gc0=i*cs,gr0=j*cs;
@@ -3656,36 +3665,43 @@ async function boot(){
   const b=L.latLngBounds(meta.bounds);  // emprise des données préparées
   map=L.map("map",{minZoom:8,maxZoom:18,zoomControl:false,attributionControl:true}).fitBounds(L.latLngBounds(meta.view||meta.bounds));
   // carte unique : reprend la dernière vue, et charge une autre région quand la vue en sort
-  if(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],ZID)===ZID)map.setView([SAVED_VIEW[0],SAVED_VIEW[1]],SAVED_VIEW[2]);
+  if(SAVED_VIEW&&(OV||zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],ZID)===ZID))map.setView([SAVED_VIEW[0],SAVED_VIEW[1]],SAVED_VIEW[2]);
   {let swT;map.on("moveend",()=>{const c=map.getCenter(),z=map.getZoom();
     try{localStorage.setItem("champi-view-pos",JSON.stringify([+c.lat.toFixed(5),+c.lng.toFixed(5),z]))}catch(e){}
     clearTimeout(swT);swT=setTimeout(()=>{if(state.adding||!$("coin-form").hidden)return;   // pas de changement de région (rechargement) pendant la saisie d'un coin
-     const n=zoneAt(c.lat,c.lng,ZID);
-      if(n&&n!==ZID){const nm=ZNAME[n];
-        const m=document.createElement("div");m.setAttribute("role","status");m.style.cssText="position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:3000;background:#2f5d3a;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;box-shadow:0 2px 8px #0005";m.textContent="Chargement de la région « "+nm+" »…";document.body.appendChild(m);
-        try{localStorage.setItem("champi-zone",n)}catch(e){}
-        setTimeout(()=>location.replace(location.pathname),150)}},700)})}
+     // vue d'ensemble <-> régions selon le zoom (écart entre 10 et 12 : pas de va-et-vient au zoom 11)
+     let n=zoneAt(c.lat,c.lng,ZID);
+     if(ZOV){const zz=map.getZoom();
+       if(OV){n=zz>=OV_Z1?zoneAt(c.lat,c.lng,ZREG):""}
+       else if(zz<=OV_Z0)n=ZOV}
+      if(n&&n!==ZID){const nm=n===ZOV?"vue d'ensemble du canton":"région « "+ZNAME[n]+" »";
+        const m=document.createElement("div");m.setAttribute("role","status");m.style.cssText="position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:3000;background:#2f5d3a;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;box-shadow:0 2px 8px #0005";m.textContent="Chargement de la "+nm+"…";
+        const go=()=>{document.body.appendChild(m);try{localStorage.setItem("champi-zone",n)}catch(e){}
+          setTimeout(()=>location.replace(location.pathname),150)};
+        // hors ligne : on ne passe à la vue d'ensemble que si ses données sont en cache (téléchargées avec la région)
+        if(n===ZOV&&navigator.onLine===false&&window.caches)caches.match(ZOV+"/data.json").then(r=>{if(r)go()}).catch(()=>{});else go()}},700)})}
   const attr='© <a href="https://www.swisstopo.admin.ch" target="_blank" rel="noopener">swisstopo</a> · MétéoSuisse · SwissFungi/WSL · OFEV';
   // une couche pour les petits zooms (11-13, toute l'emprise) puis une par zone, agrandie par Leaflet au-delà de son zoom maximal
   // carte nationale sur écran haute résolution : tuiles du zoom suivant affichées à demi-taille,
   // pour que routes et textes gardent une taille adaptée au zoom (sinon ils sont agrandis et très épais)
   // carte vue de loin (zoom 13 ou moins) : carte swisstopo sans noms (swissTLM3D) ; les noms des localités sont posés par l'app selon le zoom
-  const baseFor=name=>{const o=name==="carte"&&(window.devicePixelRatio||1)>=1.5?1:0,ts=o?128:256,tl=name==="carte"&&!!TI.packs.tlm;
-    return L.layerGroup([tl?new PackLayer({name:"tlm",zoff:o,tileSize:ts,maxNativeZoom:13,maxZoom:13,minZoom:8,attribution:attr,bounds:b})
-      :new PackLayer({name,zoff:o,tileSize:ts,maxNativeZoom:13-o,maxZoom:13-o,minZoom:11,attribution:attr,bounds:b}),
+  const baseFor=name=>{const o=name==="carte"&&!OV&&(window.devicePixelRatio||1)>=1.5?1:0,ts=o?128:256,tl=name==="carte"&&!!TI.packs.tlm,nz=OV?11:13;   // vue d'ensemble : tuiles des zooms 8 à 11 (agrandies au-delà)
+    return L.layerGroup([tl?new PackLayer({name:"tlm",zoff:o,tileSize:ts,maxNativeZoom:nz,maxZoom:nz,minZoom:8,attribution:attr,bounds:b})
+      :new PackLayer({name,zoff:o,tileSize:ts,maxNativeZoom:nz-o,maxZoom:nz-o,minZoom:OV?8:11,attribution:attr,bounds:b}),
     ...(meta.basemaps||areasOf().map(a=>({bounds:a.bounds,maxz:a.maxz||16,minz:14}))).map(a=>new PackLayer({name,zoff:o,tileSize:ts,maxNativeZoom:a.maxz-o,maxZoom:18,minZoom:(a.minz||14)-(tl?0:o),bounds:L.latLngBounds(a.bounds)}))])};
   const bases={carte:baseFor("carte"),ortho:baseFor("ortho")};
   bases[state.base].addTo(map);
   await loadRegion(regionAround(map.getBounds()));
   overlay=new CanvasOverlay(canvas,regionLL(),{opacity:1,interactive:false});blockLayer=new BlockLayer();
-  coverLayer=L.layerGroup(areasOf().map(a=>L.rectangle(a.bounds,{color:"#5d6a5f",weight:1,dashArray:"2 6",fill:false,interactive:false}))).addTo(map);
-  regionLayer=L.rectangle(regionLL(),{color:"#2f5d3a",weight:2,dashArray:"8 6",fill:false,interactive:false}).addTo(map);
+  coverLayer=L.layerGroup(areasOf().map(a=>L.rectangle(a.bounds,{color:"#5d6a5f",weight:1,dashArray:"2 6",fill:false,interactive:false})));
+  regionLayer=L.rectangle(regionLL(),{color:"#2f5d3a",weight:2,dashArray:"8 6",fill:false,interactive:false});
+  if(!OV){coverLayer.addTo(map);regionLayer.addTo(map)}   // pointillés : régions chargée et préparées (inutiles dans la vue d'ensemble, qui couvre tout le canton)
   const RegionCtl=L.Control.extend({options:{position:"topright"},onAdd(){const d=L.DomUtil.create("div","region-ctl");
     d.innerHTML=`<div class="area-jump"${areasOf().length<2?" hidden":""}>${areasOf().map((a,k)=>`<button class="btn" data-area="${k}">${esc(a.short||a.name)}</button>`).join("")}</div><button class="btn primary" id="load-region" hidden>Charger les données de cette région</button><div class="region-msg" id="region-msg" hidden></div>`;
     L.DomEvent.disableClickPropagation(d);return d}});
   map.addControl(new RegionCtl());
   // boutons d'affichage, petits et alignés en bas de la carte
-  {const v=L.DomUtil.create("div","view-btns",map.getContainer());v.innerHTML=`<button class="btn" id="base-btn" title="Basculer entre photo aérienne et carte nationale">🗺 Carte</button><button class="btn" id="best-btn" aria-pressed="false" title="Met en évidence le lieu le plus favorable dans la partie visible de la carte">★ Meilleur lieu</button><button class="btn" id="geo-btn" aria-pressed="false" title="Courbes de niveau, falaises, cours d'eau, routes, chemins, arrêts de transports publics et parkings (visibles en zoomant)">⛰ Géographie</button>`;
+  {const v=L.DomUtil.create("div","view-btns",map.getContainer());v.innerHTML=`<button class="btn" id="base-btn" title="Basculer entre photo aérienne et carte nationale">🗺 Carte</button><button class="btn ov-hide" id="best-btn" aria-pressed="false" title="Met en évidence le lieu le plus favorable dans la partie visible de la carte">★ Meilleur lieu</button><button class="btn ov-hide" id="geo-btn" aria-pressed="false" title="Courbes de niveau, falaises, cours d'eau, routes, chemins, arrêts de transports publics et parkings (visibles en zoomant)">⛰ Géographie</button>`;
     const z=L.DomUtil.create("div","zl-row",v),zb=L.DomUtil.create("div","leaflet-bar zl-zoom",z);
     [["+","Zoom avant",()=>map.zoomIn()],["−","Zoom arrière",()=>map.zoomOut()]].forEach(([t,l,f])=>{const a=L.DomUtil.create("a","",zb);a.href="#";a.setAttribute("role","button");a.title=l;a.setAttribute("aria-label",l);a.textContent=t;
       L.DomEvent.on(a,"click",e=>{L.DomEvent.preventDefault(e);f()})});
@@ -3765,8 +3781,8 @@ async function boot(){
   dateLab();window.__dateLab=dateLab;$("upd-btn").onclick=refreshData;
   // affichage : maillage fin (25 m) ou zones de forêt ; en Auto, maillage fin dès que la largeur de l'écran couvre 1 km ou moins
   const VP={p:"auto"};try{const v=localStorage.getItem("champi-view");if(v==="zone"||v==="cell"||v==="auto")VP.p=v}catch(e){}
-  const autoView=()=>{const c=map.getCenter(),mpp=156543.03392*Math.cos(c.lat*Math.PI/180)/Math.pow(2,map.getZoom());return mpp*map.getSize().x<=1000?"cell":"zone"};
-  const effView=()=>VP.p==="auto"?autoView():VP.p;
+  const autoView=()=>{if(OV)return "cell";const c=map.getCenter(),mpp=156543.03392*Math.cos(c.lat*Math.PI/180)/Math.pow(2,map.getZoom());return mpp*map.getSize().x<=1000?"cell":"zone"};
+  const effView=()=>OV?"cell":VP.p==="auto"?autoView():VP.p;
   const setView=v=>{state.view=v;saveState();rerender()};
   const viewBtns=()=>{["auto","zone","cell"].forEach(k=>$("v-"+k).setAttribute("aria-pressed",VP.p===k));
     $("view-help").textContent=VP.p==="auto"?"Maillage fin (cellules de 25 m) quand l'écran couvre 1 km ou moins, zones de forêt au-delà.":VP.p==="zone"?"Chaque zone (bornée par les chemins, routes et paliers d'altitude de 150 m) prend la valeur de ses 20 % meilleures cellules.":"Chaque cellule de 25 m garde sa propre valeur."};
@@ -3828,6 +3844,11 @@ async function boot(){
   {let seen=null;try{seen=localStorage.getItem("champi-tour2")}catch(e){seen="?"}if(!seen)setTimeout(tourStart,1200)}
   state.view=state.view||"zone";
   setMode(state.mode);applyViewPref(VP.p,true);
+  if(OV){["o-relief","o-contour","o-water","o-road","o-acc","o-tp","o-park","o-trail","o-hunt","o-hard","o-res","o-excl"].forEach(id=>{const e=$(id),l=e&&e.closest("label");if(l)l.classList.add("ov-hide")});
+    [$("v-auto").parentElement,$("view-help")].forEach(e=>e&&e.classList.add("ov-hide"));
+    const n=document.createElement("p");n.className="small";n.style.cssText="margin:8px 0;padding:8px 10px;border-radius:8px;background:#eef3ee";
+    n.textContent="Vue d'ensemble du canton (zoom éloigné) : forêts regroupées en blocs d'environ 170 m, mêmes notes et mêmes couleurs que dans les régions. Zoomez (à partir du zoom 12) pour le détail : routes, sentiers, chasse, accès, zones de forêt.";
+    const h=$("v-auto").parentElement;h.parentElement.insertBefore(n,h)}
   booted=true;render();
   $("loading").hidden=true;
 }
@@ -3846,6 +3867,7 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
   var fmt=function(d){try{return new Date(d).toLocaleDateString("fr-CH",{day:"numeric",month:"short"})}catch(e){return ""}};
   // télécharge les fichiers d'une région (data, grilles, tuiles de fond) dans le cache ; prog(%) pendant le téléchargement
   async function dlZone(z,prog){
+    if(z!==ZOV&&ZOV&&!stamp(ZOV)){try{await dlZone(ZOV,function(){})}catch(e){console.warn(e)}}   // la vue d'ensemble (zoom éloigné) suit chaque région téléchargée
     var base=z+"/",list=await fetch(base+"files.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error("manifeste introuvable ("+r.status+")");return r.json()});
     list=list.concat(["zone.js"]);
     var c=await caches.open(DATA),N=list.length,resume=!stamp(z),n=0,i=0,fails=[],quota=false,net=false;

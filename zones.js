@@ -7,5 +7,6 @@ var ZONES=[
 {"id":"bro","nom":"Broye (Moudon, Payerne)","nominal":[46.6,6.68,46.99,7.0],"bbox":[46.591,6.6669,46.999,7.0131],"mb":"≈ 110 Mo","ok":1},
 {"id":"vul","nom":"Vully et Avenches","nominal":[46.78,6.98,46.99,7.26],"bbox":[46.771,6.9669,46.999,7.2731],"mb":"≈ 50 Mo","ok":1},
 {"id":"chb","nom":"Chablais alpin (Bex, Ormonts)","nominal":[46.18,6.74,46.37,7.26],"bbox":[46.171,6.727,46.379,7.273],"mb":"≈ 110 Mo","ok":1},
-{"id":"pde","nom":"Pays-d'Enhaut et Diablerets","nominal":[46.35,7.04,46.62,7.26],"bbox":[46.341,7.027,46.629,7.273],"mb":"≈ 70 Mo","ok":1}
+{"id":"pde","nom":"Pays-d'Enhaut et Diablerets","nominal":[46.35,7.04,46.62,7.26],"bbox":[46.341,7.027,46.629,7.273],"mb":"≈ 70 Mo","ok":1},
+{"id":"vd","nom":"Vue d'ensemble du canton (zoom éloigné)","bbox":[46.17094,6.04694,46.99914,7.27314],"mb":"≈ 4 Mo","ok":1,"ov":1}
 ];
