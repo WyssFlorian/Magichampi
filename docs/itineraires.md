@@ -29,3 +29,10 @@ Lecture : sans la classe 2, le réseau est très fragmenté (Lausanne, Vully, Gr
 - Difficulté, 5 niveaux (très facile … très difficile) : maximum du niveau « effort » (durée, dénivelé positif) et du niveau « technique » (pente soutenue, sentier de montagne / alpin, sentier non balisé, zone difficile d'accès), avec la raison affichée. Seuils estimés, à caler sur des parcours connus.
 - Les tronçons de classe 2 sont tracés en orange tireté avec « Bord de route : attention à la circulation » ; les traversées en rouge pointillé.
 - Limites : une seule région à la fois (les régions se recouvrent d'1 km) ; pas de météo ni de chasse dans le calcul (PR suivantes) ; la déclaration de responsabilité formelle viendra dans la PR « avertissements ».
+
+## Balade en boucle et export GPX (PR 2 sur 4)
+Menu ☰ › Itinéraire › Type « Balade en boucle » : un départ, une cible en distance (2 à 20 km) ou en durée de marche (30 min à 6 h). Trois variantes, triées par écart à la cible, choisies par boutons.
+- Méthode (heuristique, pas un optimum) : triangle départ → W1 → W2 → départ, W1 et W2 à la distance r du départ et à 60° d'écart. Les directions sont choisies là où le mode affiché est le meilleur (« envie de détour » ≥ 1), trois directions écartées d'au moins 90°. Les arêtes déjà empruntées coûtent ×6 pour éviter les allers-retours. r est ajusté (9 essais) jusqu'à ±10 % de la cible ; sinon la page le dit. Rayon limité à 8 km, calcul de 0,05 à 0,5 s.
+- Les variantes à plus de 35 % de la cible sont écartées s'il en reste d'autres.
+- Export GPX (trace sans altitude) pour tout itinéraire, A→B ou boucle.
+- Pas encore pris en compte : zones de chasse (pénalité), météo (PR suivantes).
