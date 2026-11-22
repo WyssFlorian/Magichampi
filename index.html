@@ -1095,7 +1095,8 @@ details.more[open]>summary{margin-bottom:4px}
     </details>
 
     <details class="panel-det" id="sec-coins"><summary>Mes coins</summary>
-      <div class="row" style="margin:4px 0 8px;gap:6px"><button class="btn primary" id="add-coin">＋ Nouveau coin</button><select id="coin-filter" class="coin-sel" style="flex:1;min-width:0" aria-label="Filtrer les coins par espèce" hidden></select></div>
+      <div class="row" style="margin:4px 0 8px;gap:6px"><button class="btn primary" id="add-coin">＋ Nouveau coin</button><label class="btn" style="cursor:pointer" title="Un coin par photo, à partir du GPS et de la date de la photo (lus dans votre navigateur, rien n'est envoyé)">📷 Importer des photos<input id="ph-files" type="file" accept="image/*,.heic,.heif" multiple hidden></label><select id="coin-filter" class="coin-sel" style="flex:1;min-width:0" aria-label="Filtrer les coins par espèce" hidden></select></div>
+      <div id="ph-box" class="share-box" hidden role="status" aria-live="polite"><p class="small" id="ph-msg" style="margin:0"></p><div id="ph-list"></div></div>
       <div id="coin-form" class="coin-form" hidden>
         <div class="cf-title" id="cf-title">Nouveau coin</div>
         <label class="cf-l">Nom<input id="cf-name" type="text" maxlength="60" autocomplete="off"></label>
@@ -2514,6 +2515,76 @@ async function photoGet(id){if(photoURL[id])return photoURL[id];try{const db=awa
 async function photoPut(id,blob){const db=await pdb();await new Promise((res,rej)=>{const t=db.transaction("photos","readwrite");if(blob)t.objectStore("photos").put(blob,id);else t.objectStore("photos").delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error)});if(photoURL[id]){URL.revokeObjectURL(photoURL[id]);delete photoURL[id]}}
 // photo réduite (1280 px au plus, JPEG) pour ne pas remplir la mémoire du navigateur
 function shrinkPhoto(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height)),cv=document.createElement("canvas");cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);cv.toBlob(b=>{cv.width=cv.height=0;b?res(b):rej(new Error("photo"))},"image/jpeg",.8)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("photo"))};im.src=u})}
+/* ---------- import de photos : un coin par photo (GPS + date EXIF lus dans le navigateur, rien n'est envoyé) ---------- */
+// lit l'en-tête TIFF/EXIF : {gps:[lat,lng]|null, date:"AAAA-MM-JJ"|""} ; null si illisible
+function tiffExif(dv,t){
+  try{const m=dv.getUint16(t),le=m===0x4949;if(!le&&m!==0x4d4d)return null;
+    const u16=o=>dv.getUint16(o,le),u32=o=>dv.getUint32(o,le);if(u16(t+2)!==42)return null;
+    const ifd=o=>{const n=Math.min(u16(t+o),200),r={};for(let i=0;i<n;i++){const e=t+o+2+i*12;if(e+12>dv.byteLength)break;r[u16(e)]={n:u32(e+4),v:e+8}}return r};
+    const vo=(en,sz)=>en.n*sz>4?t+u32(en.v):en.v;
+    const str=en=>{const o=vo(en,1);let r="";for(let i=0;i<en.n&&o+i<dv.byteLength;i++){const c=dv.getUint8(o+i);if(!c)break;r+=String.fromCharCode(c)}return r};
+    const rats=en=>{const o=vo(en,8),a=[];for(let i=0;i<en.n&&i<3;i++){const d=u32(o+i*8+4);a.push(d?u32(o+i*8)/d:0)}return a};
+    const i0=ifd(u32(t+4));let ds="",gps=null;
+    if(i0[0x8769]){const ex=ifd(u32(i0[0x8769].v)),e=ex[0x9003]||ex[0x9004];if(e)ds=str(e)}
+    if(!ds&&i0[0x132])ds=str(i0[0x132]);
+    if(i0[0x8825]){const g=ifd(u32(i0[0x8825].v));
+      if(g[1]&&g[2]&&g[3]&&g[4]){const a=rats(g[2]),b=rats(g[4]);let lat=a[0]+(a[1]||0)/60+(a[2]||0)/3600,lng=b[0]+(b[1]||0)/60+(b[2]||0)/3600;
+        if(/^S/i.test(str(g[1])))lat=-lat;if(/^W/i.test(str(g[3])))lng=-lng;
+        if(isFinite(lat)&&isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180&&(lat||lng))gps=[lat,lng]}}
+    const dm=/^(\d{4})[:\-](\d{2})[:\-](\d{2})/.exec(ds),date=dm&&+dm[1]>1990&&dm[2]>"00"&&dm[2]<="12"&&dm[3]>"00"&&dm[3]<="31"?`${dm[1]}-${dm[2]}-${dm[3]}`:"";
+    return {gps,date}}catch(e){return null}}
+// JPEG (segment APP1 « Exif ») ou HEIC/HEIF (bloc Exif cherché par son en-tête TIFF)
+function exifRead(buf){
+  const dv=new DataView(buf),u8=new Uint8Array(buf);
+  if(u8.length>12&&u8[0]===0xff&&u8[1]===0xd8){
+    let o=2;while(o+4<u8.length&&u8[o]===0xff){const mk=u8[o+1],len=dv.getUint16(o+2);
+      if(mk===0xe1&&u8[o+4]===0x45&&u8[o+5]===0x78&&u8[o+6]===0x69&&u8[o+7]===0x66)return tiffExif(dv,o+10);
+      if(mk===0xda||len<2)break;o+=2+len}
+    return null}
+  if(u8.length>12&&u8[4]===0x66&&u8[5]===0x74&&u8[6]===0x79&&u8[7]===0x70){   // ftyp : HEIC/HEIF
+    let best=null,tries=0;const end=Math.min(u8.length-4,6e6);
+    for(let i=0;i<end&&tries<40;i++){const x=u8[i];
+      if((x===0x4d&&u8[i+1]===0x4d&&u8[i+2]===0&&u8[i+3]===0x2a)||(x===0x49&&u8[i+1]===0x49&&u8[i+2]===0x2a&&u8[i+3]===0)){tries++;
+        const r=tiffExif(dv,i);if(r&&r.gps)return r;if(r&&!best&&r.date)best=r}}
+    return best}
+  return null}
+const phTmp={q:[]};
+function phNew(){return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function phName(date,f){return date?"Photo du "+fmtCoinDate(date):"Photo "+String(f.name||"").replace(/\.[^.]+$/,"").slice(0,40)}
+const phDup=(lat,lng,date)=>state.coins.some(c=>Math.abs(c.lat-lat)<1e-4&&Math.abs(c.lng-lng)<1.5e-4&&(!c.date||!date||c.date===date));
+function phRenderQueue(){
+  const box=$("ph-list");box.innerHTML="";
+  phTmp.q.forEach((it,i)=>{const d=document.createElement("div");d.className="row";d.style.cssText="gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap";
+    d.innerHTML=`<span class="small" style="flex:1;min-width:0;overflow-wrap:anywhere">📷 ${esc(it.f.name||"photo")}${it.date?" · "+esc(fmtCoinDate(it.date)):""} : pas de position GPS</span><button class="btn" data-pl="${i}" type="button">📍 Placer à la main</button><button class="btn" data-ig="${i}" type="button">Ignorer</button>`;box.appendChild(d)});
+  box.querySelectorAll("[data-pl]").forEach(b=>b.onclick=()=>phPlace(+b.dataset.pl));
+  box.querySelectorAll("[data-ig]").forEach(b=>b.onclick=()=>{phTmp.q.splice(+b.dataset.ig,1);phRenderQueue();if(!phTmp.q.length)$("ph-box").hidden=!$("ph-msg").textContent})}
+async function phPlace(i){
+  const it=phTmp.q[i];if(!it)return;phTmp.q.splice(i,1);phRenderQueue();
+  openCoinForm(-1);$("cf-name").value=phName(it.date,it.f);$("cf-sp").value="";if(it.date)$("cf-date").value=it.date;
+  try{CF.photo=await shrinkPhoto(it.f);$("cf-img").src=URL.createObjectURL(CF.photo);$("cf-img").hidden=$("cf-img-x").hidden=false}catch(e){$("cf-pos").textContent="Vignette impossible pour ce format (HEIC) : le coin sera créé sans photo. "+$("cf-pos").textContent}
+  cfPick(true)}
+async function importPhotos(files){
+  files=[...files];if(!files.length)return;
+  const msg=$("ph-msg");$("ph-box").hidden=false;phTmp.q=[];phRenderQueue();
+  const r={add:0,dup:0,nogps:0,nothumb:0,bad:0},pts=[];
+  for(let n=0;n<files.length;n++){const f=files[n];msg.textContent=`Lecture des photos… ${n+1} / ${files.length}`;
+    let ex=null;try{ex=exifRead(await f.arrayBuffer())}catch(e){r.bad++;continue}
+    const today=localToday(),date=ex&&ex.date&&ex.date<=today?ex.date:"";
+    if(!ex||!ex.gps){phTmp.q.push({f,date});r.nogps++;continue}
+    const [lat,lng]=ex.gps;
+    if(phDup(lat,lng,date)){r.dup++;continue}   // même lieu (~11 m) et même date qu'un coin existant (y compris iNaturalist) : pas de doublon
+    const c={id:phNew(),name:phName(date,f),lat:+lat.toFixed(6),lng:+lng.toFixed(6)};if(date)c.date=date;
+    try{const b=await shrinkPhoto(f);await photoPut(c.id,b);c.photo=1}catch(e){r.nothumb++}
+    state.coins.push(c);pts.push([c.lat,c.lng]);r.add++}
+  if(r.add){saveCoins();renderCoins();try{if(pts.every(q=>{const n=zoneAt(q[0],q[1],ZID);return !n||n===ZID}))map.fitBounds(L.latLngBounds(pts),{maxZoom:COIN_ZOOM-1,padding:[40,40]});else r.far=1}catch(e){};const d=$("sec-coins");if(d)d.open=true}
+  const t=[];t.push(r.add?`${r.add} coin${r.add>1?"s":""} créé${r.add>1?"s":""} (espèce non précisée : ouvrez ✎ pour la choisir)`:"Aucun coin créé");
+  if(r.far)t.push("certains coins sont dans une autre région : touchez leur nom dans la liste pour y aller");
+  if(r.dup)t.push(`${r.dup} ignoré${r.dup>1?"s":""} (même lieu et même date qu'un coin déjà présent)`);
+  if(r.nothumb)t.push(`${r.nothumb} sans vignette (format non lisible par ce navigateur, souvent HEIC)`);
+  if(r.bad)t.push(`${r.bad} illisible${r.bad>1?"s":""}`);
+  if(r.nogps)t.push(`${r.nogps} sans position GPS : placez-les à la main ou ignorez-les${/iP(hone|ad)/.test(navigator.userAgent)?" (sur iPhone, choisissez « Options › Position » dans le sélecteur de photos pour conserver le lieu)":""}`);
+  msg.textContent=t.join(" · ")+".";phRenderQueue()}
+function setupPhotoImport(){$("ph-files").onchange=e=>{const fs=e.target.files;importPhotos(fs).finally(()=>{e.target.value=""})}}
 /* ---------- formulaire de saisie d'un coin ---------- */
 const CF={k:-1,lat:null,lng:null,photo:undefined,tmp:null,picking:false};
 function cfPos(){$("cf-pos").textContent=CF.lat==null?"Aucun emplacement.":`${CF.lat.toFixed(5)}, ${CF.lng.toFixed(5)}${CF.acc?` (précision ± ${Math.round(CF.acc)} m)`:""}`;
@@ -3636,7 +3707,7 @@ async function boot(){
   const applyAlpha=()=>overlay.setOpacity($("o-alpha").value/130*zoomAlpha(Math.round(map.getZoom())));
   $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();
   $("o-sq").onchange=()=>{saveLay();renderSquares()};
-  setupCoinForm();setupShare();try{seSetup()}catch(e){console.warn(e)}setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
+  setupCoinForm();setupPhotoImport();setupShare();try{seSetup()}catch(e){console.warn(e)}setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
   document.querySelectorAll("[data-act=tour]").forEach(b=>b.onclick=tourStart);
   {let seen=null;try{seen=localStorage.getItem("champi-tour2")}catch(e){seen="?"}if(!seen)setTimeout(tourStart,1200)}
   state.view=state.view||"zone";
