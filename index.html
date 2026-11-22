@@ -1887,9 +1887,9 @@ function renderInner(){
 }
 
 /* ---------- score en carrés : taille des carrés selon le zoom (agrégation côté navigateur, mêmes classes que la grille) ---------- */
-// Chaque carré fait au moins ~10 px à l'écran : 1, 2, 4, 8… cellules de côté (alignées sur la grille complète). Sa couleur suit la classe moyenne
+// Chaque carré fait au moins ~5 px à l'écran : 1, 2, 4, 8… cellules de côté (alignées sur la grille complète). Sa couleur suit la classe moyenne
 // des cellules de forêt qu'il contient (dégradé continu entre les classes).
-const BLOCK_PX=MOBILE?11:9;
+const BLOCK_PX=MOBILE?5:4.5;
 const BlockLayer=L.Layer.extend({
   initialize(){this._op=1},
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";this._c.style.opacity=this._op;m.getPane("overlayPane").appendChild(this._c);
@@ -1918,7 +1918,7 @@ const BlockLayer=L.Layer.extend({
     const cMin=Math.max(0,Math.floor(-o.x/p)),cMax=Math.min(cols,Math.ceil((W-o.x)/p)),rMin=Math.max(0,Math.floor(-o.y/p)),rMax=Math.min(rows,Math.ceil((H-o.y)/p));
     if(cMax<=cMin||rMax<=rMin)return;
     const bc0=Math.floor((g0+cMin)/b),bc1=Math.floor((g0+cMax-1)/b),br0=Math.floor((h0+rMin)/b),br1=Math.floor((h0+rMax-1)/b);
-    const gap=bp>=7?1:0;
+    const gap=bp>=9?1:0;
     for(let br=br0;br<=br1;br++){const ra=Math.max(0,br*b-h0),rb=Math.min(rows,(br+1)*b-h0);
       for(let bc=bc0;bc<=bc1;bc++){const ca=Math.max(0,bc*b-g0),cb=Math.min(cols,(bc+1)*b-g0);
         let sum=0,n=0;
@@ -3749,7 +3749,9 @@ async function boot(){
   $("o-score").onchange=syncScore;$("o-blocks").onchange=()=>{saveLay();syncScore()};
   // plus on zoome, plus le score devient transparent pour laisser voir la forêt dessous
   const zoomAlpha=z=>z<=13?1:z===14?.8:z===15?.6:z===16?.5:.42;
-  function applyAlpha(){const o=$("o-alpha").value/130*zoomAlpha(Math.round(map.getZoom()));overlay.setOpacity(o);blockLayer.setOpacity(o)}
+  // carrés fins : plus transparents que l'ancien rendu pour garder la carte lisible dessous (surtout en zoomant)
+  const blockAlpha=z=>z<=12?.8:z===13?.7:z===14?.6:z===15?.52:z===16?.45:.38;
+  function applyAlpha(){const v=$("o-alpha").value/130,z=Math.round(map.getZoom());overlay.setOpacity(v*zoomAlpha(z));blockLayer.setOpacity(v*blockAlpha(z))}
   $("o-alpha").oninput=applyAlpha;map.on("zoomend",applyAlpha);applyAlpha();syncScore();
   $("o-sq").onchange=()=>{saveLay();renderSquares()};
   setupCoinForm();setupPhotoImport();setupShare();try{seSetup()}catch(e){console.warn(e)}setupBackup();setupCloud();setupAlerts();try{setupSorties()}catch(e){console.warn(e)}try{setupComm()}catch(e){console.warn(e)}
