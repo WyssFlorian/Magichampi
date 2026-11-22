@@ -165,7 +165,8 @@ function gpx(){
 // Dijkstra sur la grille de 25 m (cellules d'environ 17 m de côté au sol) reliée au réseau de chemins : les chemins sont des arcs de cellule à cellule
 // (coût du graphe), la forêt peut être traversée hors chemin (Tobler ×1,6) seulement près d'une zone « élevé » ou mieux, et jamais dans les cellules à
 // pente ≥ 30° (25-30° ×3 plus lent), cours d'eau (tampon d'une cellule), marais, réserves et zones exclues (usable).
-const OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100;let HZ=null,HZkey="";
+const OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100,DETOUR_CAP=[1,1.3,1.8,2.6];   // plafond de durée par cran du curseur de détour
+let HZ=null,HZkey="";
 async function hazards(){
   const key=ZD+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows;if(HZ&&HZkey===key)return HZ;
   const W=meta.cols,H=meta.rows,water=new Uint8Array(W*H),marsh=new Uint8Array(W*H);
@@ -200,12 +201,12 @@ async function routeOff(pA,pB,envie){
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;
     al[li]=near[li]&&usable(gi)&&G.fx[gi]>0&&G.slope[gi]<slopeMax&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
   // arcs de chemin (échantillons consécutifs d'une même arête), dans la fenêtre
-  const {cf,cb}=costs(envie,null,envie>0?bonusQ():null),cnt=new Int32Array(N+1),arcs=[];
+  const qq=envie>0?bonusQ():null,cnt=new Int32Array(N+1),arcs=[];
   const lc=k=>{const X=g.SM[2*k],Y=g.SM[2*k+1],c=Math.floor((X-meta.x0)/res)-c0,r=Math.floor((meta.y1-Y)/res)-r0;return c>=0&&r>=0&&c<ww&&r<hh?r*ww+c:-1};
   for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1])continue;const u=lc(k),v=lc(k+1);if(u<0||v<0||u===v)continue;const e=g.SE[k],f=(g.SS[k+1]-g.SS[k])/Math.max(g.len[e],1);
-    arcs.push([u,v,cf[e]*f,k*2],[v,u,cb[e]*f,k*2+1]);cnt[u+1]++;cnt[v+1]++}
-  for(let i=0;i<N;i++)cnt[i+1]+=cnt[i];const fill=cnt.slice(),aTo=new Int32Array(arcs.length),aC=new Float32Array(arcs.length),aId=new Int32Array(arcs.length);
-  for(const [u,v,c,id] of arcs){const q=fill[u]++;aTo[q]=v;aC[q]=c;aId[q]=id}
+    arcs.push([u,v,e,f,0,k*2],[v,u,e,f,1,k*2+1]);cnt[u+1]++;cnt[v+1]++}
+  for(let i=0;i<N;i++)cnt[i+1]+=cnt[i];const fill=cnt.slice(),aTo=new Int32Array(arcs.length),aE=new Int32Array(arcs.length),aF=new Float32Array(arcs.length),aD=new Uint8Array(arcs.length),aId=new Int32Array(arcs.length);
+  for(const [u,v,e,f,d,id] of arcs){const q=fill[u]++;aTo[q]=v;aE[q]=e;aF[q]=f;aD[q]=d;aId[q]=id}
   const onPath=i=>cnt[i+1]>cnt[i];
   // départ / arrivée : la cellule touchée si elle est utilisable, sinon le point de chemin le plus proche
   const pick=(p,c)=>{const li=(c[1]-r0)*ww+(c[0]-c0);if(al[li]||onPath(li))return li;const s=snap(L.latLng(p.lat,p.lng));if(!s)return -1;return lc(s.k)};
@@ -214,18 +215,29 @@ async function routeOff(pA,pB,envie){
   let cap=1<<20,hk=new Float64Array(cap),hv=new Int32Array(cap),hn=0;
   const hpush=(k,v)=>{if(hn===cap){cap*=2;const a1=new Float64Array(cap),b1=new Int32Array(cap);a1.set(hk);b1.set(hv);hk=a1;hv=b1}let i=hn++;while(i>0){const p=(i-1)>>1;if(hk[p]<=k)break;hk[i]=hk[p];hv[i]=hv[p];i=p}hk[i]=k;hv[i]=v};
   const hpop=()=>{const v=hv[0],k0=hk[0],k=hk[--hn],w=hv[hn];let i=0;for(;;){let c=2*i+1;if(c>=hn)break;if(c+1<hn&&hk[c+1]<hk[c])c++;if(hk[c]>=k)break;hk[i]=hk[c];hv[i]=hv[c];i=c}hk[i]=k;hv[i]=w;popK=k0;return v};let popK=0;
-  const dist=new Float64Array(N).fill(Infinity),prev=new Int32Array(N).fill(-1),via=new Int32Array(N).fill(-1),dm=G.dem,sl=G.slope;
-  dist[S0]=0;hpush(0,S0);
-  const tob=(L_,g_)=>L_/(6000/3600*Math.exp(-3.5*Math.abs(g_+.05)));
-  while(hn){const u=hpop(),d=popK;if(d>dist[u])continue;if(u===T0)break;
-    for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],w=d+aC[k];if(w<dist[v]){dist[v]=w;prev[v]=u;via[v]=aId[k];hpush(w,v)}}
-    const ux=u%ww,uy=(u/ww)|0,ug=(r0+uy)*W+c0+ux;
-    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const x=ux+dx,y=uy+dy;if(x<0||y<0||x>=ww||y>=hh)continue;const v=y*ww+x;
-      if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
-      if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
-      const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_;
-      let t=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1);const cw=currentClass[vg];if(envie>0&&cw!==255&&cw<5)t*=1-Math.min(.6,.2*envie*WGW[cw]);
-      const w=d+t;if(w<dist[v]){dist[v]=w;prev[v]=u;via[v]=-1;hpush(w,v)}}}
+  const dm=G.dem,sl=G.slope,tob=(L_,g_)=>L_/(6000/3600*Math.exp(-3.5*Math.abs(g_+.05)));
+  // Dijkstra à force de récompense str (0 = plus rapide ; 1 = envie choisie) ; rt = durée réelle (s) sans récompense.
+  const solve=str=>{
+    const e1=envie*str,{cf,cb}=costs(e1,null,e1>0?qq:null),R0=costs(0,null,null),
+      dist=new Float64Array(N).fill(Infinity),rt=new Float64Array(N),prev=new Int32Array(N).fill(-1),via=new Int32Array(N).fill(-1);
+    hn=0;dist[S0]=0;hpush(0,S0);
+    // récompense hors chemin : bien plus forte que sur chemin (jusqu'à ×0,1 dans une cellule très élevée avec « grand détour »)
+    const rew=cw=>cw!==255&&cw<5&&e1>0?1-Math.min(.9,.3*e1*WGW[cw]):1;
+    while(hn){const u=hpop(),d=popK;if(d>dist[u])continue;if(u===T0)break;
+      for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],e=aE[k],w=d+(aD[k]?cb[e]:cf[e])*aF[k];if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+(aD[k]?R0.cb[e]:R0.cf[e])*aF[k];prev[v]=u;via[v]=aId[k];hpush(w,v)}}
+      const ux=u%ww,uy=(u/ww)|0,ug=(r0+uy)*W+c0+ux;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const x=ux+dx,y=uy+dy;if(x<0||y<0||x>=ww||y>=hh)continue;const v=y*ww+x;
+        if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
+        if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
+        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(currentClass[vg]);
+        const w=d+t;if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+t0;prev[v]=u;via[v]=-1;hpush(w,v)}}}
+    return {dist,rt,prev,via}};
+  // plafond de durée : la durée réelle ne dépasse pas CAP[envie] × celle du trajet le plus rapide ; sinon la récompense est réduite par paliers
+  let sol=solve(1),detour=1;
+  if(envie>0&&isFinite(sol.dist[T0])){const base=solve(0);if(isFinite(base.dist[T0])){const cap=base.rt[T0]*DETOUR_CAP[envie];
+    for(const str of [1,.7,.45,.25,.1]){if(str<1)sol=solve(str);if(sol.rt[T0]<=cap){break}}
+    detour=base.rt[T0]>0?sol.rt[T0]/base.rt[T0]:1}}
+  const {dist,prev,via}=sol;
   if(!isFinite(dist[T0]))return {error:"Aucun passage trouvé en tout-terrain : essayez sans cette option ou changez de point."};
   // reconstruction
   const cells=[];for(let v=T0;v!==S0;v=prev[v])cells.push(v);cells.push(S0);cells.reverse();
@@ -241,7 +253,7 @@ async function routeOff(pA,pB,envie){
       const ug=(r0+((u/ww)|0))*W+c0+(u%ww),vg=(r0+((v/ww)|0))*W+c0+(v%ww),dx=(v%ww)-(u%ww),dy=((v/ww)|0)-((u/ww)|0),L_=gs*(dx&&dy?1.4142:1),dz=dm[vg]-dm[ug];
       off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
   flush();
-  return {seq,off,pl,cost:dist[T0]}}
+  return {seq,off,pl,cost:dist[T0],detour}}
 
 
 /* ---------- météo des 7 jours : avertissements et durcissement du tout-terrain ---------- */
