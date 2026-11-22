@@ -1890,7 +1890,7 @@ function renderInner(){
 // Chaque carré fait au moins ~5 px à l'écran : 1, 2, 4, 8… cellules de côté (alignées sur la grille complète). Sa couleur suit la classe moyenne
 // des cellules de forêt qu'il contient (dégradé continu entre les classes).
 const BLOCK_PX=MOBILE?5:4.5;
-const BLOCK_EARLY=4;  // les petits carrés apparaissent 2 niveaux de zoom plus tôt (facteur 2² sur la taille des carrés)
+const BLOCK_EARLY=16;  // les petits carrés (cellules de 25 m) apparaissent dès le zoom 11 ; la texture fine arrive 2 niveaux de zoom plus tôt qu'avant (facteur 4 sur la taille des carrés)
 const BlockLayer=L.Layer.extend({
   initialize(){this._op=1},
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";this._c.style.opacity=this._op;m.getPane("overlayPane").appendChild(this._c);
@@ -1904,7 +1904,7 @@ const BlockLayer=L.Layer.extend({
     const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);
     const cols=meta.cols,rows=meta.rows,cls=currentClass,z=m.getZoom();
     const p=meta.res*256*Math.pow(2,z)/40075016.68557849;           // pixels par cellule
-    let b=1;while(b*p*BLOCK_EARLY<BLOCK_PX)b*=2;                                  // cellules par côté de carré
+    let b=1;while(b*p*BLOCK_EARLY<BLOCK_PX||(W/(b*p))*(H/(b*p))>4e6)b*=2;          // cellules par côté de carré (et pas plus de ~4 M de carrés)
     const o=m.latLngToContainerPoint(regionLL().getNorthWest()),bp=b*p;
     const now=state.mode==="now",multi=state.sp==="multi",minK=(multi&&!now)?2:1;
     const PAL=now?NOW_COLORS:(multi?MULTI_COLORS:COLORS);
@@ -1920,6 +1920,16 @@ const BlockLayer=L.Layer.extend({
     if(cMax<=cMin||rMax<=rMin)return;
     const bc0=Math.floor((g0+cMin)/b),bc1=Math.floor((g0+cMax-1)/b),br0=Math.floor((h0+rMin)/b),br1=Math.floor((h0+rMax-1)/b);
     const gap=bp>=9?1:0;
+    if(bp<1.2){ // carrés plus petits qu'un pixel : une image (1 px par carré) réduite à l'écran, bien plus rapide que des millions de fillRect
+      const nbc=bc1-bc0+1,nbr=br1-br0+1,oc=document.createElement("canvas");oc.width=nbc;oc.height=nbr;const ox=oc.getContext("2d"),im=ox.createImageData(nbc,nbr),d=im.data;
+      const rgb=lut.map(c=>{if(!c)return null;const m=c.match(/[\d.]+/g);return [+m[0],+m[1],+m[2],Math.round(+m[3]*255)]});
+      for(let br=br0;br<=br1;br++){const ra=Math.max(0,br*b-h0),rb=Math.min(rows,(br+1)*b-h0);
+        for(let bc=bc0;bc<=bc1;bc++){const ca=Math.max(0,bc*b-g0),cb=Math.min(cols,(bc+1)*b-g0);
+          let sum=0,n=0;
+          for(let r=ra;r<rb;r++){const ro=r*cols;for(let cc=ca;cc<cb;cc++){const v=cls[ro+cc];if(v===255)continue;n++;if(v>=minK)sum+=v}}
+          if(!n)continue;const col=rgb[Math.round(sum/n*16)];if(!col)continue;const k=((br-br0)*nbc+(bc-bc0))*4;d[k]=col[0];d[k+1]=col[1];d[k+2]=col[2];d[k+3]=col[3]}}
+      ox.putImageData(im,0,0);x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+      x.drawImage(oc,o.x+(bc0*b-g0)*p,o.y+(br0*b-h0)*p,nbc*bp,nbr*bp);return}
     for(let br=br0;br<=br1;br++){const ra=Math.max(0,br*b-h0),rb=Math.min(rows,(br+1)*b-h0);
       for(let bc=bc0;bc<=bc1;bc++){const ca=Math.max(0,bc*b-g0),cb=Math.min(cols,(bc+1)*b-g0);
         let sum=0,n=0;
