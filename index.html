@@ -753,7 +753,7 @@ a.btn{text-decoration:none;display:inline-block}
 .cf-title{font-weight:700}.cf-l{display:flex;flex-direction:column;gap:3px;font-size:13px}
 .cf-l input[type=text],.cf-l input[type=date],.cf-l select{font:inherit;font-size:14px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:transparent;color:inherit}
 .cf-img{width:56px;height:56px;object-fit:cover;border-radius:8px}
-.cf-del{color:#c62828}
+.cf-del{color:#c62828}.cf-keep{display:flex;flex-direction:column;gap:2px;font-size:13px}.cf-keep label{display:flex;gap:5px;align-items:center}.cf-img.off{opacity:.3}
 .bk-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .bk-row .btn{font-size:12.5px;padding:3px 10px}
 .bk-warn{color:#b26a00}
@@ -1102,14 +1102,17 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="cf-l">Nom<input id="cf-name" type="text" maxlength="60" autocomplete="off"></label>
         <label class="cf-l">Champignon<select id="cf-sp" class="coin-sel"></select></label>
         <div class="cf-l">Emplacement
+          <div class="row" style="gap:6px"><input id="cf-ll" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="46.52345, 6.63210" aria-label="Coordonnées (latitude, longitude)" title="Touchez pour centrer la carte sur ces coordonnées ; modifiez-les à la main si besoin" style="flex:1;min-width:0"><button class="btn" id="cf-center" type="button" title="Centrer la carte sur ces coordonnées" aria-label="Centrer la carte sur ces coordonnées">🎯</button></div>
           <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" id="cf-gps" type="button">📡 Ma position</button><button class="btn" id="cf-pick" type="button" aria-pressed="false">👆 Choisir sur la carte</button></div>
           <span class="small" id="cf-pos" role="status">Aucun emplacement.</span>
         </div>
         <label class="cf-l">Date <span class="small">(facultatif)</span><input id="cf-date" type="date"></label>
         <div class="cf-l">Photo <span class="small">(facultatif, reste sur cet appareil)</span>
-          <div class="row" style="gap:8px;align-items:center"><label class="btn" style="cursor:pointer">📷 Ajouter<input id="cf-photo" type="file" accept="image/*" hidden></label><img id="cf-img" class="cf-img" alt="Photo du coin" hidden><button class="btn" id="cf-img-x" type="button" hidden>Retirer</button></div>
+          <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><img id="cf-img" class="cf-img" alt="Photo du coin" hidden>
+            <span id="cf-keep" class="cf-keep" role="radiogroup" aria-label="Photo du coin" hidden><label><input type="radio" name="cf-keep" value="1" checked> Garder la photo</label><label><input type="radio" name="cf-keep" value="0"> Sans photo</label></span>
+            <label class="btn" style="cursor:pointer" id="cf-add">📷 Ajouter<input id="cf-photo" type="file" accept="image/*" hidden></label></div>
         </div>
-        <div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap"><button class="btn primary" id="cf-save" type="button">Enregistrer</button><button class="btn" id="cf-cancel" type="button">Annuler</button><span style="flex:1"></span><button class="btn cf-del" id="cf-del" type="button" hidden>Supprimer</button></div>
+        <div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap"><button class="btn primary" id="cf-save" type="button">Enregistrer</button><button class="btn" id="cf-cancel" type="button">Annuler</button><button class="btn" id="cf-stop" type="button" hidden>Arrêter l'import</button><span style="flex:1"></span><button class="btn cf-del" id="cf-del" type="button" hidden>Supprimer</button></div>
       </div>
       <div class="coins" id="coins"></div>
       <div class="bk-row"><button class="btn" id="bk-save" type="button">💾 Sauvegarder</button><label class="btn" style="cursor:pointer">↺ Restaurer<input id="bk-file" type="file" accept=".json,application/json" hidden></label><span class="small" id="bk-msg" role="status"></span></div>
@@ -2523,8 +2526,10 @@ function renderCoins(){
     if(coinOnMap(c)){  // sur la carte : seulement les coins de l'espèce recherchée (et ceux sans espèce)
     const dot=coinDot(c);  // pastille : aptitude du lieu seule, sans filtres ni exclusions
     const m=L.marker([c.lat,c.lng],{icon:L.divIcon({className:"coin-hit",html:'<div class="coin-icon'+(dot?" dot-"+dot:"")+'"></div>',iconSize:[44,44],iconAnchor:[22,22]}),draggable:true,zIndexOffset:1000,title:c.name+(c.sp?" · "+coinSpName(c.sp):"")});
-    m.on("dragend",e=>{const p=e.target.getLatLng();c.lat=p.lat;c.lng=p.lng;saveCoins();renderCoins()});
-    m.on("click",e=>{L.DomEvent.stopPropagation(e);goCoin(k)});
+    m.on("dragend",e=>{const p=e.target.getLatLng();c.lat=p.lat;c.lng=p.lng;if(CF.k===k&&!$("coin-form").hidden){CF.lat=p.lat;CF.lng=p.lng;CF.acc=null}saveCoins();renderCoins();if(CF.k===k&&!$("coin-form").hidden)cfPos()});
+    m.on("click",e=>{L.DomEvent.stopPropagation(e);
+      if(!$("coin-form").hidden&&!CF.picking&&!CF.imp){const d=$("sec-coins");if(d)d.open=true;openCoinForm(k);return}   // formulaire déjà ouvert (mode édition) : un toucher sur un coin ouvre son formulaire
+      goCoin(k)});
     coinLayer.addLayer(m);}
     const meta_=[c.sp?coinSpName(c.sp):"espèce non précisée",c.date?fmtCoinDate(c.date):null].filter(Boolean).join(" · ");
     const row=document.createElement("div");row.className="coin";
@@ -2601,7 +2606,7 @@ function exifRead(buf){
         const r=tiffExif(dv,i);if(r&&r.gps)return r;if(r&&!best&&r.date)best=r}}
     return best}
   return null}
-const phTmp={q:[]};
+const phTmp={q:[],fq:[],st:{add:0,skip:0,n:0},extra:[]};
 function phNew(){return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function phName(date,f){return date?"Photo du "+fmtCoinDate(date):"Photo "+String(f.name||"").replace(/\.[^.]+$/,"").slice(0,40)}
 const phDup=(lat,lng,date)=>state.coins.some(c=>Math.abs(c.lat-lat)<1e-4&&Math.abs(c.lng-lng)<1.5e-4&&(!c.date||!date||c.date===date));
@@ -2611,65 +2616,84 @@ function phRenderQueue(){
     d.innerHTML=`<span class="small" style="flex:1;min-width:0;overflow-wrap:anywhere">📷 ${esc(it.f.name||"photo")}${it.date?" · "+esc(fmtCoinDate(it.date)):""} : pas de position GPS</span><button class="btn" data-pl="${i}" type="button">📍 Placer à la main</button><button class="btn" data-ig="${i}" type="button">Ignorer</button>`;box.appendChild(d)});
   box.querySelectorAll("[data-pl]").forEach(b=>b.onclick=()=>phPlace(+b.dataset.pl));
   box.querySelectorAll("[data-ig]").forEach(b=>b.onclick=()=>{phTmp.q.splice(+b.dataset.ig,1);phRenderQueue();if(!phTmp.q.length)$("ph-box").hidden=!$("ph-msg").textContent})}
+// formulaire d'import : une photo à la fois, pré-rempli (nom, date, emplacement, photo) ; l'espèce se choisit dans le menu
+async function phForm(it,pos){
+  openCoinForm(-1);CF.imp=pos?1:0;$("cf-name").value=phName(it.date,it.f);$("cf-sp").value="";if(it.date)$("cf-date").value=it.date;
+  if(pos){$("cf-title").textContent=`Photo ${pos[0]} sur ${pos[1]} : nouveau coin`;$("cf-cancel").textContent="Ignorer cette photo";$("cf-stop").hidden=pos[1]<2||pos[0]>=pos[1]}
+  if(it.gps){CF.lat=it.gps[0];CF.lng=it.gps[1];cfPos();cfCenter()}
+  const sec=$("sec-coins");if(sec)sec.open=true;$("coin-form").scrollIntoView({behavior:"smooth",block:"nearest"});
+  try{CF.cand=await shrinkPhoto(it.f);$("cf-img").src=URL.createObjectURL(CF.cand);cfPhotoUI()}catch(e){$("cf-pos").textContent="Vignette impossible pour ce format (HEIC) : le coin sera créé sans photo. "+$("cf-pos").textContent}
+  if(!it.gps)cfPick(true)}
 async function phPlace(i){
-  const it=phTmp.q[i];if(!it)return;phTmp.q.splice(i,1);phRenderQueue();
-  openCoinForm(-1);$("cf-name").value=phName(it.date,it.f);$("cf-sp").value="";if(it.date)$("cf-date").value=it.date;
-  try{CF.photo=await shrinkPhoto(it.f);$("cf-img").src=URL.createObjectURL(CF.photo);$("cf-img").hidden=$("cf-img-x").hidden=false}catch(e){$("cf-pos").textContent="Vignette impossible pour ce format (HEIC) : le coin sera créé sans photo. "+$("cf-pos").textContent}
-  cfPick(true)}
+  const it=phTmp.q[i];if(!it)return;phTmp.q.splice(i,1);phRenderQueue();await phForm(it,null)}
+function phNext(){const it=phTmp.fq.shift();if(!it)return phEnd();phForm(it,[phTmp.st.n-phTmp.fq.length,phTmp.st.n])}
+function phEnd(){const st=phTmp.st,t=[];
+  t.push(st.add?`${st.add} coin${st.add>1?"s":""} créé${st.add>1?"s":""} (touchez ✎ pour modifier)`:"Aucun coin créé");
+  if(st.skip)t.push(`${st.skip} photo${st.skip>1?"s":""} ignorée${st.skip>1?"s":""}`);
+  $("ph-msg").textContent=t.concat(phTmp.extra).join(" · ")+".";phRenderQueue();renderCoins()}
 async function importPhotos(files){
   files=[...files];if(!files.length)return;
-  const msg=$("ph-msg");$("ph-box").hidden=false;phTmp.q=[];phRenderQueue();
-  const r={add:0,dup:0,nogps:0,nothumb:0,bad:0},pts=[];
+  const msg=$("ph-msg");$("ph-box").hidden=false;phTmp.q=[];phTmp.fq=[];phTmp.st={add:0,skip:0,n:0};phTmp.extra=[];phRenderQueue();
+  const r={dup:0,nogps:0,bad:0};
   for(let n=0;n<files.length;n++){const f=files[n];msg.textContent=`Lecture des photos… ${n+1} / ${files.length}`;
     let ex=null;try{ex=exifRead(await f.arrayBuffer())}catch(e){r.bad++;continue}
     const today=localToday(),date=ex&&ex.date&&ex.date<=today?ex.date:"";
     if(!ex||!ex.gps){phTmp.q.push({f,date});r.nogps++;continue}
     const [lat,lng]=ex.gps;
     if(phDup(lat,lng,date)){r.dup++;continue}   // même lieu (~11 m) et même date qu'un coin existant (y compris iNaturalist) : pas de doublon
-    const c={id:phNew(),name:phName(date,f),lat:+lat.toFixed(6),lng:+lng.toFixed(6)};if(date)c.date=date;
-    try{const b=await shrinkPhoto(f);await photoPut(c.id,b);c.photo=1}catch(e){r.nothumb++}
-    state.coins.push(c);pts.push([c.lat,c.lng]);r.add++}
-  if(r.add){saveCoins();renderCoins();try{if(pts.every(q=>{const n=zoneAt(q[0],q[1],ZID);return !n||n===ZID}))map.fitBounds(L.latLngBounds(pts),{maxZoom:COIN_ZOOM-1,padding:[40,40]});else r.far=1}catch(e){};const d=$("sec-coins");if(d)d.open=true}
-  const t=[];t.push(r.add?`${r.add} coin${r.add>1?"s":""} créé${r.add>1?"s":""} (espèce non précisée : ouvrez ✎ pour la choisir)`:"Aucun coin créé");
-  if(r.far)t.push("certains coins sont dans une autre région : touchez leur nom dans la liste pour y aller");
-  if(r.dup)t.push(`${r.dup} ignoré${r.dup>1?"s":""} (même lieu et même date qu'un coin déjà présent)`);
-  if(r.nothumb)t.push(`${r.nothumb} sans vignette (format non lisible par ce navigateur, souvent HEIC)`);
-  if(r.bad)t.push(`${r.bad} illisible${r.bad>1?"s":""}`);
-  if(r.nogps)t.push(`${r.nogps} sans position GPS : placez-les à la main ou ignorez-les${/iP(hone|ad)/.test(navigator.userAgent)?" (sur iPhone, choisissez « Options › Position » dans le sélecteur de photos pour conserver le lieu)":""}`);
-  msg.textContent=t.join(" · ")+".";phRenderQueue()}
+    phTmp.fq.push({f,date,gps:[+lat.toFixed(6),+lng.toFixed(6)]})}
+  const ex=phTmp.extra;
+  if(r.dup)ex.push(`${r.dup} ignoré${r.dup>1?"s":""} (même lieu et même date qu'un coin déjà présent)`);
+  if(r.bad)ex.push(`${r.bad} illisible${r.bad>1?"s":""}`);
+  if(r.nogps)ex.push(`${r.nogps} sans position GPS : placez-les à la main ou ignorez-les${/iP(hone|ad)/.test(navigator.userAgent)?" (sur iPhone, choisissez « Options › Position » dans le sélecteur de photos pour conserver le lieu)":""}`);
+  phTmp.st.n=phTmp.fq.length;
+  if(phTmp.fq.length){msg.textContent=`${phTmp.fq.length} photo${phTmp.fq.length>1?"s":""} à vérifier : un formulaire s'ouvre pour chacune.`;phNext()}else phEnd()}
 function setupPhotoImport(){$("ph-files").onchange=e=>{const fs=e.target.files;importPhotos(fs).finally(()=>{e.target.value=""})}}
 /* ---------- formulaire de saisie d'un coin ---------- */
 const CF={k:-1,lat:null,lng:null,photo:undefined,tmp:null,picking:false};
-function cfPos(){$("cf-pos").textContent=CF.lat==null?"Aucun emplacement.":`${CF.lat.toFixed(5)}, ${CF.lng.toFixed(5)}${CF.acc?` (précision ± ${Math.round(CF.acc)} m)`:""}`;
+function cfPos(){$("cf-ll").value=CF.lat==null?"":CF.lat.toFixed(5)+", "+CF.lng.toFixed(5);$("cf-pos").textContent=CF.lat==null?"Aucun emplacement : saisissez les coordonnées, ou utilisez la position / la carte.":CF.acc?`Précision ± ${Math.round(CF.acc)} m`:"";
   if(CF.tmp){map.removeLayer(CF.tmp);CF.tmp=null}
   if(CF.lat!=null){CF.tmp=L.marker([CF.lat,CF.lng],{icon:L.divIcon({className:"",html:'<div class="coin-icon" style="border-color:#e65100"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map)}}
 function cfPick(v){CF.picking=state.adding=v;$("cf-pick").setAttribute("aria-pressed",v);$("cf-pick").textContent=v?"Touchez la carte…":"👆 Choisir sur la carte";map.getContainer().style.cursor=v?"crosshair":"";
   if(v&&NARROW.matches)map.getContainer().scrollIntoView({behavior:"smooth",block:"start"})}
+// photo : « Garder » / « Sans photo » ; CF.cand = nouvelle photo (import ou ajout), CF.had = le coin en a déjà une
+function cfPhotoUI(){const has=!!(CF.cand||CF.had);$("cf-keep").hidden=!has;$("cf-img").hidden=!has;$("cf-img").classList.toggle("off",has&&!CF.keep);
+  document.querySelectorAll('input[name="cf-keep"]').forEach(r=>r.checked=(r.value==="1")===CF.keep);
+  $("cf-add").firstChild.textContent=has?"📷 Changer":"📷 Ajouter";
+  CF.photo=CF.keep?(CF.cand||undefined):null}
+function cfCenter(){if(CF.lat!=null)map.setView([CF.lat,CF.lng],Math.max(map.getZoom(),COIN_ZOOM-1));if(NARROW.matches)map.getContainer().scrollIntoView({behavior:"smooth",block:"start"})}
 function openCoinForm(k,ll){
-  const c=k>=0?state.coins[k]:null;CF.k=k;CF.photo=undefined;CF.acc=null;
+  const c=k>=0?state.coins[k]:null;CF.k=k;CF.photo=undefined;CF.acc=null;CF.imp=0;CF.cand=null;CF.had=!!(c&&c.photo);CF.keep=true;$("cf-stop").hidden=true;$("cf-cancel").textContent="Annuler";
   $("cf-title").textContent=c?"Modifier le coin":"Nouveau coin";
   $("cf-name").value=c?c.name:"Coin "+(state.coins.length+1);
   $("cf-sp").innerHTML=`<option value="">Non précisé</option>`+spAlpha(SPECIES).map(x=>`<option value="${x.id}">${esc(x.fr)}</option>`).join("");
   $("cf-sp").value=c?(c.sp||""):(state.sp!=="multi"?state.sp:"");
   $("cf-date").value=c&&c.date?c.date:"";$("cf-date").max=localToday();
   CF.lat=c?c.lat:ll?ll.lat:null;CF.lng=c?c.lng:ll?ll.lng:null;cfPos();
-  $("cf-img").hidden=$("cf-img-x").hidden=true;$("cf-img").removeAttribute("src");$("cf-photo").value="";
-  if(c&&c.photo)photoGet(c.id).then(u=>{if(u&&CF.k===k){$("cf-img").src=u;$("cf-img").hidden=$("cf-img-x").hidden=false}});
+  $("cf-img").removeAttribute("src");$("cf-photo").value="";cfPhotoUI();
+  if(c&&c.photo)photoGet(c.id).then(u=>{if(u&&CF.k===k&&!CF.cand){$("cf-img").src=u}});
   $("cf-del").hidden=!c;$("coin-form").hidden=false;$("add-coin").hidden=true;
   if(!ll&&!c&&NARROW.matches)$("coin-form").scrollIntoView({behavior:"smooth",block:"nearest"});
   if(ll)$("coin-form").scrollIntoView({behavior:"smooth",block:"center"});
 }
-function closeCoinForm(){cfPick(false);if(CF.tmp){map.removeLayer(CF.tmp);CF.tmp=null}$("coin-form").hidden=true;$("add-coin").hidden=false;CF.k=-1}
+function closeCoinForm(){CF.imp=0;cfPick(false);if(CF.tmp){map.removeLayer(CF.tmp);CF.tmp=null}$("coin-form").hidden=true;$("add-coin").hidden=false;CF.k=-1}
 function setupCoinForm(){
   $("add-coin").onclick=()=>openCoinForm(-1);
-  $("cf-cancel").onclick=closeCoinForm;
+  $("cf-cancel").onclick=()=>{const imp=CF.imp;closeCoinForm();if(imp){phTmp.st.skip++;phNext()}};
   $("cf-pick").onclick=()=>cfPick(!CF.picking);
   $("cf-gps").onclick=()=>{if(!navigator.geolocation){$("cf-pos").textContent="Position GPS indisponible ici : choisissez sur la carte.";return}
     $("cf-pos").textContent="Recherche de la position…";
     navigator.geolocation.getCurrentPosition(p=>{CF.lat=p.coords.latitude;CF.lng=p.coords.longitude;CF.acc=p.coords.accuracy;cfPos();map.setView([CF.lat,CF.lng],Math.max(map.getZoom(),COIN_ZOOM-1))},
       e=>{$("cf-pos").textContent=(e&&e.code===1?"Accès à la position refusé (autorisez-le pour le navigateur ou l'app Claude dans les réglages)":"Position GPS indisponible")+" : choisissez sur la carte."},{enableHighAccuracy:true,timeout:20000,maximumAge:30000})};
-  $("cf-photo").onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;try{CF.photo=await shrinkPhoto(f);const u=URL.createObjectURL(CF.photo);$("cf-img").src=u;$("cf-img").hidden=$("cf-img-x").hidden=false}catch(err){$("cf-pos").textContent="Photo illisible."}};
-  $("cf-img-x").onclick=()=>{CF.photo=null;$("cf-img").hidden=$("cf-img-x").hidden=true;$("cf-photo").value=""};
+  $("cf-photo").onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;try{CF.cand=await shrinkPhoto(f);CF.keep=true;$("cf-img").src=URL.createObjectURL(CF.cand);cfPhotoUI()}catch(err){$("cf-pos").textContent="Photo illisible."}};
+  document.querySelectorAll('input[name="cf-keep"]').forEach(r=>r.onchange=()=>{CF.keep=r.value==="1";cfPhotoUI()});
+  // coordonnées modifiables à la main ; un toucher dans le champ (ou 🎯) centre la carte dessus
+  $("cf-ll").onfocus=$("cf-ll").onclick=cfCenter;$("cf-center").onclick=cfCenter;
+  $("cf-ll").onchange=()=>{const t=$("cf-ll").value.trim();if(!t){CF.lat=CF.lng=null;CF.acc=null;cfPos();return}
+    const ll=locParse(t);if(!ll){$("cf-pos").textContent="Coordonnées non reconnues (exemple : 46.52345, 6.63210), ou choisissez sur la carte.";return}
+    CF.lat=ll[0];CF.lng=ll[1];CF.acc=null;cfPos();map.setView([CF.lat,CF.lng],Math.max(map.getZoom(),COIN_ZOOM-1))};
+  $("cf-ll").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("cf-ll").onchange();$("cf-ll").blur()}};
+  $("cf-stop").onclick=()=>{phTmp.fq=[];closeCoinForm();phEnd()};
   $("cf-del").onclick=async()=>{const c=state.coins[CF.k];if(!c)return;if(c.photo)try{await photoPut(c.id,null)}catch(e){}state.coins.splice(CF.k,1);saveCoins();closeCoinForm();renderCoins()};
   $("cf-save").onclick=async()=>{
     if(CF.lat==null){$("cf-pos").textContent="Indiquez d'abord l'emplacement (GPS ou carte).";return}
@@ -2680,7 +2704,8 @@ function setupCoinForm(){
     const d=$("cf-date").value;if(d)c.date=d;else delete c.date;
     if(CF.photo!==undefined){try{await photoPut(c.id,CF.photo);if(CF.photo)c.photo=1;else delete c.photo}catch(e){$("cf-pos").textContent="La photo n'a pas pu être enregistrée sur cet appareil.";return}}
     if(CF.k<0)state.coins.push(c);
-    saveCoins();closeCoinForm();renderCoins()};
+    const imp=CF.imp;if(imp)phTmp.st.add++;
+    saveCoins();closeCoinForm();renderCoins();if(imp)phNext()};
 }
 /* ---------- guide animé : des champignons présentent la carte ---------- */
 const MUSH={
@@ -3605,7 +3630,8 @@ async function boot(){
   if(SAVED_VIEW&&zoneAt(SAVED_VIEW[0],SAVED_VIEW[1],ZID)===ZID)map.setView([SAVED_VIEW[0],SAVED_VIEW[1]],SAVED_VIEW[2]);
   {let swT;map.on("moveend",()=>{const c=map.getCenter(),z=map.getZoom();
     try{localStorage.setItem("champi-view-pos",JSON.stringify([+c.lat.toFixed(5),+c.lng.toFixed(5),z]))}catch(e){}
-    clearTimeout(swT);swT=setTimeout(()=>{if(state.adding)return;const n=zoneAt(c.lat,c.lng,ZID);
+    clearTimeout(swT);swT=setTimeout(()=>{if(state.adding||!$("coin-form").hidden)return;   // pas de changement de région (rechargement) pendant la saisie d'un coin
+     const n=zoneAt(c.lat,c.lng,ZID);
       if(n&&n!==ZID){const nm=ZNAME[n];
         const m=document.createElement("div");m.setAttribute("role","status");m.style.cssText="position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:3000;background:#2f5d3a;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;box-shadow:0 2px 8px #0005";m.textContent="Chargement de la région « "+nm+" »…";document.body.appendChild(m);
         try{localStorage.setItem("champi-zone",n)}catch(e){}
