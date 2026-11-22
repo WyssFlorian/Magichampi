@@ -1,4 +1,5 @@
 // Seuils de classes (quantiles 60 / 85 / 96,25 % de l'aptitude des forêts de la carte, un sur deux) → ZONE.MAP_THR_V<n> de <zone>/zone.js.
+// NB (22.11.2026) : les seuils publiés sont désormais calculés sur tout le canton par tools/seuils_canton.js / .py ; ce script reste utile pour une seule région.
 // usage : node tools/seuils.js <dossier Magichampi> <zone>   (Playwright ; sert les fichiers par interception, imprime le JSON)
 // Fonctionne aussi pour une région pas encore publiée (ok:0 dans zones.js : on la passe à ok:1 dans la copie servie).
 const {chromium}=require('playwright');const path=require('path'),fs=require('fs');const [root,z]=process.argv.slice(2);
