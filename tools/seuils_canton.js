@@ -2,16 +2,17 @@
 // 1) node tools/seuils_canton.js <dossier> hist <zone>            → histogramme de l'aptitude de chaque espèce (forêts, une cellule sur deux, relevés « tous »)
 // 2) python3 tools/seuils_canton.py seuils h_*.json                → fusionne, calcule les quantiles 60/85/96,25 % du canton → ZONE.MAP_THR_V6, ZONE.MAP_AMAX dans les 8 zone.js
 // 3) node tools/seuils_canton.js <dossier> multi <zone>            → (après 2) histogramme des points « forte concentration » par combinaison de catégories, avec les seuils du canton
-// 4) python3 tools/seuils_canton.py multi m_*.json                 → quantiles 60/85/96 % → ZONE.MULTI_REF dans les 8 zone.js
+// 4) python3 tools/seuils_canton.py multi m_*.json                 → quantiles 60/85/96 % → ZONE.MULTI_REF dans les 8 zone.js (une table par réglage de relevés : refaire avec YR=0, 1, 2 et ranger {"0":…,"1":…,"2":…})
 const {chromium}=require('playwright');const path=require('path'),fs=require('fs');const [root,mode,z]=process.argv.slice(2);
 (async()=>{const b=await chromium.launch();const p=await b.newPage();const errs=[];p.on('pageerror',e=>errs.push(String(e)));
 await p.route('http://local/**',r=>{const u=new URL(r.request().url());
   if(u.pathname==='/zones.js'){let t=fs.readFileSync(path.join(root,'zones.js'),'utf8');return r.fulfill({body:t,contentType:'application/javascript'})}
   const f=path.join(root,decodeURIComponent(u.pathname==='/'?'/index.html':u.pathname));if(!fs.existsSync(f))return r.fulfill({status:404,body:''});r.fulfill({path:f})});
 await p.route(/^https?:\/\/(?!local)/,r=>r.abort());
+await p.addInitScript('window.__YR='+(+(process.env.YR||2)));
 await p.goto(`http://local/index.html?r=${z}`);await p.waitForTimeout(8000);
 const r=await p.evaluate(async(mode)=>{try{
-  state.yr=2;
+  state.yr=window.__YR;
   if(mode==="hist"){const BW=.0005,out={};SPECIES.forEach(s=>{out[s.id]={}});
     const band=Math.max(64,Math.floor(7e5/GR.cols));
     for(let r0=0;r0<GR.rows;r0+=band){await loadRegion({c0:0,r0,cols:GR.cols,rows:Math.min(band,GR.rows-r0)});const n=G.fx.length;
