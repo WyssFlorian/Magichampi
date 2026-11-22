@@ -761,6 +761,13 @@ a.btn{text-decoration:none;display:inline-block}
 .bk-row .btn{font-size:12.5px;padding:3px 10px}
 .bk-warn{color:#b26a00}
 .coin-more{margin-top:10px}.coin-more summary{font-size:13px;cursor:pointer}
+.coin-bar{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.coin-bar .btn{flex:1 1 150px;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal;line-height:1.2}
+.coin-bar #coin-contrib{flex-basis:100%}
+.coin-bar2{display:flex;gap:8px;margin:0 0 8px}
+.coin-bar2 label{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--muted)}
+.coin-bar2 select{width:100%;min-width:0;min-height:36px;font-size:14px;color:var(--fg,inherit)}
+.coin-grp{margin:10px 0 2px;font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--muted);text-transform:uppercase}
 .coin-sel{font:inherit;font-size:12px;padding:2px 4px;border:1px solid var(--line);border-radius:6px;background:transparent;color:inherit}
 .coin-h{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-top:4px}
 .coin button{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit}
@@ -1097,7 +1104,8 @@ details.more[open]>summary{margin-bottom:4px}
     </details>
 
     <details class="panel-det" id="sec-coins"><summary>Mes coins</summary>
-      <div class="row" style="margin:4px 0 8px;gap:6px"><button class="btn primary" id="add-coin">＋ Nouveau coin</button><label class="btn" style="cursor:pointer" title="Un coin par photo, à partir du GPS et de la date de la photo (lus dans votre navigateur, rien n'est envoyé)">📷 Importer des photos<input id="ph-files" type="file" accept="image/*,.heic,.heif" multiple hidden></label><select id="coin-filter" class="coin-sel" style="flex:1;min-width:0" aria-label="Filtrer les coins par espèce" hidden></select></div>
+      <div class="coin-bar"><button class="btn primary" id="add-coin">＋ Nouveau coin</button><label class="btn" style="cursor:pointer" title="Un coin par photo, à partir du GPS et de la date de la photo (lus dans votre navigateur, rien n'est envoyé)">📷 Importer des photos<input id="ph-files" type="file" accept="image/*,.heic,.heif" multiple hidden></label><button class="btn" type="button" id="coin-contrib" title="Envoyer anonymement vos coins pour améliorer la carte">🤝 Contribuer</button></div>
+      <div class="coin-bar2" id="coin-sortbar" hidden><label>Espèce<select id="coin-filter" class="coin-sel" aria-label="Filtrer les coins par espèce"></select></label><label>Tri<select id="coin-sort" class="coin-sel" aria-label="Trier les coins"><option value="cat">Par catégorie</option><option value="esp">Par espèce</option><option value="date">Plus récents</option><option value="nom">Par nom</option></select></label></div>
       <div id="ph-box" class="share-box" hidden role="status" aria-live="polite"><p class="small" id="ph-msg" style="margin:0"></p><div id="ph-list"></div></div>
       <div id="coin-form" class="coin-form" hidden>
         <div class="cf-title" id="cf-title">Nouveau coin</div>
@@ -2519,12 +2527,19 @@ function renderCoins(){
   const opts=[["","Toutes les espèces ("+state.coins.length+")"]].concat(SPECIES.filter(x=>cnt[x.id]).map(x=>[x.id,x.fr+" ("+cnt[x.id]+")"]));
   if(cnt[""]&&Object.keys(cnt).length>1)opts.push(["none","Espèce non précisée ("+cnt[""]+")"]);
   sel.innerHTML=opts.map(([v,t])=>`<option value="${v}"${(state.coinFilter||"")===v?" selected":""}>${esc(t)}</option>`).join("");
-  sel.hidden=state.coins.length<2;sel.onchange=()=>{state.coinFilter=sel.value;renderCoins()};
+  $("coin-sortbar").hidden=state.coins.length<2;sel.onchange=()=>{state.coinFilter=sel.value;renderCoins()};
   if(!state.coins.length){box.innerHTML=`<p class="small" style="margin:0">Aucun coin. Touchez « Nouveau coin » pour en ajouter un (position GPS ou point sur la carte). Vous aviez des coins avant de vider le navigateur ? Touchez « ↺ Restaurer » et choisissez votre fichier de sauvegarde.</p>`}
   const f=state.coinFilter||"",keep=c=>!f||(f==="none"?!c.sp:c.sp===f);
-  const ord=id=>{const i=SPECIES.findIndex(x=>x.id===id);return i<0?99:i};
-  const list=state.coins.map((c,k)=>({c,k})).filter(o=>keep(o.c)).sort((a,b)=>ord(a.c.sp)-ord(b.c.sp)||a.c.name.localeCompare(b.c.name,"fr",{numeric:true}));
+  const ord=id=>{const i=SPECIES.findIndex(x=>x.id===id);return i<0?999:i};
+  const tierOf=c=>{const x=SPECIES.find(y=>y.id===c.sp);return x?x.tier:9};
+  const nm=(a,b)=>a.c.name.localeCompare(b.c.name,"fr",{numeric:true});
+  let sm="cat";try{sm=localStorage.getItem("champi-coin-sort")||"cat"}catch(e){}
+  const ss=$("coin-sort");if(ss){ss.value=sm;ss.onchange=()=>{try{localStorage.setItem("champi-coin-sort",ss.value)}catch(e){}renderCoins()}}
+  const cmp={cat:(a,b)=>tierOf(a.c)-tierOf(b.c)||ord(a.c.sp)-ord(b.c.sp)||nm(a,b),esp:(a,b)=>ord(a.c.sp)-ord(b.c.sp)||nm(a,b),date:(a,b)=>(b.c.date||"").localeCompare(a.c.date||"")||nm(a,b),nom:nm}[sm]||nm;
+  const list=state.coins.map((c,k)=>({c,k})).filter(o=>keep(o.c)).sort(cmp);
+  const GRP={1:"★ Stars",2:"Bons comestibles",3:"Intéressants",9:"Espèce non précisée"};let lastG=null;
   list.forEach(({c,k})=>{
+    if(sm==="cat"&&list.length>1){const g=tierOf(c);if(g!==lastG){lastG=g;const h=document.createElement("div");h.className="coin-grp";h.textContent=GRP[g]||"Autres";box.appendChild(h)}}
     const cl=coinClass(c);
     if(coinOnMap(c)){  // sur la carte : seulement les coins de l'espèce recherchée (et ceux sans espèce)
     const dot=coinDot(c);  // pastille : aptitude du lieu seule, sans filtres ni exclusions
@@ -2544,6 +2559,7 @@ function renderCoins(){
     if(c.photo)photoGet(c.id).then(u=>{const im=row.querySelector("img.th");if(im&&u)im.src=u});
   });
   if(state.coins.length&&!list.length)box.innerHTML=`<p class="small">Aucun coin pour cette espèce.</p>`;
+  const cb=$("coin-contrib");if(cb)cb.onclick=()=>{const d=$("sec-coins");if(d)d.open=true;const e=$("sec-share-enc");if(e){e.open=true;setTimeout(()=>e.scrollIntoView({behavior:"smooth",block:"start"}),50)}};
   box.querySelectorAll("a[data-k]").forEach(a=>a.onclick=e=>{e.preventDefault();goCoin(+a.dataset.k)});
   box.querySelectorAll("button[data-ed]").forEach(b=>b.onclick=()=>openCoinForm(+b.dataset.ed));
 }
