@@ -1890,6 +1890,7 @@ function renderInner(){
 // Chaque carré fait au moins ~5 px à l'écran : 1, 2, 4, 8… cellules de côté (alignées sur la grille complète). Sa couleur suit la classe moyenne
 // des cellules de forêt qu'il contient (dégradé continu entre les classes).
 const BLOCK_PX=MOBILE?5:4.5;
+const BLOCK_EARLY=4;  // les petits carrés apparaissent 2 niveaux de zoom plus tôt (facteur 2² sur la taille des carrés)
 const BlockLayer=L.Layer.extend({
   initialize(){this._op=1},
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";this._c.style.opacity=this._op;m.getPane("overlayPane").appendChild(this._c);
@@ -1903,7 +1904,7 @@ const BlockLayer=L.Layer.extend({
     const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);
     const cols=meta.cols,rows=meta.rows,cls=currentClass,z=m.getZoom();
     const p=meta.res*256*Math.pow(2,z)/40075016.68557849;           // pixels par cellule
-    let b=1;while(b*p<BLOCK_PX)b*=2;                                  // cellules par côté de carré
+    let b=1;while(b*p*BLOCK_EARLY<BLOCK_PX)b*=2;                                  // cellules par côté de carré
     const o=m.latLngToContainerPoint(regionLL().getNorthWest()),bp=b*p;
     const now=state.mode==="now",multi=state.sp==="multi",minK=(multi&&!now)?2:1;
     const PAL=now?NOW_COLORS:(multi?MULTI_COLORS:COLORS);
