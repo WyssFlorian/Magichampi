@@ -1,14 +1,15 @@
 /* Itinéraire A→B sur le réseau de chemins précalculé (<région>/graphe.json, voir tools/graphe.py).
    Coût d'une arête = temps de marche (Tobler, dénivelé + / − de l'arête) × facteur de réseau × (1 − bonus de cueillette).
-   Classe 5/4 : 1 · sentier balisé : 0,7 · classe 3 (route forestière) : 3,5 · classe 2 (4 m, bord de route) : 6 ·
+   Classe 5/4 : 1 · sentier balisé : 0,7 · classe 3 (route forestière) : 1,6 · classe 2 (4 m, bord de route) : 3,5 ·
    classe 1 : jamais, sauf traversée ≤ 30 m (arête virtuelle). Calcul entièrement dans le navigateur. */
 (function(){
 "use strict";
 if(typeof L==="undefined")return;
 const $=id=>document.getElementById(id);
 const DIFF=["très facile","facile","moyen","difficile","très difficile"],DCOL=["#2e8b57","#7cb342","#e0a800","#e8731f","#c62828"];
-const FACT={1:12,2:6,3:3.5,4:1,5:1},TYPE_F={0:1,1:.7,2:.8,3:1},TYPE_T={0:1,1:1,2:1.3,3:1.6};   // facteur de coût (réseau) · multiplicateur de temps (type de sentier)
-const R_E=6378137,WGW=[0,.05,.2,.6,1];                                                  // poids du bonus par classe d'affichage (très faible … très élevé)
+const FACT={1:12,2:3.5,3:1.6,4:1,5:1},TYPE_F={0:1,1:.7,2:.8,3:1},TYPE_T={0:1,1:1,2:1.3,3:1.6};   // facteur de coût (réseau) · multiplicateur de temps (type de sentier)
+const R_E=6378137,WGW=[0,0,.2,.6,1];                                                  // poids du bonus par classe d'affichage (très faible … très élevé) : rien sous « moyen », le détour ne vise que les zones moyen ou mieux
+const MIN_GAIN=100,GAIN_RATIO=.2,OFF_ROAD=20;   // détour accepté seulement s'il gagne ≥ 100 m (et ≥ 20 % de la distance ajoutée) dans des zones « moyen » ou mieux · bande de 20 m le long des routes de classe 2 où le hors-chemin est interdit
 let GR=null,GRZ=null,loading=null,map0=null,mk={A:null,B:null},pts={A:null,B:null},arm=null,layer=null,last=null;
 
 /* ---------- graphe ---------- */
@@ -70,18 +71,27 @@ function sub(e,s0,s1){   // sous-ligne de l'arête e entre les abscisses s0 et s
 
 /* ---------- bonus de cueillette (classes affichées) ---------- */
 function bonusQ(){
-  const g=GR,q=new Float32Array(g.nE),cnt=new Uint16Array(g.nE);
+  const g=GR,q=new Float32Array(g.nE),cnt=new Uint16Array(g.nE),gd=new Uint16Array(g.nE);q.gd=gd;   // gd[e] : échantillons de l'arête en zone « moyen » ou mieux
   if(typeof currentClass==="undefined"||!currentClass||typeof meta==="undefined")return q;
   const x0=meta.x0,y1=meta.y1,res=meta.res,cols=meta.cols,rows=meta.rows;
   for(let i=0;i<g.SE.length;i++){const X=g.SM[2*i],Y=g.SM[2*i+1],c=Math.floor((X-x0)/res),r=Math.floor((y1-Y)/res),e=g.SE[i];cnt[e]++;
-    if(c>=0&&r>=0&&c<cols&&r<rows){const v=currentClass[r*cols+c];if(v!==255&&v<5)q[e]+=WGW[v]}}
-  for(let e=0;e<g.nE;e++)if(cnt[e])q[e]/=cnt[e];
+    if(c>=0&&r>=0&&c<cols&&r<rows){const v=currentClass[r*cols+c];if(v!==255&&v<5){q[e]+=WGW[v];if(v>=2)gd[e]++}}}
+  q.cnt=cnt;for(let e=0;e<g.nE;e++)if(cnt[e])q[e]/=cnt[e];
   return q}
+// longueur (m) d'un tracé du graphe qui traverse des zones « moyen » ou mieux
+const seqLen=R=>R.seq.reduce((a,[,s0,s1])=>a+Math.abs(s1-s0),0);
+function goodLen(R,q){let t=0;for(const [e,s0,s1] of R.seq)if(q.cnt[e])t+=Math.abs(s1-s0)*q.gd[e]/q.cnt[e];return t}
+// A→B avec envie de détour : le détour n'est gardé que s'il apporte au moins MIN_GAIN m de zones « moyen » ou mieux ; sinon trajet le plus court
+function routeGD(A,B,envie){
+  const R=route(A,B,envie);if(!R||!(envie>0))return R;
+  const R0=route(A,B,0);if(!R0)return R;const q=bonusQ();
+  const ex=seqLen(R)-seqLen(R0);if(ex<=seqLen(R0)*.02||goodLen(R,q)-goodLen(R0,q)>=Math.max(MIN_GAIN,GAIN_RATIO*ex))return R;
+  R0.noGain=true;return R0}
 
 /* ---------- plus court chemin (Dijkstra, tas binaire) ---------- */
 function costs(envie,pen,qq){
   const g=GR,q=qq||(envie>0?bonusQ():null),mult=e=>{const k=g.cls[e],t=g.typ[e];
-    let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?3:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 3
+    let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?2:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 2
     if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);return m};
   const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);
   for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0)}
@@ -208,6 +218,15 @@ async function routeOff(pA,pB,envie){
   for(let i=0;i<N;i++)cnt[i+1]+=cnt[i];const fill=cnt.slice(),aTo=new Int32Array(arcs.length),aE=new Int32Array(arcs.length),aF=new Float32Array(arcs.length),aD=new Uint8Array(arcs.length),aId=new Int32Array(arcs.length);
   for(const [u,v,e,f,d,id] of arcs){const q=fill[u]++;aTo[q]=v;aE[q]=e;aF[q]=f;aD[q]=d;aId[q]=id}
   const onPath=i=>cnt[i+1]>cnt[i];
+  // bande de OFF_ROAD m le long des routes de classe 2 : pas de hors-chemin en forêt (on suit la route) ; les cellules de chemin restent praticables
+  const ban=new Uint8Array(N);
+  for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1]||g.cls[g.SE[k]]!==2)continue;
+    const x0=(g.SM[2*k]-meta.x0)/res-c0,y0=(meta.y1-g.SM[2*k+1])/res-r0,x1=(g.SM[2*k+2]-meta.x0)/res-c0,y1=(meta.y1-g.SM[2*k+3])/res-r0;
+    if(Math.max(x0,x1)<-3||Math.min(x0,x1)>ww+3||Math.max(y0,y1)<-3||Math.min(y0,y1)>hh+3)continue;
+    const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)*gs/5)),R_=Math.ceil(OFF_ROAD/gs);
+    for(let j=0;j<=n;j++){const x=x0+(x1-x0)*j/n,y=y0+(y1-y0)*j/n;
+      for(let dy=-R_;dy<=R_;dy++)for(let dx=-R_;dx<=R_;dx++){const c=Math.floor(x)+dx,r=Math.floor(y)+dy;if(c<0||r<0||c>=ww||r>=hh)continue;
+        if(Math.hypot((c+.5-x)*gs,(r+.5-y)*gs)<=OFF_ROAD){al[r*ww+c]=0;ban[r*ww+c]=1}}}}
   // départ / arrivée : la cellule touchée si elle est utilisable, sinon le point de chemin le plus proche
   const pick=(p,c)=>{const li=(c[1]-r0)*ww+(c[0]-c0);if(al[li]||onPath(li))return li;const s=snap(L.latLng(p.lat,p.lng));if(!s)return -1;return lc(s.k)};
   const S0=pick(pA,a),T0=pick(pB,b);if(S0<0||T0<0)return {error:"Le départ ou l'arrivée est à plus de 300 m d'un chemin et hors zone utilisable."};
@@ -227,14 +246,15 @@ async function routeOff(pA,pB,envie){
       for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],e=aE[k],w=d+(aD[k]?cb[e]:cf[e])*aF[k];if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+(aD[k]?R0.cb[e]:R0.cf[e])*aF[k];prev[v]=u;via[v]=aId[k];hpush(w,v)}}
       const ux=u%ww,uy=(u/ww)|0,ug=(r0+uy)*W+c0+ux;
       for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const x=ux+dx,y=uy+dy;if(x<0||y<0||x>=ww||y>=hh)continue;const v=y*ww+x;
+        if(ban[v]||ban[u])continue;   // dans la bande de 20 m le long d'une route de classe 2 : seulement par les arcs de la route (pas de pas hors chemin)
         if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
         if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
         const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(currentClass[vg]);
         const w=d+t;if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+t0;prev[v]=u;via[v]=-1;hpush(w,v)}}}
     return {dist,rt,prev,via}};
   // plafond de durée : la durée réelle ne dépasse pas CAP[envie] × celle du trajet le plus rapide ; sinon la récompense est réduite par paliers
-  let sol=solve(1,S0,T0),detour=1,strF=1,bt=0;
-  if(envie>0&&isFinite(sol.dist[T0])){const base=solve(0,S0,T0);if(isFinite(base.dist[T0])){bt=base.rt[T0];const cap=bt*DETOUR_CAP[envie];
+  let sol=solve(1,S0,T0),detour=1,strF=1,bt=0,base=null,noGain=false;
+  if(envie>0&&isFinite(sol.dist[T0])){base=solve(0,S0,T0);if(isFinite(base.dist[T0])){bt=base.rt[T0];const cap=bt*DETOUR_CAP[envie];
     for(const str of [1,.7,.45,.25,.1]){strF=str;if(str<1)sol=solve(str,S0,T0);if(sol.rt[T0]<=cap){break}}
     detour=bt>0?sol.rt[T0]/bt:1}}
   const {dist}=sol;
@@ -263,6 +283,10 @@ async function routeOff(pA,pB,envie){
       if(ok&&tot<=cap){chosen=tryW;curLegs=L2}}
     legs=curLegs;
     let rtT=0;for(const l of legs)rtT+=l.rt;detour=rtT/bt}
+  // détour sans gain : on garde le trajet le plus rapide s'il ne traverse pas au moins MIN_GAIN m de plus de zones « moyen » ou mieux
+  if(envie>0&&base&&bt>0&&detour>1.02&&isFinite(base.dist[T0])){
+    const gl=cs=>{let n=0;for(const u of cs){const gi=(r0+((u/ww)|0))*W+c0+(u%ww),c=currentClass[gi];if(c!==255&&c>=2&&c<5)n++}return n*gs},bl=recon(base,S0,T0);
+    const lc2=legs.flatMap(l=>l.cells);if(gl(lc2)-gl(bl.cells)<Math.max(MIN_GAIN,GAIN_RATIO*Math.max(0,lc2.length-bl.cells.length)*gs)){legs=[bl];detour=1;noGain=true}}
   const cells=[],vias=[];legs.forEach((l,k)=>{l.cells.forEach((c,i)=>{if(k>0&&i===0)return;cells.push(c);vias.push(i===0?-1:l.vias[i])})});
   const costT=legs.reduce((a,l)=>a+l.cost,0);
   // reconstruction (cells, vias construits ci-dessus)
@@ -278,7 +302,7 @@ async function routeOff(pA,pB,envie){
       const ug=(r0+((u/ww)|0))*W+c0+(u%ww),vg=(r0+((v/ww)|0))*W+c0+(v%ww),dx=(v%ww)-(u%ww),dy=((v/ww)|0)-((u/ww)|0),L_=gs*(dx&&dy?1.4142:1),dz=dm[vg]-dm[ug];
       off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
   flush();
-  return {seq,off,pl,cost:costT,detour}}
+  return {seq,off,pl,cost:costT,detour,noGain}}
 
 
 /* ---------- météo des 7 jours : avertissements et durcissement du tout-terrain ---------- */
@@ -425,11 +449,11 @@ async function compute(){
     $("it-offbox").hidden=false;
     if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer. (Le tracé affiché plus haut, s'il y en avait un, n'était pas en tout-terrain.)";return}
     R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){clearRoute();msg.textContent=R.error;return}
-  }else R=route(A,B,+$("it-env").value);
+  }else R=routeGD(A,B,+$("it-env").value);
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=summarize(R);draw(S,R);show(S);last=S;
-  msg.textContent=(A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"";
+  msg.textContent=(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
 }
 
 
@@ -469,7 +493,7 @@ function init(){
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
-  window.ITIN={wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
+  window.ITIN={routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
 }
 init();
 })();

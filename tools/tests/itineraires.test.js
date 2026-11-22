@@ -24,6 +24,17 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
     if(R){abOk++;const S=ITIN.summarize(R);if(!(S.len>0&&S.sec>0&&S.lvl>=0&&S.lvl<=4))o.bad=1;if(!pair&&inW(i)&&inW(j))pair=[i,j]}}
    o.ab=ab;o.abOk=abOk;o.tmax=Math.round(tmax);
    if(pair){const R=await ITIN.routeOff(mk(pair[0]),mk(pair[1]),3);o.off=R.error?R.error:Math.round(R.off.len)}
+   // point 2 : jamais de hors-chemin à moins de 15 m (marge de maille) d'une route de classe 2 ; point 3 : détour gardé seulement s'il atteint des zones « moyen » ou mieux
+   const c2=[];for(let i=0;i<g.SE.length;i++)if(g.cls[g.SE[i]]===2)c2.push(i);o.nOff=0;o.nearRoad=0;o.gd=0;o.gdBad=0;
+   const dRoad=(x,y)=>{let b=1e9;for(const i of c2){const dx=g.SX[i]-x;if(dx>b||dx<-b)continue;b=Math.min(b,Math.hypot(dx,g.SY[i]-y))}return b};
+   for(let q=0,n=0;q<300&&n<6;q++){const i=Math.floor(Math.random()*g.SX.length),j=Math.floor(Math.random()*g.SX.length),d=Math.hypot(g.SX[i]-g.SX[j],g.SY[i]-g.SY[j]);if(d<800||d>3500||!inW(i)||!inW(j))continue;n++;
+    const A0=mk(i),B0=mk(j),R=await ITIN.routeOff(A0,B0,2);if(R.error)continue;
+    for(const l of R.pl)if(l.k==='o')for(const [la,lo] of l.ll){o.nOff++;if(dRoad((lo-g.lon0)*g.kx,(la-g.lat0)*g.ky)<15)o.nearRoad++}}
+   const qb=ITIN.bonusQ();
+   for(let q=0,n=0;q<300&&n<10;q++){const i=Math.floor(Math.random()*g.SX.length),j=Math.floor(Math.random()*g.SX.length),d=Math.hypot(g.SX[i]-g.SX[j],g.SY[i]-g.SY[j]);if(d<1500||d>6000)continue;
+    const A=ITIN.snap(mk(i)),B=ITIN.snap(mk(j));if(!A||!B)continue;n++;const R=ITIN.routeGD(A,B,3),R0=ITIN.route(A,B,0);if(!R||!R0)continue;o.gd++;
+    const len=x=>x.seq.reduce((a,[,s0,s1])=>a+Math.abs(s1-s0),0),ex=len(R)-len(R0);
+    if(ex>len(R0)*.02&&ITIN.goodLen(R,qb)-ITIN.goodLen(R0,qb)<100)o.gdBad++}
    const k=Math.floor(g.SX.length/2),L2=await ITIN.loopRoutes(ITIN.snap(mk(k)),mk(k),'len',8000,2);o.loops=L2.length;
    o.wx=ITIN.wx(g.lat0+g.SY[k]/g.ky,g.lon0+g.SX[k]/g.kx);
    return o});
@@ -31,6 +42,8 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   ok(r.nE>1000,'graphe chargé ('+r.nE+' arêtes, '+r.load+' ms)');
   ok(r.ab>0&&r.abOk/r.ab>=.5,'A→B : '+r.abOk+'/'+r.ab+' trajets trouvés (≥ 50 %), pire temps '+r.tmax+' ms');
   ok(!r.bad,'statistiques et difficulté cohérentes');
+  ok(r.nearRoad===0,'tout-terrain : 0 point hors chemin à moins de 15 m d\'une route de classe 2 ('+r.nOff+' points hors chemin testés)');
+  ok(r.gdBad===0,'grand détour : aucun détour sans gain en zones moyen ou mieux ('+r.gd+' trajets)');
   ok(r.loops>=1,'boucles : '+r.loops+' proposée(s)');
   ok(r.off===undefined||typeof r.off==='number'||/Tout-terrain|zone|Aucun|déconseillé|météo|aucune/i.test(r.off),'tout-terrain : '+(r.off===undefined?'pas de paire':r.off));
   ok(errs.length===0,'aucune erreur de script'+(errs.length?' : '+errs[0]:''));
