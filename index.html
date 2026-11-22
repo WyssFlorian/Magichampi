@@ -996,6 +996,9 @@ details.more[open]>summary{margin-bottom:4px}
 .menu-pop .acc-ic,.menu-pop .obs-icon,.menu-pop .hunt-sw,.menu-pop .hard-sw,.menu-pop .vapko-pin,.menu-pop .trail-sw,.menu-pop .road-sw,.menu-pop .water-sw,.menu-pop .relief-sw,.menu-pop .sortie-sw{flex:none}
 .menu-pop .row{flex-wrap:wrap}
 .inf-extra{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}.inf-extra[hidden]{display:none}.inf-extra .btn{padding:3px 10px;font-size:12px}
+.it-intro,.it-note{font-size:12px;color:var(--muted,#667);margin:4px 0 8px}.it-btns{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.it-lab{display:block;margin:8px 0;font-size:13px}.it-msg{font-size:13px;margin:6px 0;min-height:1em}
+.it-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel)}.it-big{font-size:20px;font-weight:700}.it-sub{font-size:12px;font-weight:400;color:var(--muted,#667)}.it-row{margin:4px 0;font-size:14px}.it-warn{margin:6px 0;padding:6px 8px;border-radius:8px;background:var(--warn-bg);color:var(--warn-fg);font-size:13px}
+.it-banner{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:2500;background:var(--panel);color:var(--fg);border:2px solid var(--accent);border-radius:10px;padding:8px 12px;font-size:14px;box-shadow:0 2px 10px rgba(0,0,0,.35);display:flex;gap:8px;align-items:center;max-width:92vw}.it-banner[hidden]{display:none}
 .tool-btns{display:flex;flex-direction:column;gap:10px}.tool-big{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;font-size:15px;text-align:left;width:100%}.tool-big span{font-size:12px;color:var(--muted)}
 .inf-i{display:inline-grid;place-items:center;width:18px;height:18px;margin:2px 0;padding:0;font:700 11px/1 var(--font-body);border:1px solid var(--line);border-radius:50%;background:none;color:var(--muted);cursor:pointer;position:static}
 .menu-pop p.small[hidden]{display:none}
@@ -1259,6 +1262,13 @@ details.more[open]>summary{margin-bottom:4px}
         <h4 style="margin:14px 0 4px">Régions hors ligne</h4>
         <p class="small" style="margin:0 0 6px">Chaque région se télécharge séparément ; elles se recouvrent d'au moins 1 km, pour passer de l'une à l'autre sans trou.</p>
         <div id="off-zones"></div>
+      </div>
+      <div class="menu-page" data-t="Itinéraire" id="menu-it"><h3>Itinéraire à pied (bêta)</h3>
+        <p class="it-intro">Trace un itinéraire sur les chemins entre deux points, avec temps de marche, dénivelé et difficulté. Les routes larges sont évitées ; les routes de 4 m sont possibles mais fortement pénalisées et signalées.</p>
+        <div class="it-btns"><button class="btn" type="button" id="it-a">Départ (A)</button><button class="btn" type="button" id="it-b">Arrivée (B)</button><button class="btn" type="button" id="it-loc">A = ma position</button><button class="btn" type="button" id="it-swap" title="Inverser">⇅</button></div>
+        <label class="it-lab">Envie de détour vers les zones favorables : <b id="it-envl"></b><input type="range" id="it-env" min="0" max="3" step="1" value="0"></label>
+        <div class="it-btns"><button class="btn primary" type="button" id="it-go">Calculer</button><button class="btn" type="button" id="it-clr">Effacer</button></div>
+        <div id="it-msg" class="it-msg" role="status"></div><div id="it-res"></div>
       </div>
       <div class="menu-page" data-t="Calcul du score" id="menu-score"><h3>Comment le score est calculé</h3>
       <p><b>Aptitude du lieu</b> = type de forêt × essences × altitude × peuplement × pente × humidité × sol × présence connue. Elle ne dépend pas de la météo.</p>
@@ -3966,4 +3976,5 @@ boot().catch(e=>{$("loading").textContent="Les données n'ont pas pu être charg
   addBtn();
 })();
 </script>
+<script src="itineraire.js"></script>
 </body></html>
