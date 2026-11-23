@@ -1,0 +1,36 @@
+# Lance les tests des itinéraires (Playwright, Chromium) à chaque PR qui touche le calcul ou la page.
+# Les tests utilisent des graines fixes et vérifient aussi des seuils de temps (CPU ralenti ×4 ≈ téléphone moyen).
+name: Tests itinéraires
+on:
+  pull_request:
+    paths:
+      - 'itineraire.js'
+      - 'index.html'
+      - 'tools/tests/itineraires*.test.js'
+      - '.github/workflows/itineraires-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: itineraires-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-save --no-audit --no-fund playwright@1.49.1
+      - run: npx playwright install --with-deps chromium
+      - name: Tests
+        run: |
+          fail=0
+          for f in tools/tests/itineraires*.test.js; do
+            echo "::group::$f"
+            node "$f" || fail=1
+            echo "::endgroup::"
+          done
+          exit $fail

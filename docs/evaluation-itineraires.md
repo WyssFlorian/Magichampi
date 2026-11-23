@@ -75,3 +75,19 @@ Le coût est exprimé en % du quota hebdomadaire, sur la base de 2,5 % par 100 0
 4. **Plus tard** : propositions 9, 10 et 11. Le Web Worker (10) devient peu utile si la proposition 3 ramène les boucles vers 1 s. La restructuration (11) est à faire avant toute nouvelle option importante.
 
 Total des trois premières vagues ≈ 19 % du quota hebdomadaire.
+
+## 5. Vague 1 réalisée (23 nov. 2026) : propositions 1, 2 et 12
+- **1. Calcul unique et annulable.** Chaque `compute()` annule le précédent (jeton `RUN`), de même « Effacer » et le changement de mode ; un calcul annulé s'arrête au prochain point de contrôle et n'affiche rien, ni ne remet à zéro les réglages du nouveau calcul. Les curseurs (détour, rythme, difficulté, dénivelé) ne relancent le calcul qu'au relâchement (`change`) ; `input` ne met à jour que l'étiquette. (Le rythme ne refait pas seulement l'affichage en A→B : ce calcul dure 30 à 150 ms, la distinction n'en vaut pas la peine.)
+- **2. Boucles bornées.** Les 30 combinaisons (cible réduite × pénalité technique × pénalité de dénivelé) forment une échelle de contraintes croissantes ; on cherche par dichotomie le premier cran qui respecte les réglages (≤ 6 recherches). Budget de 3 s par recherche (au moins une direction gardée) et de 9 s au total ; au-delà, la meilleure boucle trouvée est affichée. `Math.random()` remplacé par un tirage à graine fixe : mêmes réglages = mêmes boucles.
+- **12. Tests.** `tools/tests/itineraires-annulation.test.js` (annulation, `input`/`change`, reproductibilité, seuils de temps à CPU ×4) et l'Action `.github/workflows/itineraires-tests.yml`, qui lance `tools/tests/itineraires*.test.js` sur chaque PR touchant `itineraire.js` ou `index.html`.
+
+Mesures avant → après (`node tools/profil/itineraires-mesure.js ple gdv`, CPU ×4, départ au centre) :
+
+| scénario | ple avant | ple après | gdv avant | gdv après |
+|---|---|---|---|---|
+| Boucle 8 km | 3,9 s | 3,1 s | 7,8 s | 5,2 s |
+| Boucle 8 km, répétition | 3,7 s | 3,2 s | 7,0 s (autre boucle : 5 773 m au lieu de 5 953 m) | 4,9 s (identique : 5 773 m) |
+| Boucle 8 km « facile » + D± ≤ 200 m | **71 s** | **6,3 s** | 6,2 s | 4,8 s |
+| Boucle 6 km tout-terrain | 10,4 s | 5,7 s | 11,0 s | 3,2 s |
+
+Les boucles proposées sont les mêmes qu'avant (mêmes longueurs, forêt et répétitions) sauf quand le budget coupe la recherche : sur un téléphone plus lent que ×4, il peut rester moins de variantes (1 ou 2 au lieu de 3).
