@@ -104,3 +104,11 @@ Cas signalé : à Semsales, des boucles allaient et revenaient par le même tron
   - Pays-d'Enhaut et Diablerets (`pde`) : A→B 68,0 → 60,0 % (85,9 → 85,5), longueur +6 % ; boucles 70,7 → 65,3 %.
   - Réglage de OFFP sur Riviera-Chablais : 2 → −4,2 points pour +3 % de longueur, 4 → −6,6 pts pour +5 %, 8 → −10,7 pts pour +12 %. 4 retenu.
 - Limites : en plaine, le réseau n'offre souvent pas d'alternative boisée, et départ ou arrivée en localité restent hors forêt ; le gain se voit surtout là où un chemin boisé parallèle existe. Test : `node tools/tests/itineraires.test.js` (inchangé, passe sur ple et lsn).
+
+## Plafond strict de distance ou de durée (23 nov.)
+- Le réglage « Cible » devient un **plafond jamais dépassé** (menu Itinéraire › « Plafond (jamais dépassé) ») : aucun / distance / durée de marche. « Aucun » n'existe que pour A→B ; une boucle a toujours un plafond. La durée est la durée affichée, rythme compris (×½ à ×3).
+- S'applique à tous les types : boucle (y compris tout-terrain, variétés, points de passage), A→B, A→B tout-terrain, points de passage, point ajouté par glisser.
+- Boucle : on vise 93 % du plafond (marge ±7 %), toute boucle au-dessus est écartée (`over`). Si la difficulté maximale ou la limite de dénivelé obligent déjà à réduire la cible, cela reste sous le plafond.
+- A→B et points de passage : si le trajet dépasse, on réessaie sans détour (envie 0) ; s'il dépasse encore, **rien n'est tracé** et le message donne le plafond et le trajet le plus court trouvé (« non affiché »). Un point ajouté par glisser qui ferait dépasser le plafond est refusé et le tracé précédent rétabli.
+- Remplace les comportements tolérants : cible « ±10 % », « la cible est ignorée » avec points de passage en boucle.
+- Test : `node tools/tests/itineraires-plafond.test.js [région]` (boucle, A→B, rythme ×3, points de passage). Les tests `itineraires-options` (étapes aléatoires, course entre deux calculs) échouent parfois, avec ou sans cette modification.
