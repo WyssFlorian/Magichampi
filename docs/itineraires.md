@@ -112,3 +112,9 @@ Cas signalé : à Semsales, des boucles allaient et revenaient par le même tron
 - A→B et points de passage : si le trajet dépasse, on réessaie sans détour (envie 0) ; s'il dépasse encore, **rien n'est tracé** et le message donne le plafond et le trajet le plus court trouvé (« non affiché »). Un point ajouté par glisser qui ferait dépasser le plafond est refusé et le tracé précédent rétabli.
 - Remplace les comportements tolérants : cible « ±10 % », « la cible est ignorée » avec points de passage en boucle.
 - Test : `node tools/tests/itineraires-plafond.test.js [région]` (boucle, A→B, rythme ×3, points de passage). Les tests `itineraires-options` (étapes aléatoires, course entre deux calculs) échouent parfois, avec ou sans cette modification.
+
+## Vague 2 (23 nov.) : vitesse des boucles et panneau simplifié
+- **Calcul** : coûts de base des arêtes gardés en mémoire (`costBase`), pénalité de repassage appliquée à la volée ; tas typé ; boucles : un seul Dijkstra depuis le départ (`netDist`) pour choisir les étapes à la bonne distance **par les chemins**, rayon encadré par interpolation, 3 rayons d'exploration. Boucle de 8 km à CPU ×4 : 1 à 2 s (avant 3 à 7 s).
+- **Panneau** : visibles seulement le type, les points, le plafond, 3 préréglages (Balade facile, Cueillette, Sportif) et Calculer ; le reste est dans « Réglages » (une ligne de résumé). Modifier un réglage désélectionne le préréglage.
+- **Retours** : progression « direction i/n » + Annuler ; résultat sur une ligne avec « Détails » ; variantes de boucle avec D+ et forêt ; tronçons au-dessus de la difficulté maximale en noir pointillé.
+- Détails et mesures : `docs/evaluation-itineraires.md`, section 6. Test : `node tools/tests/itineraires-panneau.test.js [région]`.

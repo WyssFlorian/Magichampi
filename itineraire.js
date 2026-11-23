@@ -38,7 +38,8 @@ function edgeTech(e){const g=GR,L_=g.len[e];let t=0;
   if(g.hard[e]>=50&&L_>=100)t=Math.max(t,3);
   if(g.cls[e]===5&&!g.typ[e]&&L_>=150)t=Math.max(t,2);
   return t}
-function techPen(M,k){const g=GR,p=new Float32Array(g.nE).fill(1);for(let e=0;e<g.nE;e++){const x=edgeTech(e)-M;if(x>0)p[e]=Math.pow(k,Math.min(x,2))}return p}
+let TPG=null;const TPM=new Map();   // pénalités techniques gardées par (réseau, niveau, force) : même tableau = même jeu de coûts en cache
+function techPen(M,k){const g=GR;if(TPG!==g){TPM.clear();TPG=g}const key=M+"|"+k;let p=TPM.get(key);if(p)return p;p=new Float32Array(g.nE).fill(1);for(let e=0;e<g.nE;e++){const x=edgeTech(e)-M;if(x>0)p[e]=Math.pow(k,Math.min(x,2))}TPM.set(key,p);return p}
 
 /* ---------- graphe ---------- */
 const merc=(lat,lng)=>[R_E*lng*Math.PI/180,R_E*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))];
@@ -140,7 +141,13 @@ function varReport(S){
     for(const sp of VAR.sps){const k=VAR.per[sp.id][r*cols+c];if(k!==255&&k>=3)tot[sp.id]=(tot[sp.id]||0)+d*Math.cos(S.ll[i][0]*Math.PI/180)}}
   const L=VAR.sps.map(sp=>[sp,tot[sp.id]||0]).sort((a,b)=>b[1]-a[1]);
   return " Sur le tracé, en zone élevée ou mieux : "+L.map(([sp,v])=>sp.fr+" "+(v>=50?km(v):"aucune")).join(", ")+"."}
+// bonus de cueillette par arête : calculé une fois par grille de classes (gardé tant que la carte, les espèces et le réseau ne changent pas)
+let BQ=null;
 function bonusQ(){
+  const C=curC(),k=typeof meta==="undefined"?"":meta.x0+"|"+meta.y1+"|"+meta.res+"|"+meta.cols+"|"+meta.rows;
+  if(BQ&&BQ.g===GR&&BQ.C===C&&BQ.k===k)return BQ.q;
+  const q=bonusQ0();BQ={g:GR,C,k,q};return q}
+function bonusQ0(){
   const g=GR,q=new Float32Array(g.nE),cnt=new Uint16Array(g.nE),gd=new Uint16Array(g.nE);q.gd=gd;   // gd[e] : échantillons de l'arête en zone « moyen » ou mieux
   if(!curC()||typeof meta==="undefined")return q;
   const x0=meta.x0,y1=meta.y1,res=meta.res,cols=meta.cols,rows=meta.rows;
@@ -159,32 +166,47 @@ function routeGD(A,B,envie){
   R0.noGain=true;return R0}
 
 /* ---------- plus court chemin (Dijkstra, tas binaire) ---------- */
-function costs(envie,pen,qq,noDV){
-  const g=GR,q=qq||(envie>0?bonusQ():null),mult=e=>{const k=g.cls[e],t=g.typ[e];
+// Coûts de base d'une arête dans chaque sens : cf0/cb0 = temps × facteur de réseau × bonus × hors-forêt × pénalité technique (BP) ; af/ab = parties additives (traversée de classe 1, dénivelé).
+// Le tout ne dépend que des réglages (détour, hors-forêt, BP, dénivelé, grille de classes) : calculé une fois et gardé (8 jeux). La pénalité de repassage (pen, boucles) se applique à la volée : coût = cf0×pen + af.
+let CCK=null;const CCM=new Map(),IDS=new WeakMap();let IDN=0;const idOf=o=>o?(IDS.get(o)||(IDS.set(o,++IDN),IDN)):0;
+function costBase(envie,qq,noDV){
+  const g=GR,q=qq||(envie>0?bonusQ():null);
+  if(CCK!==g){CCM.clear();CCK=g}
+  const key=[envie,OFFP,idOf(q),idOf(BP),noDV?"-":DV?DV.lam+(DV.both?"b":"u"):"0"].join("|");let B=CCM.get(key);if(B)return B;
+  const mult=e=>{const k=g.cls[e],t=g.typ[e];
     let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?2:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 2
     if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);
     if(OFFP&&k!==1)m*=1+OFFP*(1-g.fo[e]/100);   // hors forêt : surcoût proportionnel à la part de l'arête hors forêt (graphe : fo, 0-100 %)
     return m};
-  const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);
-  for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1)*(BP?BP[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0);
-    if(DV&&!noDV){cf[e]+=DV.lam*(g.up[e]+(DV.both?g.dn[e]:0));cb[e]+=DV.lam*(g.dn[e]+(DV.both?g.up[e]:0))}}
-  return {cf,cb}}
+  const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE),af=new Float32Array(g.nE),ab=new Float32Array(g.nE);
+  for(let e=0;e<g.nE;e++){const m=mult(e)*(BP?BP[e]:1),x=g.cls[e]===1?120:0;cf[e]=g.tf[e]*m;cb[e]=g.tb[e]*m;af[e]=ab[e]=x;
+    if(DV&&!noDV){af[e]+=DV.lam*(g.up[e]+(DV.both?g.dn[e]:0));ab[e]+=DV.lam*(g.dn[e]+(DV.both?g.up[e]:0))}}
+  B={cf,cb,af,ab,full:null};if(CCM.size>=8)CCM.delete(CCM.keys().next().value);CCM.set(key,B);return B}
+function costs(envie,pen,qq,noDV){
+  const B=costBase(envie,qq,noDV),g=GR;
+  if(!pen){if(!B.full){const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);for(let e=0;e<g.nE;e++){cf[e]=B.cf[e]+B.af[e];cb[e]=B.cb[e]+B.ab[e]}B.full={cf,cb}}return B.full}
+  const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);for(let e=0;e<g.nE;e++){cf[e]=B.cf[e]*pen[e]+B.af[e];cb[e]=B.cb[e]*pen[e]+B.ab[e]}return {cf,cb}}
+// tas binaire typé partagé (route et netDist ne sont jamais imbriquées)
+let HK=new Float64Array(1<<16),HV=new Int32Array(1<<16),HN=0,HPK=0;
+function hpush(k,v){if(HN===HK.length){const a=new Float64Array(HN*2),b=new Int32Array(HN*2);a.set(HK);b.set(HV);HK=a;HV=b}let i=HN++;while(i>0){const p=(i-1)>>1;if(HK[p]<=k)break;HK[i]=HK[p];HV[i]=HV[p];i=p}HK[i]=k;HV[i]=v}
+function hpop(){const v=HV[0];HPK=HK[0];const k=HK[--HN],w=HV[HN];let i=0;for(;;){let c=2*i+1;if(c>=HN)break;if(c+1<HN&&HK[c+1]<HK[c])c++;if(HK[c]>=k)break;HK[i]=HK[c];HV[i]=HV[c];i=c}HK[i]=k;HV[i]=w;return v}
+let RT=null,ONES=null;const ones=()=>(ONES&&ONES.length===GR.nE&&ONES.g===GR)?ONES:(ONES=new Float32Array(GR.nE).fill(1),ONES.g=GR,ONES);
 function route(A,B,envie,pen,qq){
-  const g=GR,{cf,cb}=costs(envie,pen,qq);
-  const dist=new Float64Array(g.nN).fill(Infinity),prev=new Int32Array(g.nN).fill(-1),heap=[],push=(d,n)=>{heap.push([d,n]);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p}},
-    pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){let m=i;const a=2*i+1,b=a+1;if(a<heap.length&&heap[a][0]<heap[m][0])m=a;if(b<heap.length&&heap[b][0]<heap[m][0])m=b;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m}}return t};
+  const g=GR,Bs=costBase(envie,qq),cf0=Bs.cf,cb0=Bs.cb,af=Bs.af,ab=Bs.ab,P=pen||ones();
+  if(!RT||RT.n!==g.nN)RT={n:g.nN,d:new Float64Array(g.nN),p:new Int32Array(g.nN)};const dist=RT.d.fill(Infinity),prev=RT.p.fill(-1);HN=0;   // tableaux réutilisés d'un appel à l'autre
+  const cf=e=>cf0[e]*P[e]+af[e],cb=e=>cb0[e]*P[e]+ab[e];
   const fa=A.s/Math.max(g.len[A.e],1),fb=B.s/Math.max(g.len[B.e],1);
   // même arête : chemin direct
   let best=Infinity,bestEnd=null;
-  if(A.e===B.e){const e=A.e,f=Math.abs(fb-fa);best=(fb>=fa?cf[e]:cb[e])*f;bestEnd={direct:true}}
+  if(A.e===B.e){const e=A.e,f=Math.abs(fb-fa);best=(fb>=fa?cf(e):cb(e))*f;bestEnd={direct:true}}
   // départ : vers a (sens b→a) et vers b (sens a→b)
   const ea=g.a[A.e],eb=g.b[A.e];
-  dist[ea]=cb[A.e]*fa;dist[eb]=Math.min(dist[eb],cf[A.e]*(1-fa));push(dist[ea],ea);if(eb!==ea)push(dist[eb],eb);
-  const ta=g.a[B.e],tb=g.b[B.e],costA=cf[B.e]*fb,costB=cb[B.e]*(1-fb);   // ta→point : sens a→b ; tb→point : sens b→a
-  while(heap.length){const [d,u]=pop();if(d>dist[u])continue;if(d>=best)break;
+  dist[ea]=cb(A.e)*fa;dist[eb]=Math.min(dist[eb],cf(A.e)*(1-fa));hpush(dist[ea],ea);if(eb!==ea)hpush(dist[eb],eb);
+  const ta=g.a[B.e],tb=g.b[B.e],costA=cf(B.e)*fb,costB=cb(B.e)*(1-fb);   // ta→point : sens a→b ; tb→point : sens b→a
+  while(HN){const u=hpop(),d=HPK;if(d>dist[u])continue;if(d>=best)break;
     if(u===ta&&d+costA<best){best=d+costA;bestEnd={node:ta,end:"a"}}
     if(u===tb&&d+costB<best){best=d+costB;bestEnd={node:tb,end:"b"}}
-    for(let k=g.deg[u];k<g.deg[u+1];k++){const c=g.adj[k],e=c>>1,fw=!(c&1),v=fw?g.b[e]:g.a[e],w=d+(fw?cf[e]:cb[e]);if(w<dist[v]){dist[v]=w;prev[v]=c;push(w,v)}}}
+    for(let k=g.deg[u];k<g.deg[u+1];k++){const c=g.adj[k],e=c>>1,fw=!(c&1),v=fw?g.b[e]:g.a[e],w=d+(fw?cf(e):cb(e));if(w<dist[v]){dist[v]=w;prev[v]=c;hpush(w,v)}}}
   if(!bestEnd)return null;
   const seq=[];   // tronçons : [arête, de s0 à s1 (abscisses m), sens]
   if(bestEnd.direct){seq.push([A.e,A.s,B.s])}
@@ -198,6 +220,13 @@ function route(A,B,envie,pen,qq){
   }
   return {seq,cost:best}
 }
+// distance sur le réseau (m, longueur des arêtes) depuis le départ A vers tous les noeuds, bornée à maxD : un seul Dijkstra qui sert à choisir les étapes d'une boucle à la bonne distance par les chemins (Infinity au-delà)
+function netDist(A,maxD){
+  const g=GR,dn=new Float64Array(g.nN).fill(Infinity);HN=0;
+  const ea=g.a[A.e],eb=g.b[A.e];dn[ea]=A.s;dn[eb]=Math.min(dn[eb],g.len[A.e]-A.s);hpush(dn[ea],ea);if(eb!==ea)hpush(dn[eb],eb);
+  while(HN){const u=hpop(),d=HPK;if(d>dn[u])continue;if(d>maxD)break;
+    for(let k=g.deg[u];k<g.deg[u+1];k++){const c=g.adj[k],e=c>>1,v=(c&1)?g.a[e]:g.b[e],w=d+g.len[e];if(w<dn[v]){dn[v]=w;hpush(w,v)}}}
+  return dn}
 
 
 /* ---------- balade en boucle ---------- */
@@ -207,7 +236,15 @@ function nodeSnap(u){const g=GR,c=g.adj[g.deg[u]],e=c>>1;return {e,s:(c&1)?g.len
 // Un seul calcul à la fois : un nouveau calcul (ou « Effacer », ou un changement de mode) annule le précédent, qui s'arrête au prochain point de contrôle et n'affiche rien.
 let RUN={c:false},RUNS=0;const CANCEL={cancel:true};
 const AW=async(p,run)=>{const v=await p;if(run.c)throw CANCEL;return v};   // attend p puis abandonne si ce calcul a été annulé entre-temps
-const cancelRun=()=>{RUN.c=true;RUN={c:false};BP=null;DV=null};
+const cancelRun=()=>{RUN.c=true;RUN={c:false};BP=null;DV=null;progOff()};
+// progression (« Calcul… 2/5 » + Annuler) et résultat condensé : une phrase visible, les remarques dans « Détails »
+const prog=t=>{const b=$("it-prog");if(!b)return;$("it-progt").textContent=t;b.hidden=false},progOff=()=>{const b=$("it-prog");if(b)b.hidden=true};
+function setMsg(head,rest){
+  const m=$("it-msg");head=(head||"").trim();rest=(rest||"").trim();
+  if(!head&&rest){const t=rest,i=t.search(/[.!?](\s|$)/);   // pas de résumé : la première phrase fait office de résumé
+    if(t.length<=170||i<0){m.textContent=t;return}head=t.slice(0,i+1);rest=t.slice(i+1).trim()}
+  if(!rest){m.textContent=head;return}
+  m.innerHTML=esc(head)+`<details class="it-more"><summary>Détails</summary>${esc(rest)}</details>`}
 const stop=run=>{if(run.c)throw CANCEL};
 // budget de recherche des boucles : au-delà, on garde les meilleures boucles déjà trouvées (une direction au moins) ; graine fixe : mêmes réglages = mêmes boucles
 let BUDGET=3000;const SEED=20261123;
@@ -225,13 +262,13 @@ function loopMetrics(R){
     while(d>0&&acc+d>=nxt){const t=(nxt-acc)/d;sm.push([pts[i-1][0]+t*(pts[i][0]-pts[i-1][0]),pts[i-1][1]+t*(pts[i][1]-pts[i-1][1])]);nxt+=ST}
     acc+=d}
   const n=sm.length;if(n<4)return null;
-  const forest=new Uint8Array(n),good=new Uint8Array(n),rep=new Uint8Array(n),cells=new Map();
+  const forest=new Uint8Array(n),good=new Uint8Array(n),rep=new Uint8Array(n),cells=new Map();   // cells : maille de 20 m → premier échantillon qui la touche (indices croissants : « repassé » = un voisin déjà touché 4 échantillons plus tôt)
   for(let i=0;i<n;i++){
     const q=merc(sm[i][0],sm[i][1]),c=Math.floor((q[0]-meta.x0)/meta.res),r=Math.floor((meta.y1-q[1])/meta.res);
     if(c>=0&&r>=0&&c<meta.cols&&r<meta.rows){const gi=r*meta.cols+c,v=curC()[gi],fo=G.fx[gi]>0;forest[i]=fo?1:0;good[i]=fo&&v!==255&&v>=2&&v<5?1:0}
-    const kx=Math.floor((sm[i][1]-g.lon0)*g.kx/ST),ky=Math.floor((sm[i][0]-g.lat0)*g.ky/ST);
-    for(let a=-1;a<=1&&!rep[i];a++)for(let b=-1;b<=1;b++){const l=cells.get((kx+a)+","+(ky+b));if(l&&l.some(j=>i-j>=4)){rep[i]=1;break}}
-    const k=kx+","+ky;let l=cells.get(k);if(!l)cells.set(k,l=[]);l.push(i)}
+    const kx=Math.floor((sm[i][1]-g.lon0)*g.kx/ST)+32768,ky=Math.floor((sm[i][0]-g.lat0)*g.ky/ST)+32768;
+    for(let a=-1;a<=1&&!rep[i];a++)for(let b=-1;b<=1;b++){const j=cells.get((kx+a)*65536+ky+b);if(j!==undefined&&i-j>=4){rep[i]=1;break}}
+    const k=kx*65536+ky;if(!cells.has(k))cells.set(k,i)}
   let nf_=0,ng=0,nr=0,nd=0;
   for(let i=0;i<n;i++){nf_+=forest[i];ng+=good[i];nr+=rep[i]}
   for(let i=0;i<n;){if(!rep[i]){i++;continue}let j=i,reach=false;while(j<n&&rep[j])j++;   // tronçon répété i…j-1 : atteint-il une zone favorable en forêt ?
@@ -241,13 +278,14 @@ function loopMetrics(R){
 // coût de sélection d'une boucle : écart à la cible, impasses lourdement, répétitions, moins de forêt / de zones favorables
 let LFW=1;   // poids de la part en forêt dans le choix d'une boucle
 const loopCost=(err,m)=>m?err+3*m.dead+.7*m.rep-.5*m.good-LFW*m.forest:err;
-let nf=null;   // part de forêt (0-1) des noeuds, pour le choix des étapes
+let nf=null,DN=null,NEAR=null,PGT=0;   // part de forêt (0-1) des noeuds, pour le choix des étapes · DN : distance par les chemins depuis le départ
 async function loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pA,all){
-  const run=RUN,g=GR,pickW=ang=>{   // meilleurs noeuds près de (r, ang) : on préfère les noeuds en forêt et dans les zones favorables
-    const tx=ax+r*Math.cos(ang),ty=ay+r*Math.sin(ang),L=[];
-    for(const u of cand){const dx=(g.lon[u]-g.lon0)*g.kx-tx,dy=(g.lat[u]-g.lat0)*g.ky-ty,d=Math.hypot(dx,dy);if(d<r*.3)L.push([d/r-.6*nq[u]-(LOOPQ?.5*nf[u]:0),u])}
+  const run=RUN,g=GR,pickW=ang=>{   // meilleurs noeuds dans la direction ang, à la distance r PAR LES CHEMINS (DN : un seul Dijkstra depuis le départ) : on préfère les noeuds en forêt et dans les zones favorables
+    const L=[],N_=NEAR;
+    for(let i=0;i<N_.u.length;i++){const dn=N_.dn[i];if(dn<r*.75||dn>r*1.3)continue;const da=Math.abs(((N_.an[i]-ang+3*Math.PI)%(2*Math.PI))-Math.PI),u=N_.u[i];
+      if(da<Math.PI/4)L.push([2*Math.abs(dn-r)/r+Math.abs(N_.rho[i]-r/1.5)/r+da/(Math.PI/6)-.6*nq[u]-(LOOPQ?.5*nf[u]:0),u])}
     return L.sort((a,b)=>a[0]-b[0]).slice(0,4).map(x=>x[1])};
-  const C1=pickW(th),C2=pickW(th+Math.PI/3),res=[],maxN=!all?1:off?4:12;
+  const C1=pickW(th),C2=pickW(th+Math.PI/3),res=[],maxN=!all?1:off?4:12,L1=new Map();
   for(const w1 of C1)for(const w2 of C2){if(w1===w2)continue;if(res.length>=maxN)break;
     if(off){   // tout-terrain : trois tronçons hors chemin autorisés (départ → W1 → W2 → départ) ; les cellules déjà empruntées coûtent ×4
       const ll=u=>({lat:g.lat[u],lng:g.lon[u]}),seq=[],pl=[],O={len:0,up:0,dn:0,sec:0,lvl:0};let ok=true,P=pA;const used=LOOPQ?new Set():null;
@@ -258,17 +296,28 @@ async function loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pA,all){
       if(ok){const o={seq,pl,off:O};if(!all)return o;res.push(o)}continue}
     const pen=new Float32Array(g.nE).fill(1),seq=[];let ok=true,P=A;
     for(const w of [nodeSnap(w1),nodeSnap(w2),A]){
-      const R=route(P,w,envie,pen,q);if(!R){ok=false;break}
+      let R;
+      if(P===A&&seq.length===0){R=L1.has(w1)?L1.get(w1):(L1.set(w1,route(P,w,envie,pen,q)),L1.get(w1))}   // 1re étape (départ → W1) : ne dépend que de W1
+      else R=route(P,w,envie,pen,q);
+      if(!R){ok=false;break}
       seq.push(...R.seq);for(const [e] of R.seq)pen[e]=LOOPQ?12:6;P=w}
     if(ok){if(!all)return {seq};res.push({seq})}}
   return all?res:null}
 async function loopRoutes(A,pt,metric,target,envie,off){
-  const run=RUN,rnd=rng(SEED),dl=performance.now()+BUDGET,late=()=>performance.now()>dl,g=GR,q=envie>0?bonusQ():null,nq=new Float32Array(g.nN),cand=[];
-  nf=new Float32Array(g.nN);let mxf=1;for(let e=0;e<g.nE;e++)if(g.fo[e]>mxf)mxf=g.fo[e];
+  const run=RUN,rnd=rng(SEED),dl=performance.now()+BUDGET,late=()=>performance.now()>dl,g=GR,q=envie>0?bonusQ():null,nq=new Float32Array(g.nN);
+  if(!g.LX){   // part de forêt des noeuds et noeuds candidats : propres au réseau, calculés une fois
+    const nf0=new Float32Array(g.nN),c0=[];let mxf=1;for(let e=0;e<g.nE;e++)if(g.fo[e]>mxf)mxf=g.fo[e];
+    for(let e=0;e<g.nE;e++){const f=g.fo[e]/mxf;nf0[g.a[e]]=Math.max(nf0[g.a[e]],f);nf0[g.b[e]]=Math.max(nf0[g.b[e]],f)}
+    for(let u=0;u<g.nN;u++){for(let k=g.deg[u];k<g.deg[u+1];k++){const e=g.adj[k]>>1;if(g.cls[e]>=3){c0.push(u);break}}}
+    g.LX={nf:nf0,cand:c0}}
+  nf=g.LX.nf;const cand=g.LX.cand;
   if(q)for(let e=0;e<g.nE;e++){nq[g.a[e]]=Math.max(nq[g.a[e]],q[e]);nq[g.b[e]]=Math.max(nq[g.b[e]],q[e])}
-  for(let e=0;e<g.nE;e++){const f=g.fo[e]/mxf;nf[g.a[e]]=Math.max(nf[g.a[e]],f);nf[g.b[e]]=Math.max(nf[g.b[e]],f)}
-  for(let u=0;u<g.nN;u++){for(let k=g.deg[u];k<g.deg[u+1];k++){const e=g.adj[k]>>1;if(g.cls[e]>=3){cand.push(u);break}}}
   const ax=(pt.lng-g.lon0)*g.kx,ay=(pt.lat-g.lat0)*g.ky,out=[];
+  // distance visée en mètres de chemin : longueur de la boucle (ou durée marchée à 4 km/h ÷ rythme) ; la boucle fait environ 3,5 fois la distance d'une étape
+  const Lm=metric==="len"?target*.93:target*.93/3600*4000/durF();DN=netDist(A,Math.min(15000,Lm*.8));
+  {const us=[],dns=[],ans=[],rhos=[];   // noeuds candidats atteints par les chemins : distance par les chemins, direction et distance à vol d'oiseau, calculées une fois
+    for(const u of cand){if(DN[u]===Infinity)continue;const x=(g.lon[u]-g.lon0)*g.kx-ax,y=(g.lat[u]-g.lat0)*g.ky-ay;us.push(u);dns.push(DN[u]);ans.push(Math.atan2(y,x));rhos.push(Math.hypot(x,y))}
+    NEAR={u:us,dn:dns,an:ans,rho:rhos}}
   // secteurs : 12 directions, score = somme des meilleurs noeuds des deux fenêtres (zones favorables + forêt) ; on garde 3 directions écartées d'au moins 90°
   const NT=LOOPQ&&!off?5:3,sc=[];for(let i=0;i<12;i++){const th=i*Math.PI/6;let v=0;for(const u of cand){const x=(g.lon[u]-g.lon0)*g.kx-ax,y=(g.lat[u]-g.lat0)*g.ky-ay,an=Math.atan2(y,x),d=Math.hypot(x,y);
       const da=Math.abs(((an-th-Math.PI/6+3*Math.PI)%(2*Math.PI))-Math.PI);if(da<Math.PI/4&&d>500&&d<8000)v+=nq[u]+(LOOPQ?.5*nf[u]:0)}sc.push([v,th])}
@@ -276,16 +325,24 @@ async function loopRoutes(A,pt,metric,target,envie,off){
   while(ths.length<3)ths.push(ths.length*2*Math.PI/3);
   // plafond strict : `target` est un maximum ; on vise 93 % du plafond (marge de ±7 %) et toute boucle au-dessus du plafond est marquée `over` (err > 1)
   const aim=target*.93,MXv=+($("it-max")?$("it-max").value:4),mkC=R=>{const S=summarize(R),m=loopMetrics(R),mm=metric==="len"?S.len:S.sec,ov=mm>target,err=ov?1+(mm-target)/target:Math.abs(mm-aim)/aim;S.met=m;return {R,S,err,over:ov,M:m,cost:loopCost(err,m)+(S.lvl>MXv?1:0)}};
+  let ti=0;
   for(const th of ths){
-    let r=Math.min(8000,metric==="len"?aim/4:aim/3600*4000/4/durF()),best=null;
+    prog("Calcul des boucles… direction "+(++ti)+"/"+ths.length+(PGT?" (essai "+PGT+")":""));
+    let r=Math.min(12000,Lm/(off?3:3.5)),best=null;   // hors chemin les étapes se rejoignent presque en ligne droite : on part d'une distance plus grande
+    let lo=null,hi=null,pM=null,stall=0;   // encadrement de la distance d'étape : plus grande valeur donnant une boucle sous la cible, plus petite au-dessus (le choix des noeuds saute par paliers : on resserre l'intervalle au lieu de tâtonner)
     for(let it=0;it<9;it++){
       const R=await AW(loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pt),run);if(!R)break;
       const c=mkC(R),M=metric==="len"?c.S.len:c.S.sec;
       if(!best||c.err<best.err)best=c;
-      if(c.err<=.1||(late()&&!best.over&&best.err<=.35))break;r=Math.min(8000,Math.max(300,r*Math.pow(aim/M,it<4?.9:.6)*(1+(it>=4?(rnd()-.5)*.15:0))))}
+      if(c.err<=.1||(late()&&!best.over&&best.err<=.35))break;
+      if(pM!==null&&Math.abs(pM-M)<1&&++stall>=2)break;pM=M;   // la boucle ne change plus avec la distance d'étape : inutile d'insister
+      if(M<aim){if(!lo||r>lo.r)lo={r,M}}else if(!hi||r<hi.r)hi={r,M}
+      let nr=r*Math.pow(aim/M,it<4?.9:.6)*(1+(it>=4?(rnd()-.5)*.15:0));
+      if(lo&&hi&&hi.r>lo.r){if(hi.r-lo.r<.03*lo.r)break;const t=(aim-lo.M)/(hi.M-lo.M);nr=lo.r+(hi.r-lo.r)*Math.min(.85,Math.max(.15,isFinite(t)?t:.5))}
+      r=Math.min(12000,Math.max(300,nr))}
     // exploration : plusieurs couples d'étapes autour du rayon trouvé ; on garde la boucle de coût minimal (forêt, peu de répétitions, pas d'impasse) à ±15 % de la visée (93 % du plafond)
     if(LOOPQ&&best&&!late()){
-      for(const k of off?[1,.93,1.07]:[1,.88,.94,1.06,1.12]){if(late()&&best.err<=.15)break;const L_=await AW(loopOnce(A,ax,ay,th,r*k,envie,q,nq,cand,off,pt,true),run);
+      for(const k of off?[1,.93,1.07]:[1,.92,1.08]){if(late()&&best.err<=.15)break;const L_=await AW(loopOnce(A,ax,ay,th,r*k,envie,q,nq,cand,off,pt,true),run);
         for(const R of L_){const c=mkC(R);if(c.err<=.15&&(c.cost<best.cost||best.err>.15))best=c}}}
     if(best)out.push(best);
     await AW(new Promise(r=>setTimeout(r,0)),run);
@@ -542,9 +599,10 @@ function clearRoute(all){
 function draw(S,R){
   if(!map.getPane("itineraire")){const p=map.createPane("itineraire");p.style.zIndex=450}
   layer=L.layerGroup().addTo(map);const g=GR,pl=[];
-  if(R.pl)R.pl.forEach(p=>pl.push(p));else for(const [e,s0,s1] of R.seq){if(s0===s1)continue;const k=g.cls[e],ll=sub(e,s0,s1);pl.push({ll,k})}
+  if(R.pl)R.pl.forEach(p=>pl.push(p));else {const MX=+$("it-max").value;for(const [e,s0,s1] of R.seq){if(s0===s1)continue;const k=g.cls[e],ll=sub(e,s0,s1);pl.push({ll,k,hard:MX<4&&edgeTech(e)>MX})}}
   pl.forEach(p=>L.polyline(p.ll,{pane:"itineraire",color:"#fff",weight:8,opacity:.9,lineCap:"round",interactive:false}).addTo(layer));
   pl.forEach(p=>L.polyline(p.ll,p.k==="o"?{pane:"itineraire",color:"#6a1b9a",weight:5,dashArray:"2 7",lineCap:"round",interactive:false}:p.k===1?{pane:"itineraire",color:"#c62828",weight:5,dashArray:"4 6",interactive:false}:p.k===2?{pane:"itineraire",color:"#e8731f",weight:5,dashArray:"10 6",interactive:false}:{pane:"itineraire",color:"#1565c0",weight:5,lineCap:"round",interactive:false}).addTo(layer));
+  pl.filter(p=>p.hard).forEach(p=>L.polyline(p.ll,{pane:"itineraire",color:"#111",weight:5,dashArray:"2 7",lineCap:"butt",interactive:false}).addTo(layer));   // au-dessus de la difficulté maximale : noir pointillé
   RPL=pl;const all=pl.flatMap(p=>p.ll);S.ll=all;if(all.length&&!noFit)map.fitBounds(L.latLngBounds(all),{padding:[40,40],maxZoom:17});
 }
 function dvMsg(S){const l=dvLim();return l&&!dvOk(S)?"Aucun trajet respectant la limite de dénivelé ("+dvTxt(l)+") trouvé : voici le moins pentu (+"+Math.round(S.up)+" m / −"+Math.round(S.dn)+" m). ":""}
@@ -554,21 +612,27 @@ function show(S){
   if(S.off>=20)w.push(`<b>Tout-terrain (bêta)</b> : ${km(S.off)} hors chemin (tracé violet pointillé), en forêt près d'une zone favorable, ${offRule(+$("it-max").value)}. Pas de balisage, terrain, ruisseaux non cartographiés et fossés possibles : vous êtes seul responsable du passage ; renoncez si le terrain vous semble dangereux.`);
   wxWarn(S).forEach(x=>w.push(x));
   if(S.cross)w.push(`${S.cross} traversée${S.cross>1?"s":""} de route large (tracé rouge pointillé, ≤ 30 m) : traversez avec prudence, aux endroits sûrs.`);
+  {const MX=+$("it-max").value,hl=MX<4?S.lines.filter(l=>edgeTech(l.e)>MX).reduce((a,l)=>a+Math.abs(l.s1-l.s0),0):0;
+    if(hl>=20)w.push(`<b>Difficulté maximale dépassée</b> sur ${km(hl)} (tracé noir pointillé) : aucun passage plus facile n'a été trouvé ici.`)}
+  const fo=S.met?` · forêt ${Math.round(S.met.forest*100)} %`:"";
   $("it-res").innerHTML=`<div class="it-card"><div class="it-big">${dur(S.sec)} <span class="it-sub">de marche · ${km(S.len)}</span></div>
+   <div class="it-line">+${Math.round(S.up)} m · <span class="pill" style="background:${c};color:#fff">${d}</span>${fo}</div>
+   <details class="it-more"><summary>Détails</summary>
    <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b>${dvLim()?` <span class="it-sub">${dvOk(S)?"✓ sous":"⚠ au-dessus de"} la limite (${dvTxt(dvLim())})</span>`:""}</div>
-   <div class="it-row">Difficulté : <span class="pill" style="background:${c};color:#fff">${d}</span> <span class="it-sub">${esc(S.reason)}</span></div>
+   <div class="it-row">Difficulté : <b>${d}</b> <span class="it-sub">${esc(S.reason)}</span></div>
    ${S.met?`<div class="it-row">En forêt : <b>${Math.round(S.met.forest*100)} %</b> du tracé · tronçons parcourus deux fois : <b>${Math.round(S.met.rep*100)} %</b></div>`:""}
-   ${S.legs&&S.legs.length>1?`<div class="it-row">Étapes :<ol class="it-legs">${S.legs.map(l=>`<li>${l.from} → ${l.to} : <b>${dur(l.sec)}</b> · ${km(l.len)} · ${DIFF[l.lvl]}</li>`).join("")}</ol></div>`:""}
+   ${S.legs&&S.legs.length>1?`<div class="it-row">Étapes :<ol class="it-legs">${S.legs.map(l=>`<li>${l.from} → ${l.to} : <b>${dur(l.sec)}</b> · ${km(l.len)} · ${DIFF[l.lvl]}</li>`).join("")}</ol></div>`:""}</details>
    ${w.map(x=>`<div class="it-warn">${x}</div>`).join("")}
    <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button><button type="button" class="btn" id="it-kml">Export swisstopo (KML)</button><a class="btn" id="it-geo" target="_blank" rel="noopener">Ouvrir map.geo.admin.ch</a></div>
    <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux. <a href="#" id="it-decl">Déclaration de responsabilité</a></p></div>`;
   $("it-decl").onclick=e=>{e.preventDefault();declare(false)};
   $("it-gpx").onclick=gpx;$("it-kml").onclick=kml;$("it-geo").href=geoLink(S)}
 const isLoop=()=>$("it-mode").value==="loop";
+const openReg=()=>{const d=$("it-reg");if(d)d.open=true};
 function showVars(V,k){
   if(layer){map.removeLayer(layer);layer=null}
   const v=V[k];draw(v.S,v.R);show(v.S);last=v.S;
-  $("it-vars").innerHTML=V.map((x,i)=>`<button type="button" class="btn${i===k?" primary":""}" data-k="${i}">Boucle ${i+1} · ${km(x.S.len)} · ${dur(x.S.sec)} · ${DIFF[x.S.lvl]}</button>`).join("");
+  $("it-vars").innerHTML=V.map((x,i)=>`<button type="button" class="btn${i===k?" primary":""}" data-k="${i}">Boucle ${i+1} · ${km(x.S.len)} · ${dur(x.S.sec)} · +${Math.round(x.S.up)} m · ${DIFF[x.S.lvl]}${x.S.met?" · forêt "+Math.round(x.S.met.forest*100)+" %":""}</button>`).join("");
   $("it-vars").querySelectorAll("button").forEach(b=>b.onclick=()=>showVars(V,+b.dataset.k))}
 async function computeLoop(){
   const run=RUN,msg=$("it-msg");$("it-vars").innerHTML="";
@@ -580,7 +644,7 @@ async function computeLoop(){
   {const ve=prepVar();if(ve){msg.textContent=ve;return}}
   const A=snap(pts.A);if(!A){msg.textContent="Le départ est à plus de 300 m d'un chemin de cette région : déplacez le marqueur.";clearRoute();return}
   const dm=$("it-lm").value==="len",v=+$("it-lt").value,target0=dm?v*1000:v*60,M=+$("it-max").value,tt=$("it-off").checked;
-  if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}}
+  if(tt){$("it-offbox").hidden=false;openReg();if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}}
   let V=[],note="",shr=1;LOOPERR="";
   // difficulté maximale : pénalité sur les tronçons trop techniques (×6 puis ×40), puis cible réduite (×0,75, ×0,55) si c'est l'effort (durée, dénivelé) qui dépasse
   const DL=dvLim();
@@ -589,14 +653,14 @@ async function computeLoop(){
   const ladder=[];for(const s of M<4||DL?[1,.75,.55]:[1])for(const k of M<4?[6,40]:[0])for(const lam of DL?DV_LAM:[0])ladder.push([s,k,lam]);
   let best=null,lastV=[],lastS=1,lo=0,hi=ladder.length-1,j=0,tries=0;const T0=performance.now();
   try{while(lo<=hi){
-    j=tries===0?0:(lo+hi)>>1;tries++;const [s,k,lam]=ladder[j];
+    j=tries===0?0:(lo+hi)>>1;tries++;PGT=ladder.length>1?tries:0;const [s,k,lam]=ladder[j];
     BP=M<4?techPen(M,k):null;setDV(lam);
     const v=await AW(loopRoutes(A,pts.A,dm?"len":"sec",target0*s,+$("it-env").value,tt),run),okV=v.filter(x=>!x.over&&x.S.lvl<=M&&dvOk(x.S));
     if(v.length){lastV=v;lastS=s}
     if(okV.length){best={V:okV,s};hi=j-1}else lo=j+1;
     if(best&&lo>hi)break;
     if(performance.now()-T0>3*BUDGET&&(best||lastV.length))break}
-  }finally{if(RUN===run){BP=null;DV=null}}
+  }finally{if(RUN===run){BP=null;DV=null;PGT=0}}
   if(best){V=best.V;shr=best.s}else{V=lastV;shr=lastS}
   if(!V.length){clearRoute();msg.textContent=LOOPERR||"Aucune boucle trouvée depuis ce départ : le réseau y est trop morcelé ou trop court. Essayez un autre point de départ.";return}
   {const fe=V.filter(x=>!x.over);   // plafond strict : aucune boucle au-dessus du plafond n'est affichée
@@ -610,11 +674,13 @@ async function computeLoop(){
   if(DL&&V.every(x=>!dvOk(x.S)))note+=` Aucune boucle sous la limite de dénivelé (${dvTxt(DL)}) trouvée ici : voici la moins pentue (+${Math.round(Math.min(...V.map(x=>x.S.up)))} m). `;
   if(LOOPQ&&last.met&&last.met.dead>.03)note+=" Une partie du tracé est un aller-retour qui n'atteint aucune forêt : le réseau de chemins autour du départ n'offre pas mieux à cette distance. ";
   const offN=V.filter(x=>x.err>.15&&shr===1).length;
-  msg.textContent=note+(VAR?" Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(last)+" ":"")+(offN?offN+" boucle(s) sur "+V.length+" sont nettement plus courtes que le plafond (réseau limité autour du départ), toutes sous "+capTxt(capOf())+".":V.length+" boucle(s) proposée(s), toutes sous le plafond de "+capTxt(capOf())+".")}
+  setMsg((offN?offN+" boucle(s) sur "+V.length+" sont nettement plus courtes que le plafond (réseau limité autour du départ), toutes sous "+capTxt(capOf())+".":V.length+" boucle(s) proposée(s), toutes sous le plafond de "+capTxt(capOf())+"."),note+(VAR?" Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(last)+" ":""))}
 async function compute(){
   cancelRun();const run=RUN;RUNS++;
+  if(typeof regUpd==="function")regUpd();
+  prog("Calcul…");
   try{await computeAny()}catch(e){if(e!==CANCEL)throw e}
-  finally{if(RUN===run){BP=null;DV=null}}}
+  finally{if(RUN===run){BP=null;DV=null;progOff()}}}
 async function computeAny(){
   const run=RUN;
   if(WP.length){clearRouteKeep();return computeWp()}
@@ -631,7 +697,7 @@ async function computeAny(){
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
   let R,S0=null;const M=+$("it-max").value,tt=$("it-off").checked;
   if(tt){
-    $("it-offbox").hidden=false;
+    $("it-offbox").hidden=false;openReg();
     if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer. (Le tracé affiché plus haut, s'il y en avait un, n'était pas en tout-terrain.)";return}}
   const CAP=capOf(),env0=+$("it-env").value;let evUsed=env0;
   for(const ev of CAP&&env0>0?[env0,0]:[env0]){   // plafond strict : si le détour dépasse le plafond, on réessaie sans détour (trajet le plus court)
@@ -644,7 +710,7 @@ async function computeAny(){
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=S0||summarize(R);draw(S,R);show(S);last=S;
-  msg.textContent=(CAP&&evUsed!==env0?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
+  setMsg("",(CAP&&evUsed!==env0?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":""));
 }
 
 
@@ -675,7 +741,7 @@ function wpOrder(){   // ordre le plus court en ligne droite (force brute jusqu'
   const old=WP.slice();best.forEach((i,k)=>{WP[k]=old[i]});wpRefresh()}
 function wpCat(legs){
   const off=legs.some(l=>l.off)?legs.reduce((o,l)=>{const f=l.off||{len:0,up:0,dn:0,sec:0,lvl:0};return {len:o.len+f.len,up:o.up+f.up,dn:o.dn+f.dn,sec:o.sec+f.sec,lvl:Math.max(o.lvl,f.lvl)}},{len:0,up:0,dn:0,sec:0,lvl:0}):undefined;
-  return {seq:legs.flatMap(l=>l.seq),off,pl:legs.flatMap((l,i)=>(l.pl||l.seq.filter(s=>s[1]!==s[2]).map(([e,s0,s1])=>({ll:sub(e,s0,s1),k:GR.cls[e]}))).map(p=>({...p,lg:i})))}}
+  return {seq:legs.flatMap(l=>l.seq),off,pl:legs.flatMap((l,i)=>(l.pl||l.seq.filter(s=>s[1]!==s[2]).map(([e,s0,s1])=>({ll:sub(e,s0,s1),k:GR.cls[e],hard:+$("it-max").value<4&&edgeTech(e)>+$("it-max").value}))).map(p=>({...p,lg:i})))}}
 async function computeWp(){
   const run=RUN,msg=$("it-msg"),loop=isLoop();$("it-vars").innerHTML="";
   if(!pts.A||(!loop&&!pts.B)){msg.textContent=loop?"Choisissez le départ de la boucle (A).":"Choisissez le départ et l'arrivée.";return}
@@ -685,7 +751,7 @@ async function computeWp(){
   try{await AW(loadGraph(),run)}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
   {const ve=prepVar();if(ve){msg.textContent=ve;return}}
   const M=+$("it-max").value,tt=$("it-off").checked,env0=+$("it-env").value,CAP=capOf();let envie=env0;
-  if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}}
+  if(tt){$("it-offbox").hidden=false;openReg();if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}}
   if($("it-wopt").checked)wpOrder();
   const P=[pts.A,...WP.map(w=>w.ll),loop?pts.A:pts.B],nm=P.map((_,i)=>i===0?"A":i===P.length-1?(loop?"A":"B"):String(i));
   if(P.some(p=>!p))return;   // marqueur retiré ou mode changé pendant le calcul
@@ -709,11 +775,11 @@ async function computeWp(){
   if(layer){map.removeLayer(layer);layer=null}
   draw(S0,R);show(S0);last=S0;
   const hard=M<4?LS.filter(l=>l.lvl>M):[];
-  msg.textContent=(loop?"Boucle A → "+WP.map((_,i)=>i+1).join(" → ")+" → A, définie par vos points de passage. ":"")+(CAP?"Plafond de "+capTxt(CAP)+" respecté"+(envie!==env0?" (détour retiré)":"")+". ":"")+
+  setMsg("",(loop?"Boucle A → "+WP.map((_,i)=>i+1).join(" → ")+" → A, définie par vos points de passage. ":"")+(CAP?"Plafond de "+capTxt(CAP)+" respecté"+(envie!==env0?" (détour retiré)":"")+". ":"")+
     (hard.length?"Point de passage inaccessible sous « "+DIFF[M]+" » : "+hard.map(l=>"l'étape "+l.from+" → "+l.to+" reste « "+DIFF[l.lvl]+" » ("+l.reason+")").join(" ; ")+". Le tracé affiché passe quand même par vos points : choisissez une difficulté plus élevée ou déplacez-les. ":"")+
     (VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S0)+" ":"")+
     (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+dvMsg(S0)+
-    (WP.length+" point"+(WP.length>1?"s":"")+" de passage."+($("it-wopt").checked&&WP.length>1?" Ordre optimisé.":""))}
+    (WP.length+" point"+(WP.length>1?"s":"")+" de passage."+($("it-wopt").checked&&WP.length>1?" Ordre optimisé.":"")))}
 
 
 /* ---------- édition du tracé par clic-glisse (souris et doigt) ---------- */
@@ -785,6 +851,20 @@ function banner(t){let b=$("it-banner");if(!t){if(b)b.hidden=true;return}
   if(!b){b=document.createElement("div");b.id="it-banner";b.className="it-banner";b.innerHTML='<span id="it-bt"></span> <button type="button" class="btn" id="it-bx">Annuler</button>';document.body.appendChild(b);$("it-bx").onclick=()=>{arm=null;banner(null)}}
   $("it-bt").textContent=t;b.hidden=false}
 function start(t){arm=t;if(typeof openMenu==="function")openMenu(false);banner("Touchez la carte pour placer "+(t==="A"?"le départ (A)":t==="W"?"le point de passage "+(WP.length+1):"l'arrivée (B)"))}
+// préréglages et résumé des réglages (le panneau ne montre que le type, les points, le plafond et Calculer ; le reste est dans « Réglages »)
+const PRE={balade:{env:1,dur:2,max:1,dv:"up",dvm:200},cueillette:{env:2,dur:3,max:2,dv:"0",dvm:300},sportif:{env:1,dur:1,max:4,dv:"0",dvm:300}};
+const ENV_L=["plus court","léger détour","détour","grand détour"],DUR_S=["×½","×¾","×1","×1,5","×2","×3"];let DVUP=null;
+function regUpd(){
+  const r=$("it-resume");if(!r)return;
+  const x={env:+$("it-env").value,dur:+$("it-dur").value,max:+$("it-max").value,dv:$("it-dv").value,dvm:+$("it-dvm").value,off:$("it-off").checked},p=[ENV_L[x.env],DUR_S[x.dur],x.max>=4?"difficulté libre":"max "+DIFF[x.max]];
+  if(x.dv!=="0")p.push("D"+(x.dv==="both"?"±":"+")+" ≤ "+x.dvm+" m");if(x.off)p.push("tout-terrain");if(varOn())p.push("variétés");
+  r.textContent="· "+p.join(" · ");
+  document.querySelectorAll("#sec-itin [data-pre]").forEach(b=>{const q=PRE[b.dataset.pre];b.setAttribute("aria-pressed",String(q.env===x.env&&q.dur===x.dur&&q.max===x.max&&q.dv===x.dv&&(x.dv==="0"||q.dvm===x.dvm)&&!x.off))})}
+function applyPre(k){
+  const P=PRE[k];if(!P)return;
+  $("it-env").value=P.env;$("it-dur").value=P.dur;$("it-max").value=P.max;$("it-dv").value=P.dv;$("it-dvm").value=P.dvm;$("it-off").checked=false;$("it-offbox").hidden=true;
+  ["it-env","it-dur","it-max","it-dvm"].forEach(i=>$(i).oninput&&$(i).oninput());if(DVUP)DVUP();regUpd();
+  if(pts.A&&(isLoop()||pts.B)&&last)compute()}
 function init(){
   if(typeof map==="undefined"||!map||!$("it-go")){return setTimeout(init,300)}
   map.getContainer().addEventListener("click",e=>{
@@ -821,9 +901,12 @@ function init(){
   $("it-varbox").hidden=true;
   $("it-dur").oninput=()=>{$("it-durl").textContent=DUR_L[+$("it-dur").value]};$("it-dur").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-dur").oninput();
   const dvUp=c=>{const on=$("it-dv").value!=="0";$("it-dvrow").hidden=!on;$("it-dvl").textContent=$("it-dvm").value+" m";if(c===true&&on&&pts.A&&(isLoop()||pts.B)&&last)compute()};
-  $("it-dv").onchange=()=>dvUp(true);$("it-dvm").oninput=()=>dvUp();$("it-dvm").onchange=()=>dvUp(true);dvUp();
+  $("it-dv").onchange=()=>dvUp(true);$("it-dvm").oninput=()=>dvUp();$("it-dvm").onchange=()=>dvUp(true);dvUp();DVUP=dvUp;
   $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile"};$("it-max").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
-  window.ITIN={get last(){return last},capOf,capOver,prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v},setOffP:v=>{OFFP=v},setLFW:v=>{LFW=v},setBudget:v=>{BUDGET=v},get runs(){return RUNS},cancelRun};   // pour les tests
+  document.querySelectorAll("#sec-itin [data-pre]").forEach(b=>b.onclick=()=>applyPre(b.dataset.pre));
+  {const rg=$("it-reg");if(rg){rg.addEventListener("input",regUpd);rg.addEventListener("change",regUpd)}}
+  $("it-cancel").onclick=()=>{cancelRun();$("it-msg").textContent="Calcul annulé."};regUpd();
+  window.ITIN={get last(){return last},capOf,capOver,prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,netDist,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v},setOffP:v=>{OFFP=v},setLFW:v=>{LFW=v},setBudget:v=>{BUDGET=v},get runs(){return RUNS},cancelRun};   // pour les tests
 }
 init();
 })();

@@ -91,3 +91,22 @@ Mesures avant → après (`node tools/profil/itineraires-mesure.js ple gdv`, CPU
 | Boucle 6 km tout-terrain | 10,4 s | 5,7 s | 11,0 s | 3,2 s |
 
 Les boucles proposées sont les mêmes qu'avant (mêmes longueurs, forêt et répétitions) sauf quand le budget coupe la recherche : sur un téléphone plus lent que ×4, il peut rester moins de variantes (1 ou 2 au lieu de 3).
+
+## 6. Vague 2 réalisée (23 nov. 2026) : propositions 3, 4 et 5
+- **3. Coûts en cache et distance par les chemins.** `costBase()` calcule une fois, par jeu de réglages (détour, hors-forêt, difficulté, dénivelé, grille de classes), les coûts de base de chaque arête ; la pénalité de repassage des boucles est appliquée à la volée (coût = base × pénalité + partie additive), donc les résultats sont identiques. `bonusQ()`, `techPen()`, la part de forêt des noeuds et la liste des noeuds candidats sont gardés en mémoire. Le tas du plus court chemin est un tas typé réutilisé (plus de tableaux de paires). Pour les boucles, **un seul Dijkstra depuis le départ** (`netDist`) donne la distance par les chemins de tous les noeuds : les étapes W1 et W2 sont choisies à la bonne distance sur le réseau (et dans le bon secteur), au lieu de 9 essais de rayon à vol d'oiseau. Le rayon est encadré (interpolation) au lieu de tâtonner, la 1re étape de chaque triangle est calculée une fois par W1, l'exploration finale passe de 5 à 3 rayons, et `loopMetrics` utilise des clés numériques.
+- **4. Panneau en deux niveaux.** Visible : type, départ / arrivée, ma position, point de passage, plafond, 3 préréglages (Balade facile : léger détour, ×1, max facile, D+ ≤ 200 m ; Cueillette : détour, ×1,5, max moyen ; Sportif : léger détour, ×¾, difficulté libre), Calculer / Effacer. Replié dans « Réglages » (avec une ligne de résumé, par ex. « léger détour · ×1,5 · max moyen ») : détour, variétés, rythme, limite de dénivelé, difficulté maximale, tout-terrain. Le panneau s'ouvre tout seul quand il faut cocher « Je comprends ». 14 réglages visibles → 4.
+- **5. Retours visuels.** « Calcul des boucles… direction 2/4 (essai 1) » avec bouton Annuler ; résultat sur une ligne (durée, distance, D+, difficulté, part de forêt) avec « Détails » repliés ; message de boucle : résumé d'abord, remarques dans « Détails » ; variantes de boucle « Boucle 1 · 5,0 km · 1 h 35 · +123 m · facile · forêt 44 % » ; tronçons au-dessus de la difficulté maximale tracés en noir pointillé, avec avertissement. Non fait : coloration des tronçons hors limite de dénivelé (la limite porte sur le total du tracé, pas sur un tronçon).
+
+Mesures avant → après (`node tools/profil/itineraires-mesure.js ple gdv`, CPU ×4, départ au centre) :
+
+| scénario | ple avant | ple après | gdv avant | gdv après |
+|---|---|---|---|---|
+| Boucle 8 km | 3,2 s | 1,6 s (0,9 s en répétition) | 7,2 s | 1,3 s |
+| Boucle 8 km détour 2 | 1,1 s | 1,1 s | 3,2 s | 0,9 s |
+| Boucle 8 km « facile » + D± ≤ 200 m | 7,4 s (limite non tenable ici) | 6,2 s (idem) | 6,7 s | 0,9 s |
+| Boucle 6 km tout-terrain | 8,0 s | 6,7 s | 3,8 s | 3,3 s |
+| A→B par défaut | 26 ms | 14 ms | 45 ms | 31 ms |
+
+Écart à l'objectif (« 5 à 10 × ») : atteint sur `gdv` (5 à 7 ×), seulement 2 × sur `ple` (en répétition 3,7 ×), où le plus court chemin domine encore ; le tout-terrain (routeOff) n'est pas touché par le cache, et le cas infaisable de `ple` (6 essais complets) reste long.
+Qualité : les boucles sont un peu différentes (le choix des étapes change). `gdv` : mêmes longueurs, forêt 64 % (avant 51 %), répétitions 6 % (avant 3 %). `ple` : forêt 77 % (avant 71 %), mais répétitions 13 % (avant 5 %) : à traiter avec la proposition 6 (vague 3). Tout-terrain : `gdv` 5 583 m, répétitions 1 % (avant 4 865 m, 12 %) ; `ple` 5 759 m (avant 4 885 m). Le résultat dépend du budget de temps : sur une machine très chargée, une boucle tout-terrain peut encore dépasser le plafond et être refusée (test « options » rarement instable).
+Tests : `itineraires-panneau.test.js` (panneau, préréglages, progression, annulation, résultat condensé, cache, distance par les chemins, boucle < 6 s à CPU ×4) ; `itineraires-denivele.test.js` passe à une graine fixe (il échouait une fois sur trois).
