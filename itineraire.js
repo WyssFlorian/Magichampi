@@ -82,12 +82,54 @@ function sub(e,s0,s1){   // sous-ligne de l'arête e entre les abscisses s0 et s
   return flip?out.reverse():out}
 
 /* ---------- bonus de cueillette (classes affichées) ---------- */
+
+/* ---------- optimiser par variété : grille de classes calculée sur les espèces cochées (remplace celle de la carte) ---------- */
+// Score d'une cellule = somme des poids (WGW) des classes des espèces cochées, plafonné ; classes 0-4 comme la carte, donc tout le reste du calcul (détour, boucle, tout-terrain) en profite.
+const VAR_KEY="itin-var-v1";
+let VC=null,VAR=null;   // VC : grille de classes « variété » (ou null = grille de la carte) · VAR : {sps, per, key}
+const curC=()=>VC||(typeof currentClass!=="undefined"?currentClass:null);
+const varOn=()=>!!$("it-var")&&$("it-var").checked;
+function varSel(){return [...document.querySelectorAll("#it-varlist [data-sp]")].filter(c=>c.checked).map(c=>c.dataset.sp)}
+function varSave(){try{localStorage.setItem(VAR_KEY,JSON.stringify(varSel()))}catch(e){}}
+function varLoad(){try{const a=JSON.parse(localStorage.getItem(VAR_KEY)||"null");return Array.isArray(a)?a:null}catch(e){return null}}
+function varList(){   // liste des espèces à cocher (ordre alphabétique, hors saison grisées)
+  const box=$("it-varlist");if(!box||typeof SPECIES==="undefined")return;
+  const keep=box.children.length?varSel():(varLoad()||(typeof state!=="undefined"&&state.sp&&state.sp!=="multi"?[state.sp]:[]));
+  const L=spAlpha(SPECIES.filter(sp=>!protHidden(sp)));
+  box.innerHTML=L.map(sp=>{const so=inSeason(sp);return `<label${so?"":' class="it-off"'}><input type="checkbox" data-sp="${sp.id}"${keep.includes(sp.id)?" checked":""}><span>${esc(sp.fr)}${so?"":" <i>(hors saison)</i>"}</span></label>`}).join("");
+  box.querySelectorAll("[data-sp]").forEach(c=>c.onchange=()=>{varSave();varCount();if(last&&varOn())compute()});varCount()}
+function varCount(){const n=varSel().length;if($("it-varn"))$("it-varn").textContent=n+" variété"+(n>1?"s":"")+" cochée"+(n>1?"s":"")}
+// prépare VC avant un calcul ; retourne un message d'erreur ou ""
+function prepVar(){
+  VC=null;VAR=null;if(!varOn())return "";
+  if(typeof classesFor==="undefined"||typeof meta==="undefined")return "";
+  const all=varSel().map(id=>SPECIES.find(s=>s.id===id)).filter(Boolean);
+  if(!all.length)return "Optimiser par variété : cochez au moins une variété.";
+  const sps=all.filter(sp=>!(state.seasonOnly&&!inSeason(sp))&&!blockReason(sp.id));
+  if(!sps.length)return "Aucune des variétés cochées n'est de saison ("+(typeof quarterOn==="function"&&quarterOn()?"période visée : "+perLabel():"filtre « de saison » de la carte")+") : cochez-en d'autres ou changez la période.";
+  const key=[sps.map(s=>s.id).join(","),state.mode,state.d,state.view,state.excl,state.acc,state.resp,state.yr,state.seasonOnly,state.q,meta.x0,meta.cols,meta.rows].join("|");
+  if(!VAR||VAR.key!==key){
+    const n=meta.rows*meta.cols,S=new Float32Array(n),has=new Uint8Array(n),per={};
+    for(const sp of sps){const C=classesFor(sp).C;per[sp.id]=C;for(let i=0;i<n;i++){const k=C[i];if(k===255||k>4)continue;has[i]=1;S[i]+=WGW[k]}}
+    const out=new Uint8Array(n).fill(255),den=sps.length===1?1:1.5;
+    for(let i=0;i<n;i++)if(has[i]){const e=Math.min(1,S[i]/den);out[i]=e>=.95?4:e>=.55?3:e>=.18?2:S[i]>0?1:0}
+    VAR={sps,per,key,C:out}}
+  VC=VAR.C;return ""}
+// longueur (m) du tracé en zone « élevé » ou mieux, par variété cochée
+function varReport(S){
+  if(!VAR||!S||!S.ll||S.ll.length<2||typeof meta==="undefined")return "";
+  const {x0,y1,res,cols,rows}=meta,m=S.ll.map(p=>merc(p[0],p[1])),tot={};let dist=0;
+  for(let i=1;i<m.length;i++){const dx=m[i][0]-m[i-1][0],dy=m[i][1]-m[i-1][1],d=Math.hypot(dx,dy);if(!d)continue;dist+=d;
+    const c=Math.floor(((m[i][0]+m[i-1][0])/2-x0)/res),r=Math.floor((y1-(m[i][1]+m[i-1][1])/2)/res);if(c<0||r<0||c>=cols||r>=rows)continue;
+    for(const sp of VAR.sps){const k=VAR.per[sp.id][r*cols+c];if(k!==255&&k>=3)tot[sp.id]=(tot[sp.id]||0)+d*Math.cos(S.ll[i][0]*Math.PI/180)}}
+  const L=VAR.sps.map(sp=>[sp,tot[sp.id]||0]).sort((a,b)=>b[1]-a[1]);
+  return " Sur le tracé, en zone élevée ou mieux : "+L.map(([sp,v])=>sp.fr+" "+(v>=50?km(v):"aucune")).join(", ")+"."}
 function bonusQ(){
   const g=GR,q=new Float32Array(g.nE),cnt=new Uint16Array(g.nE),gd=new Uint16Array(g.nE);q.gd=gd;   // gd[e] : échantillons de l'arête en zone « moyen » ou mieux
-  if(typeof currentClass==="undefined"||!currentClass||typeof meta==="undefined")return q;
+  if(!curC()||typeof meta==="undefined")return q;
   const x0=meta.x0,y1=meta.y1,res=meta.res,cols=meta.cols,rows=meta.rows;
   for(let i=0;i<g.SE.length;i++){const X=g.SM[2*i],Y=g.SM[2*i+1],c=Math.floor((X-x0)/res),r=Math.floor((y1-Y)/res),e=g.SE[i];cnt[e]++;
-    if(c>=0&&r>=0&&c<cols&&r<rows){const v=currentClass[r*cols+c];if(v!==255&&v<5){q[e]+=WGW[v];if(v>=2)gd[e]++}}}
+    if(c>=0&&r>=0&&c<cols&&r<rows){const v=curC()[r*cols+c];if(v!==255&&v<5){q[e]+=WGW[v];if(v>=2)gd[e]++}}}
   q.cnt=cnt;for(let e=0;e<g.nE;e++)if(cnt[e])q[e]/=cnt[e];
   return q}
 // longueur (m) d'un tracé du graphe qui traverse des zones « moyen » ou mieux
@@ -228,7 +270,7 @@ function dilate(m,W,H,r){   // dilatation carrée de rayon r (cellules), sépara
   return o}
 async function routeOff(pA,pB,envie){
   const g=GR,W=meta.cols,H=meta.rows,res=meta.res,gs=res*Math.cos(pA.lat*Math.PI/180);
-  if(typeof currentClass==="undefined"||!currentClass)return {error:"La carte n'affiche aucune zone : choisissez une espèce ou la forte concentration."};
+  if(!curC())return {error:"La carte n'affiche aucune zone : choisissez une espèce ou la forte concentration."};
   const cOf=(lat,lng)=>{const q=merc(lat,lng);return [Math.floor((q[0]-meta.x0)/res),Math.floor((meta.y1-q[1])/res)]},a=cOf(pA.lat,pA.lng),b=cOf(pB.lat,pB.lng);
   const ok=c=>c[0]>=0&&c[1]>=0&&c[0]<W&&c[1]<H;
   if(!ok(a)||!ok(b))return {error:"Départ ou arrivée hors de la zone chargée : centrez la carte sur le trajet puis recommencez."};
@@ -236,7 +278,7 @@ async function routeOff(pA,pB,envie){
   if(N>450000)return {error:"Tout-terrain limité à environ 10 km entre le départ et l'arrivée."};
   const w0=wxOn()?wx(pA.lat,pA.lng):null,ref=wxRefuse(w0);if(ref)return {error:ref};
   const wet=wxWet(w0)||wxCold(w0),slopeMax=wet?25:OFF_SLOPE,hz0=await hazards(),hz=wet?{water:dilate(hz0.water,W,H,1),marsh:hz0.marsh}:hz0,al=new Uint8Array(N),high=new Uint8Array(N);
-  for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(currentClass[gi]!==255&&currentClass[gi]>=3)high[li]=1}
+  for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(curC()[gi]!==255&&curC()[gi]>=3)high[li]=1}
   const near=dilate(high,ww,hh,Math.ceil(OFF_NEAR/gs)*1);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;
     al[li]=near[li]&&usable(gi)&&G.fx[gi]>0&&G.slope[gi]<slopeMax&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
@@ -279,7 +321,7 @@ async function routeOff(pA,pB,envie){
         if(ban[v]||ban[u])continue;   // dans la bande de 20 m le long d'une route de classe 2 : seulement par les arcs de la route (pas de pas hors chemin)
         if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
         if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
-        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(currentClass[vg]);
+        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(curC()[vg]);
         const w=d+t;if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+t0;prev[v]=u;via[v]=-1;hpush(w,v)}}}
     return {dist,rt,prev,via}};
   // plafond de durée : la durée réelle ne dépasse pas CAP[envie] × celle du trajet le plus rapide ; sinon la récompense est réduite par paliers
@@ -315,7 +357,7 @@ async function routeOff(pA,pB,envie){
     let rtT=0;for(const l of legs)rtT+=l.rt;detour=rtT/bt}
   // détour sans gain : on garde le trajet le plus rapide s'il ne traverse pas au moins MIN_GAIN m de plus de zones « moyen » ou mieux
   if(envie>0&&base&&bt>0&&detour>1.02&&isFinite(base.dist[T0])){
-    const gl=cs=>{let n=0;for(const u of cs){const gi=(r0+((u/ww)|0))*W+c0+(u%ww),c=currentClass[gi];if(c!==255&&c>=2&&c<5)n++}return n*gs},bl=recon(base,S0,T0);
+    const gl=cs=>{let n=0;for(const u of cs){const gi=(r0+((u/ww)|0))*W+c0+(u%ww),c=curC()[gi];if(c!==255&&c>=2&&c<5)n++}return n*gs},bl=recon(base,S0,T0);
     const lc2=legs.flatMap(l=>l.cells);if(gl(lc2)-gl(bl.cells)<Math.max(MIN_GAIN,GAIN_RATIO*Math.max(0,lc2.length-bl.cells.length)*gs)){legs=[bl];detour=1;noGain=true}}
   const cells=[],vias=[];legs.forEach((l,k)=>{l.cells.forEach((c,i)=>{if(k>0&&i===0)return;cells.push(c);vias.push(i===0?-1:l.vias[i])})});
   const costT=legs.reduce((a,l)=>a+l.cost,0);
@@ -455,6 +497,7 @@ async function computeLoop(){
   if(!await declare(true)){msg.textContent="Déclaration non acceptée : l'itinéraire n'est pas calculé.";return}
   msg.textContent="Calcul des boucles…";
   try{await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
+  {const ve=prepVar();if(ve){msg.textContent=ve;return}}
   const A=snap(pts.A);if(!A){msg.textContent="Le départ est à plus de 300 m d'un chemin de cette région : déplacez le marqueur.";clearRoute();return}
   const dm=$("it-lm").value==="len",v=+$("it-lt").value,target0=dm?v*1000:v*60,M=+$("it-max").value,tt=$("it-off").checked;
   if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}
@@ -471,7 +514,7 @@ async function computeLoop(){
   if(M<4&&over)note=` Aucune boucle « ${DIFF[M]} » ou plus facile trouvée ici : voici la plus facile (${DIFF[Math.min(...V.map(x=>x.S.lvl))]}). `;
   const W=V.map(x=>({S:x.S,R:x.R}));showVars(W,0);
   const offN=V.filter(x=>x.err>.1&&shr===1).length;
-  msg.textContent=note+(offN?offN+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s)"+(shr===1?", à ±10 % de la cible.":"."))}
+  msg.textContent=note+(VAR?" Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(last)+" ":"")+(offN?offN+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s)"+(shr===1?", à ±10 % de la cible.":"."))}
 async function compute(){
   if(isLoop()){clearRouteKeep();return computeLoop()}
   $("it-vars").innerHTML="";
@@ -481,6 +524,7 @@ async function compute(){
   if(!await declare(true)){msg.textContent="Déclaration non acceptée : l'itinéraire n'est pas calculé.";return}
   msg.textContent="Calcul…";let g;
   try{g=await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
+  {const ve=prepVar();if(ve){msg.textContent=ve;return}}
   const A=snap(pts.A),B=snap(pts.B);
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
   let R,S0=null;const M=+$("it-max").value,tt=$("it-off").checked;
@@ -494,7 +538,7 @@ async function compute(){
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=S0||summarize(R);draw(S,R);show(S);last=S;
-  msg.textContent=(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
+  msg.textContent=(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
 }
 
 
@@ -534,9 +578,15 @@ function init(){
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
+  $("it-var").onchange=()=>{$("it-varbox").hidden=!$("it-var").checked;
+    if($("it-var").checked){varList();if(+$("it-env").value===0){$("it-env").value=2;$("it-env").oninput()}   // sans envie de détour, le choix des variétés ne change rien
+      if(last)compute()}else{VC=null;VAR=null;if(last)compute()}};
+  $("it-varseason").onclick=()=>{$("it-varlist").querySelectorAll("[data-sp]").forEach(c=>{const sp=SPECIES.find(x=>x.id===c.dataset.sp);c.checked=!!sp&&inSeason(sp)});varSave();varCount();if(last&&varOn())compute()};
+  $("it-varnone").onclick=()=>{$("it-varlist").querySelectorAll("[data-sp]").forEach(c=>c.checked=false);varSave();varCount()};
+  $("it-varbox").hidden=true;
   $("it-dur").oninput=()=>{$("it-durl").textContent=DUR_L[+$("it-dur").value];if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-dur").oninput();
   $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile";if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
-  window.ITIN={kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
+  window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
 }
 init();
 })();
