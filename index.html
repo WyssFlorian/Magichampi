@@ -985,6 +985,10 @@ details.more[open]>summary{margin-bottom:4px}
 .spf-tier{margin-top:8px}
 .spf-tier .row{display:flex;justify-content:space-between;align-items:center}
 .spf-tier .row button{border:0;background:none;color:var(--accent,inherit);text-decoration:underline;cursor:pointer;font-size:12px;padding:0 0 0 8px}
+.spf-common{display:flex;align-items:center;gap:6px;margin:2px 0 2px}
+.spf-common>button:first-child{border:1px solid var(--line,#ccc);background:none;border-radius:14px;padding:3px 10px;font-size:12.5px;cursor:pointer;color:inherit}
+.spf-common .ti{width:20px;height:20px;border-radius:50%;border:1px solid currentColor;background:none;font:italic 600 12px/18px Georgia,serif;padding:0;color:inherit;opacity:.75;cursor:pointer}
+.spf-cdetail{margin:2px 0 4px}
 .spf-tier label{display:flex;gap:6px;align-items:baseline;padding:2px 0}
 .spf-tier label i{color:var(--muted);font-size:11.5px}
 /* menu : ne dépasse pas l'écran, défile jusqu'en bas (iPhone) */
@@ -2326,11 +2330,14 @@ function infoToggles(){
 function menuSetup(){infoToggles();const P=[...document.querySelectorAll("#menu-pop .menu-page")];
   $("menu-toc").innerHTML=P.map((p,k)=>`<option value="${k}">${esc(p.dataset.t)}</option>`).join("");
   $("menu-toc").onchange=e=>menuGo(+e.target.value);$("menu-prev").onclick=()=>menuGo(menuPg-1);$("menu-next").onclick=()=>menuGo(menuPg+1);menuGo(0)}
+const COMMON_SP={"1":{"tot":16602,"sp":[["cibarius",3960],["edulis",3407],["tubaeformis",1868],["reticulatus",1670],["cornucopioides",1650],["caperatus",1467],["morelc",902],["morelb",835]]},"2":{"tot":46650,"sp":[["cyanoxantha",5285],["prunulus",4183],["deterrimus",3959],["olivacea",2961],["erythropus",2944],["repandum",2798],["badia",2698],["nuda",2358]]},"3":{"tot":47722,"sp":[["amethystina",3247],["laccata",3230],["perlatum",3192],["luridus",2661],["integra",2362],["grevillei",2234],["capnoides",2038]]}};
 const TIER_NAMES=["","★ Stars","Bons comestibles","Comestibles intéressants"];
+function commonText(t,L){const C=COMMON_SP[t],nm=id=>{const s=SPECIES.find(x=>x.id===id);return s?s.fr:id},f=n=>n.toLocaleString("fr-CH").replace(/\u202f/g," ");
+  return `Espèces totalisant au moins 4 % des ${f(C.tot)} relevés SwissFungi de cette catégorie dans le canton de Vaud (tous les relevés, un relevé compté une seule fois, pour une seule espèce) : `+C.sp.map(x=>`${esc(nm(x[0]))} ${f(x[1])} (${Math.round(100*x[1]/C.tot)} %)`).join(", ")+". Liste fixe, établie une fois (tools/plus_courants.py), pour la sélection seulement : elle n'entre pas dans le calcul du score."}
 function fillSpFilter(){
   const box=$("sp-filter");if(!box)return;
   box.innerHTML=[1,2,3].map(t=>{const L=spAlpha(SPECIES.filter(s=>s.tier===t&&!protHidden(s)));
-    return `<div class="spf-tier"><div class="row"><b>${TIER_NAMES[t]} (${L.filter(s=>!state.hide.includes(s.id)).length}/${L.length})</b><span><button type="button" data-all="${t}">tout cocher</button><button type="button" data-none="${t}">tout décocher</button></span></div>`+
+    return `<div class="spf-tier"><div class="row"><b>${TIER_NAMES[t]} (${L.filter(s=>!state.hide.includes(s.id)).length}/${L.length})</b><span><button type="button" data-all="${t}">tout cocher</button><button type="button" data-none="${t}">tout décocher</button></span></div><div class="spf-common"><button type="button" data-common="${t}">Les plus courants (${(COMMON_SP[t].sp.filter(x=>L.some(s=>s.id===x[0])).length)})</button><button type="button" class="ti" data-cinfo="${t}" aria-expanded="false" aria-label="Comment cette liste est établie">i</button></div><p class="small spf-cdetail" id="spf-cd${t}" hidden>${commonText(t,L)}</p>`+
       L.map(s=>`<label><input type="checkbox" data-sp="${s.id}"${state.hide.includes(s.id)?"":" checked"}><span>${esc(s.fr)} <i>${esc(s.la)}</i></span></label>`).join("")+`</div>`}).join("");
   const apply=()=>{
     state.hide=[...box.querySelectorAll("[data-sp]")].filter(c=>!c.checked).map(c=>c.dataset.sp);
@@ -2338,6 +2345,8 @@ function fillSpFilter(){
     saveState();render();
     box.querySelectorAll(".spf-tier").forEach((d,k)=>{const L=SPECIES.filter(s=>s.tier===k+1&&!protHidden(s));d.querySelector("b").textContent=`${TIER_NAMES[k+1]} (${L.filter(s=>!state.hide.includes(s.id)).length}/${L.length})`})};
   box.querySelectorAll("[data-sp]").forEach(c=>c.onchange=apply);
+  box.querySelectorAll("[data-common]").forEach(b=>b.onclick=()=>{const t=b.dataset.common,ids=COMMON_SP[t].sp.map(x=>x[0]);box.querySelectorAll("[data-sp]").forEach(c=>{const sp=SPECIES.find(x=>x.id===c.dataset.sp);if(sp.tier===+t)c.checked=ids.includes(sp.id)});apply()});
+  box.querySelectorAll("[data-cinfo]").forEach(b=>b.onclick=()=>{const p=$("spf-cd"+b.dataset.cinfo);p.hidden=!p.hidden;b.setAttribute("aria-expanded",String(!p.hidden))});
   box.querySelectorAll("[data-all],[data-none]").forEach(b=>b.onclick=()=>{const t=+(b.dataset.all||b.dataset.none);box.querySelectorAll("[data-sp]").forEach(c=>{const sp=SPECIES.find(x=>x.id===c.dataset.sp);if(sp.tier===t)c.checked=!!b.dataset.all});apply()});
 }
 /* ---------- courbes de niveau et falaises (calculées sur le relief de 25 m de la région chargée) ---------- */
