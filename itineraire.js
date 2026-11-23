@@ -1,5 +1,5 @@
 /* Itinéraire A→B sur le réseau de chemins précalculé (<région>/graphe.json, voir tools/graphe.py).
-   Coût d'une arête = temps de marche (Tobler, dénivelé + / − de l'arête) × facteur de réseau × (1 − bonus de cueillette).
+   Coût d'une arête = temps de marche (Tobler, dénivelé + / − de l'arête) × facteur de réseau × (1 − bonus de cueillette) × (1 + 4 × part hors forêt de l'arête).
    Classe 5/4 : 1 · sentier balisé : 0,7 · classe 3 (route forestière) : 1,6 · classe 2 (4 m, bord de route) : 3,5 ·
    classe 1 : jamais, sauf traversée ≤ 30 m (arête virtuelle). Calcul entièrement dans le navigateur. */
 (function(){
@@ -10,6 +10,7 @@ const offRule=M=>M>=4?"sans limite de distance au chemin (pente < 30°)":"à ≤
 const DIFF=["très facile","facile","moyen","difficile","très difficile"],DCOL=["#2e8b57","#7cb342","#e0a800","#e8731f","#c62828"];
 const FACT={1:12,2:3.5,3:1.6,4:1,5:1},TYPE_F={0:1,1:.7,2:.8,3:1},TYPE_T={0:1,1:1,2:1.3,3:1.6};   // facteur de coût (réseau) · multiplicateur de temps (type de sentier)
 const R_E=6378137,WGW=[0,0,.2,.6,1];                                                  // poids du bonus par classe d'affichage (très faible … très élevé) : rien sous « moyen », le détour ne vise que les zones moyen ou mieux
+let OFFP=4;   // pénalité hors forêt : une arête entièrement hors forêt coûte (1+OFFP) fois plus ; 0 = ancien comportement (comparaisons de test)
 const MIN_GAIN=100,GAIN_RATIO=.2,OFF_ROAD=20;   // détour accepté seulement s'il gagne ≥ 100 m (et ≥ 20 % de la distance ajoutée) dans des zones « moyen » ou mieux · bande de 20 m le long des routes de classe 2 où le hors-chemin est interdit
 /* ---------- limite de dénivelé (positif seul, ou positif et négatif) ---------- */
 // Pénalité additive (s par mètre de dénivelé) ajoutée au coût des arêtes / pas hors chemin ; on la renforce (DV_LAM) jusqu'à respecter la limite.
@@ -154,7 +155,9 @@ function routeGD(A,B,envie){
 function costs(envie,pen,qq,noDV){
   const g=GR,q=qq||(envie>0?bonusQ():null),mult=e=>{const k=g.cls[e],t=g.typ[e];
     let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?2:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 2
-    if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);return m};
+    if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);
+    if(OFFP&&k!==1)m*=1+OFFP*(1-g.fo[e]/100);   // hors forêt : surcoût proportionnel à la part de l'arête hors forêt (graphe : fo, 0-100 %)
+    return m};
   const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);
   for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1)*(BP?BP[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0);
     if(DV&&!noDV){cf[e]+=DV.lam*(g.up[e]+(DV.both?g.dn[e]:0));cb[e]+=DV.lam*(g.dn[e]+(DV.both?g.up[e]:0))}}
@@ -221,7 +224,8 @@ function loopMetrics(R){
     if(!reach&&j-i>=4)nd+=j-i;i=j}
   return {forest:nf_/n,good:ng/n,rep:nr/n,dead:nd/n,len:n*ST}}
 // coût de sélection d'une boucle : écart à la cible, impasses lourdement, répétitions, moins de forêt / de zones favorables
-const loopCost=(err,m)=>m?err+3*m.dead+.7*m.rep-.5*m.good-.3*m.forest:err;
+let LFW=1;   // poids de la part en forêt dans le choix d'une boucle
+const loopCost=(err,m)=>m?err+3*m.dead+.7*m.rep-.5*m.good-LFW*m.forest:err;
 let nf=null;   // part de forêt (0-1) des noeuds, pour le choix des étapes
 async function loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pA,all){
   const g=GR,pickW=ang=>{   // meilleurs noeuds près de (r, ang) : on préfère les noeuds en forêt et dans les zones favorables
@@ -772,7 +776,7 @@ function init(){
   const dvUp=()=>{const on=$("it-dv").value!=="0";$("it-dvrow").hidden=!on;$("it-dvl").textContent=$("it-dvm").value+" m";if(on&&pts.A&&(isLoop()||pts.B)&&last)compute()};
   $("it-dv").onchange=dvUp;$("it-dvm").oninput=dvUp;dvUp();
   $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile";if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
-  window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v}};   // pour les tests
+  window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v},setOffP:v=>{OFFP=v},setLFW:v=>{LFW=v},setLFW:v=>{LFW=v}};   // pour les tests
 }
 init();
 })();
