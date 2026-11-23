@@ -2134,9 +2134,9 @@ function popupHtml(latlng){
   h+=`</div>`;
   if(w){h+=`<hr>${rainSvg(G.midx[i])}`}
   h+=`<div class="look"><b>Sosies :</b> ${sp.look}</div>`;
-  h+=`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" data-addcoin="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)}">Marquer comme mon coin</button>${z?`<button class="btn" data-alertz="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)},${z}">🔔 Alerte pour cette forêt</button>`:""}</div></div>`;
+  h+=`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" data-addcoin="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)}">Marquer comme mon coin</button>${z?`<button class="btn" data-alertz="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)},${z}">🔔 Alerte pour cette forêt</button>`:""}</div>${trajetLink(latlng.lat,latlng.lng)}</div>`;
   const zk=state.view==="zone"&&z&&st.zone.P[z]>=0?zoneNow.cls[z]:(w?nowCls(ak,w.W):ak);
-  const short=S0+`<div class="fx" style="grid-template-columns:1fr auto"><span class="lab">${sp.fr}</span><span class="pill c${zk}">${CLS_LAB[zk]} · ${aptPct(st,state.view==="zone"&&z&&st.zone.P[z]>=0?st.zone.mean[z]:info.A)} %</span></div>`+rgBox(i,state.view==="zone"?z:0)+huntBox(i)+DET_BTN;
+  const short=S0+`<div class="fx" style="grid-template-columns:1fr auto"><span class="lab">${sp.fr}</span><span class="pill c${zk}">${CLS_LAB[zk]} · ${aptPct(st,state.view==="zone"&&z&&st.zone.P[z]>=0?st.zone.mean[z]:info.A)} %</span></div>`+rgBox(i,state.view==="zone"?z:0)+huntBox(i)+DET_BTN+trajetLink(latlng.lat,latlng.lng);
   return {short,full:h};
 }
 const SORT_SRC=ZONE.SORT_SRC;
@@ -2240,10 +2240,10 @@ function multiPopup(i,latlng){
   h+=rgBox(i,state.view==="zone"?G.zone[i]:0);
   const rows=SPECIES.filter(sp=>multiCls[sp.id]).map(sp=>({sp,k:multiCls[sp.id][i]})).sort((a,b)=>b.k-a.k);
   const LST=`<div class="fx" style="grid-template-columns:1fr auto">`+rows.map(r=>`<span class="lab"${r.k!==255&&r.k<MULTI_MIN?' style="opacity:.55" title="Présence trop faible : ne compte pas"':""}>${r.sp.fr}</span><span class="pill c${r.k===255?0:r.k}"${r.k!==255&&r.k<MULTI_MIN?' style="opacity:.55"':""}>${r.k===255?"—":CLS_LAB[r.k]}</span>`).join("")+`</div>`;h+=LST;
-  const short=S0+LST+rgBox(i,state.view==="zone"?G.zone[i]:0)+huntBox(i)+DET_BTN;
+  const short=S0+LST+rgBox(i,state.view==="zone"?G.zone[i]:0)+huntBox(i)+DET_BTN+trajetLink(latlng.lat,latlng.lng);
   h+=`<p class="small" style="margin:8px 0 0">Choisissez une espèce dans la liste pour voir le détail de son calcul ici.</p>`;
   h+=`<div class="look"><b>Rappel :</b> plusieurs espèces au même endroit veut aussi dire plus de sosies possibles. Faites contrôler toute la récolte.</div>`;
-  h+=`<div class="row" style="margin-top:8px"><button class="btn" data-addcoin="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)}">Marquer comme mon coin</button></div></div>`;
+  h+=`<div class="row" style="margin-top:8px"><button class="btn" data-addcoin="${latlng.lat.toFixed(5)},${latlng.lng.toFixed(5)}">Marquer comme mon coin</button></div>${trajetLink(latlng.lat,latlng.lng)}</div>`;
   return {short,full:h};
 }
 
@@ -2520,7 +2520,7 @@ function obsPopup(o,sp){
   h+=row("Statut","qualité « recherche » (identification confirmée par la communauté)");
   if(state.sp!=="multi"&&sp.id===state.sp&&i>=0&&currentClass&&currentClass[i]!==255)h+=row("Sur la carte",`<span class="pill c${currentClass[i]}">${CLS_LAB[currentClass[i]]}</span>`);
   h+=`</div><p class="small" style="margin:6px 0">Données © ${esc(o.who||"observateur")}, ${esc(o.lic||"")}, via GBIF. Cette observation augmente le score de l'espèce jusqu'à 1 km autour.</p>`;
-  h+=`<a class="btn primary" style="display:block;text-align:center;text-decoration:none" href="${esc(o.url)}" target="_blank" rel="noopener">Voir la publication sur iNaturalist</a></div>`;
+  h+=`<a class="btn primary" style="display:block;text-align:center;text-decoration:none" href="${esc(o.url)}" target="_blank" rel="noopener">Voir la publication sur iNaturalist</a>${trajetLink(o.lat,o.lon)}</div>`;
   return h;
 }
 let obsLayer;
@@ -3542,6 +3542,8 @@ function locHelp(){let h=document.getElementById("loc-help");if(h){h.hidden=fals
   h.onclick=e=>{if(e.target===h||e.target.classList.contains("x"))h.hidden=true};
   document.body.appendChild(h)}
 // lien « Itinéraire » : même application que pour les arrêts de transports publics (Google Maps)
+// bouton « Trajet jusqu'à cet endroit » : Google Maps, seules les coordonnées du lieu sont transmises
+function trajetLink(lat,lon){return `<a class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="https://www.google.com/maps/dir/?api=1&destination=${(+lat).toFixed(5)},${(+lon).toFixed(5)}" target="_blank" rel="noopener noreferrer">Trajet jusqu'à cet endroit</a>`}
 function itinLink(lat,lon,label){return `<a class="btn primary" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">Itinéraire${label?" "+esc(label):""}</a>`}
 /* ---------- fond de carte : tuiles swisstopo assemblées en mosaïques de 8 × 8 ---------- */
 // mosaïques gardées en mémoire : les 10 plus récentes (une mosaïque décodée occupe environ 6,5 Mo)
