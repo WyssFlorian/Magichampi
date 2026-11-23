@@ -18,7 +18,7 @@ function dvLim(){const el=$("it-dv"),m=el?el.value:"0";return m==="0"?null:{both
 const dvOk=S=>{const l=dvLim();return !l||(S.up<=l.m+.5&&(!l.both||S.dn<=l.m+.5))};
 const setDV=lam=>{const l=dvLim();DV=l&&lam>0?{lam,both:l.both}:null};
 const dvTxt=l=>l.both?"+ et − ≤ "+l.m+" m":"+ ≤ "+l.m+" m";
-let BP=null,GR=null,GRZ=null,loading=null,map0=null,mk={A:null,B:null},pts={A:null,B:null},arm=null,layer=null,last=null;
+let BP=null,GR=null,GRZ=null,loading=null,map0=null,mk={A:null,B:null},pts={A:null,B:null},arm=null,layer=null,last=null,RPL=[],noFit=false;
 
 /* ---------- facteur de durée et difficulté maximale ---------- */
 const DUR_V=[.5,.75,1,1.5,2,3],DUR_L=["jogging (temps ×½)","marche rapide (×¾)","marche normale (×1)","cueillette (×1,5)","cueillette lente (×2)","fouille complète (temps ×3)"];
@@ -523,7 +523,7 @@ function draw(S,R){
   if(R.pl)R.pl.forEach(p=>pl.push(p));else for(const [e,s0,s1] of R.seq){if(s0===s1)continue;const k=g.cls[e],ll=sub(e,s0,s1);pl.push({ll,k})}
   pl.forEach(p=>L.polyline(p.ll,{pane:"itineraire",color:"#fff",weight:8,opacity:.9,lineCap:"round",interactive:false}).addTo(layer));
   pl.forEach(p=>L.polyline(p.ll,p.k==="o"?{pane:"itineraire",color:"#6a1b9a",weight:5,dashArray:"2 7",lineCap:"round",interactive:false}:p.k===1?{pane:"itineraire",color:"#c62828",weight:5,dashArray:"4 6",interactive:false}:p.k===2?{pane:"itineraire",color:"#e8731f",weight:5,dashArray:"10 6",interactive:false}:{pane:"itineraire",color:"#1565c0",weight:5,lineCap:"round",interactive:false}).addTo(layer));
-  const all=pl.flatMap(p=>p.ll);S.ll=all;if(all.length)map.fitBounds(L.latLngBounds(all),{padding:[40,40],maxZoom:17});
+  RPL=pl;const all=pl.flatMap(p=>p.ll);S.ll=all;if(all.length&&!noFit)map.fitBounds(L.latLngBounds(all),{padding:[40,40],maxZoom:17});
 }
 function dvMsg(S){const l=dvLim();return l&&!dvOk(S)?"Aucun trajet respectant la limite de dénivelé ("+dvTxt(l)+") trouvé : voici le moins pentu (+"+Math.round(S.up)+" m / −"+Math.round(S.dn)+" m). ":""}
 function show(S){
@@ -629,7 +629,7 @@ function wpOrder(){   // ordre le plus court en ligne droite (force brute jusqu'
   const old=WP.slice();best.forEach((i,k)=>{WP[k]=old[i]});wpRefresh()}
 function wpCat(legs){
   const off=legs.some(l=>l.off)?legs.reduce((o,l)=>{const f=l.off||{len:0,up:0,dn:0,sec:0,lvl:0};return {len:o.len+f.len,up:o.up+f.up,dn:o.dn+f.dn,sec:o.sec+f.sec,lvl:Math.max(o.lvl,f.lvl)}},{len:0,up:0,dn:0,sec:0,lvl:0}):undefined;
-  return {seq:legs.flatMap(l=>l.seq),off,pl:legs.flatMap(l=>l.pl||l.seq.filter(s=>s[1]!==s[2]).map(([e,s0,s1])=>({ll:sub(e,s0,s1),k:GR.cls[e]})))}}
+  return {seq:legs.flatMap(l=>l.seq),off,pl:legs.flatMap((l,i)=>(l.pl||l.seq.filter(s=>s[1]!==s[2]).map(([e,s0,s1])=>({ll:sub(e,s0,s1),k:GR.cls[e]}))).map(p=>({...p,lg:i})))}}
 async function computeWp(){
   const msg=$("it-msg"),loop=isLoop();$("it-vars").innerHTML="";
   if(!pts.A||(!loop&&!pts.B)){msg.textContent=loop?"Choisissez le départ de la boucle (A).":"Choisissez le départ et l'arrivée.";return}
@@ -665,6 +665,63 @@ async function computeWp(){
     (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+dvMsg(S0)+
     (WP.length+" point"+(WP.length>1?"s":"")+" de passage."+($("it-wopt").checked&&WP.length>1?" Ordre optimisé.":""))}
 
+
+/* ---------- édition du tracé par clic-glisse (souris et doigt) ---------- */
+// Saisir le tracé et le glisser ajoute un point de passage à l'endroit lâché, inséré dans l'étape touchée ; le tout est recalculé comme d'habitude.
+const ED={on:false,x0:0,y0:0,lg:0,moved:false,ghost:null,band:null,touch:false,swallow:0};
+function edOk(){return !arm&&last&&layer&&RPL.length&&pts.A&&(isLoop()||pts.B)}
+function edHit(cp,tol){   // étape la plus proche du point d'écran cp, ou null
+  let best=null,bd=tol;
+  for(const p of RPL){const q=p.ll.map(l=>map.latLngToContainerPoint(l));
+    for(let i=1;i<q.length;i++){const d=L.LineUtil.pointToSegmentDistance(cp,q[i-1],q[i]);if(d<bd){bd=d;best=p.lg||0}}}
+  return best}
+function edEnds(lg){const loop=isLoop();return [lg===0?pts.A:WP[lg-1].ll,lg===WP.length?(loop?pts.A:pts.B):WP[lg].ll]}
+function edPt(e){const r=map.getContainer().getBoundingClientRect(),t=e.touches&&e.touches[0]||e.changedTouches&&e.changedTouches[0]||e;return L.point(t.clientX-r.left,t.clientY-r.top)}
+function edStart(e){
+  if(ED.on||!edOk()||e.target.closest&&e.target.closest(".leaflet-marker-icon,.leaflet-control,.leaflet-popup,.menu-btn,button"))return;
+  if(e.touches&&e.touches.length!==1)return;
+  const touch=!!e.touches,cp=edPt(e),lg=edHit(cp,touch?20:9);if(lg===null)return;
+  ED.on=true;ED.touch=touch;ED.x0=cp.x;ED.y0=cp.y;ED.lg=lg;ED.moved=false;
+  e.stopPropagation()}   // la carte ne se déplace pas : le glissement appartient au tracé
+function edMove(e){
+  if(!ED.on)return;if(e.touches&&e.touches.length!==1){edCancel();return}
+  const cp=edPt(e);
+  if(!ED.moved){if(Math.hypot(cp.x-ED.x0,cp.y-ED.y0)<6)return;ED.moved=true;
+    if(WP.length>=WP_MAX){$("it-msg").textContent="Maximum "+WP_MAX+" points de passage : retirez-en un avant d'en ajouter.";edCancel(true);return}
+    ED.ghost=L.marker(map.containerPointToLatLng(cp),{icon:wIcon("+"),interactive:false,zIndexOffset:900}).addTo(map);
+    if(!(isLoop()&&!WP.length)){const [a,b]=edEnds(ED.lg);ED.band=L.polyline([a,map.containerPointToLatLng(cp),b],{color:"#e8731f",weight:3,dashArray:"5 6",interactive:false}).addTo(map)}}
+  const ll=map.containerPointToLatLng(cp);ED.ghost.setLatLng(ll);
+  if(ED.band){const [a,b]=edEnds(ED.lg);ED.band.setLatLngs([a,ll,b])}
+  if(e.cancelable)e.preventDefault()}
+function edCancel(keepSwallow){
+  if(ED.ghost){map.removeLayer(ED.ghost);ED.ghost=null}if(ED.band){map.removeLayer(ED.band);ED.band=null}
+  ED.on=false;ED.moved=false}
+async function edEnd(e){
+  if(!ED.on)return;
+  if(!ED.moved){edCancel();return}   // simple appui : laisse passer le clic
+  const ll=ED.ghost.getLatLng(),lg=ED.lg;edCancel();ED.swallow=Date.now();
+  await wpInsert(lg,ll)}
+async function wpInsert(lg,ll){
+  const msg=$("it-msg");
+  if($("it-wopt").checked){$("it-wopt").checked=false}   // l'ordre optimisé déplacerait le point : on garde votre ordre
+  const w={ll,mk:null};w.mk=L.marker(ll,{icon:wIcon(lg+1),draggable:true,zIndexOffset:850,keyboard:false}).addTo(map);
+  w.mk.on("dragend",()=>{w.ll=w.mk.getLatLng();if(wpReady()&&last)compute()});WP.splice(lg,0,w);wpRefresh();
+  noFit=true;let err="";
+  try{await compute();if(!last){err=msg.textContent;map.removeLayer(w.mk);WP.splice(WP.indexOf(w),1);wpRefresh();if(pts.A&&(isLoop()||pts.B))await compute();
+      msg.textContent="Point non ajouté : "+err+(last?" Tracé précédent rétabli.":"")}
+    else msg.textContent="Point de passage "+(lg+1)+" ajouté par glissement. "+msg.textContent}
+  finally{noFit=false}}
+function edInit(){
+  const c=map.getContainer();
+  c.addEventListener("mousedown",e=>{if(e.button===0)edStart(e)},true);
+  c.addEventListener("touchstart",edStart,{capture:true,passive:true});
+  document.addEventListener("mousemove",e=>{if(ED.on)edMove(e);else if(!e.buttons&&!ED.hoverBusy){ED.hoverBusy=true;requestAnimationFrame(()=>{ED.hoverBusy=false;
+      c.style.cursor=edOk()&&e.target&&c.contains(e.target)&&!(e.target.closest&&e.target.closest(".leaflet-marker-icon,.leaflet-control,.leaflet-popup"))&&edHit(edPt(e),9)!==null?"crosshair":""})}});
+  c.addEventListener("touchmove",e=>{if(ED.on)edMove(e)},{capture:true,passive:false});
+  document.addEventListener("mouseup",e=>{if(ED.on)edEnd(e)});
+  c.addEventListener("touchend",e=>{if(ED.on)edEnd(e)},true);c.addEventListener("touchcancel",()=>edCancel(),true);
+  c.addEventListener("click",e=>{if(ED.swallow&&Date.now()-ED.swallow<400){e.stopPropagation();e.preventDefault()}ED.swallow=0},true)}
+
 /* ---------- déclaration de responsabilité (acceptation mémorisée en local) ---------- */
 const DECL_KEY="itin-decl-v1";
 function declOk(){try{return localStorage.getItem(DECL_KEY)==="1"}catch(e){return false}}
@@ -687,6 +744,7 @@ function init(){
     {const d=$("sec-itin");if(d){d.open=true;setTimeout(()=>d.scrollIntoView({behavior:"smooth",block:"nearest"}),50)}}
     if(t==="W"){if(pts.A&&(isLoop()?last:pts.B))compute();else $("it-msg").textContent="Point de passage "+WP.length+" placé."+(pts.A&&(isLoop()||pts.B)?" Touchez Calculer.":" Placez le départ"+(isLoop()?"":" et l'arrivée")+" si ce n'est pas fait.")}
     else if(pts.A&&pts.B)compute();else $("it-msg").textContent=t==="A"?"Départ placé. Choisissez maintenant l'arrivée.":"Arrivée placée. Choisissez maintenant le départ."},true);
+  edInit();
   $("it-a").onclick=()=>start("A");$("it-b").onclick=()=>start("B");
   $("it-w").onclick=()=>{if(WP.length>=WP_MAX){$("it-msg").textContent="Maximum "+WP_MAX+" points de passage.";return}start("W")};
   $("it-wopt").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};
