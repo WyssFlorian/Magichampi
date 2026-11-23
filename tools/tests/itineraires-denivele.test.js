@@ -12,6 +12,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  await p.goto('https://loc.test/index.html?r='+Z);await p.waitForFunction(()=>window.ITIN&&typeof currentClass!=='undefined'&&currentClass,null,{timeout:90000});await p.waitForTimeout(2500);
  const r=await p.evaluate(async()=>{
   const o={},g=await ITIN.loadGraph(),$=i=>document.getElementById(i),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  let sd=12345;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;   // graine fixe
   const mk=k=>L.latLng(g.lat0+g.SY[k]/g.ky,g.lon0+g.SX[k]/g.kx);
   const inW=k=>{const c=(g.SM[2*k]-meta.x0)/meta.res,r=(meta.y1-g.SM[2*k+1])/meta.res;return c>150&&r>150&&c<meta.cols-150&&r<meta.rows-150};
   const set=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new Event('input'))},sel=v=>{$('it-dv').value=v;$('it-dv').dispatchEvent(new Event('change'))};
@@ -20,7 +21,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   // A→B : deux points ~2-3 km avec dénivelé notable
   $('it-mode').value='ab';$('it-mode').dispatchEvent(new Event('change'));
   let A=0,B=0,best=0;
-  for(let t=0;t<400;t++){const i=Math.floor(Math.random()*g.SX.length),j=Math.floor(Math.random()*g.SX.length);if(!inW(i)||!inW(j)||g.cls[g.SE[i]]<3||g.cls[g.SE[j]]<3)continue;
+  for(let t=0;t<400;t++){const i=Math.floor(rnd()*g.SX.length),j=Math.floor(rnd()*g.SX.length);if(!inW(i)||!inW(j)||g.cls[g.SE[i]]<3||g.cls[g.SE[j]]<3)continue;
     const d=Math.hypot(g.SX[i]-g.SX[j],g.SY[i]-g.SY[j]);if(d>1500&&d<3500){A=i;B=j;break}}
   ITIN.setPt('A',mk(A));ITIN.setPt('B',mk(B));
   await go();const S0=ITIN.last;o.base=S0&&{up:Math.round(S0.up),dn:Math.round(S0.dn),len:Math.round(S0.len)};
@@ -33,7 +34,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   }
   // boucle
   $('it-mode').value='loop';$('it-mode').dispatchEvent(new Event('change'));$('it-lm').value='len';$('it-lm').dispatchEvent(new Event('change'));set('it-lt',6);
-  let k=0;for(let t=0;t<2000;t++){const i=Math.floor(Math.random()*g.SX.length);if(inW(i)&&g.cls[g.SE[i]]>=4){k=i;break}}
+  let k=0;for(let t=0;t<2000;t++){const i=Math.floor(rnd()*g.SX.length);if(inW(i)&&g.cls[g.SE[i]]>=4){k=i;break}}
   ITIN.setPt('A',mk(k));await go();const L0=ITIN.last;o.loopBase=L0&&{up:Math.round(L0.up),dn:Math.round(L0.dn),len:Math.round(L0.len)};
   if(L0){const lim=Math.max(50,Math.floor(L0.up*.6/50)*50);sel('both');set('it-dvm',lim);await go();const L1=ITIN.last;o.loopLim={lim,up:L1&&Math.round(L1.up),dn:L1&&Math.round(L1.dn),len:L1&&Math.round(L1.len),msg:$('it-msg').textContent.slice(0,200)}}
   return o});
