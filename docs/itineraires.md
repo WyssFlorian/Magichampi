@@ -88,3 +88,9 @@ Cas signalé : à Semsales, des boucles allaient et revenaient par le même tron
 - Le résultat affiche « En forêt : x % · tronçons parcourus deux fois : y % ».
 - Mesure (Semsales 46,5747 / 6,9311, région ple, cible 2 h, rythme ×1,5, léger détour, aucune limite ; 3 essais, moyennes sur les boucles proposées) : sur chemins, impasses 27 % → 7 %, répétitions 29 % → 11 %, forêt 0 % → 8 % ; tout-terrain, impasses 25 % → 1 %, répétitions 49 % → 20 %, forêt 18 % → 16-23 % (variable). La forêt est à plus de 3 km à l'est du village : une boucle de 5 km n'y entre guère.
 - Test : `node tools/tests/boucle-champs.test.js [essais]` (compare `ITIN.setLoopQ(false)` et `true`).
+
+
+## Édition du tracé par clic-glisse (23 nov. 2026)
+- Une fois un trajet affiché, saisir le tracé (souris : 9 px de tolérance ; doigt : 20 px) et le glisser ajoute un point de passage là où on lâche, inséré dans l'étape touchée (liste réordonnable, 8 max). Les étapes sont recalculées avec les mêmes règles (difficulté, dénivelé, tout-terrain).
+- Un simple appui ne change rien ; la carte ne se déplace pas pendant le glissement, la vue n'est pas recadrée. Si le nouveau point est inaccessible (à plus de 300 m d'un chemin, ou étape sans chemin), il n'est pas ajouté et le tracé précédent est rétabli. L'ordre optimisé est désactivé pour garder l'ordre du glissement.
+- Test : `node tools/tests/itineraires-glisser.test.js [région]`.
