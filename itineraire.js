@@ -6,6 +6,7 @@
 "use strict";
 if(typeof L==="undefined")return;
 const $=id=>document.getElementById(id);
+const offRule=M=>M>=4?"sans limite de distance au chemin (pente < 30°)":"à ≤ "+OFF_DIST[M]+" m d'un chemin, pente < "+OFF_SLP[M]+"°";
 const DIFF=["très facile","facile","moyen","difficile","très difficile"],DCOL=["#2e8b57","#7cb342","#e0a800","#e8731f","#c62828"];
 const FACT={1:12,2:3.5,3:1.6,4:1,5:1},TYPE_F={0:1,1:.7,2:.8,3:1},TYPE_T={0:1,1:1,2:1.3,3:1.6};   // facteur de coût (réseau) · multiplicateur de temps (type de sentier)
 const R_E=6378137,WGW=[0,0,.2,.6,1];                                                  // poids du bonus par classe d'affichage (très faible … très élevé) : rien sous « moyen », le détour ne vise que les zones moyen ou mieux
@@ -194,10 +195,10 @@ async function loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pA){
   const C1=pickW(th),C2=pickW(th+Math.PI/3);
   for(const w1 of C1)for(const w2 of C2){if(w1===w2)continue;
     if(off){   // tout-terrain : trois tronçons hors chemin autorisés (départ → W1 → W2 → départ)
-      const ll=u=>({lat:g.lat[u],lng:g.lon[u]}),seq=[],pl=[],O={len:0,up:0,dn:0,sec:0};let ok=true,P=pA;
+      const ll=u=>({lat:g.lat[u],lng:g.lon[u]}),seq=[],pl=[],O={len:0,up:0,dn:0,sec:0,lvl:0};let ok=true,P=pA;
       for(const w of [ll(w1),ll(w2),pA]){
         const R=await routeOff(P,w,envie);if(!R||R.error){if(R&&R.error)LOOPERR=R.error;ok=false;break}
-        seq.push(...R.seq);pl.push(...R.pl);for(const k of ["len","up","dn","sec"])O[k]+=R.off[k];P=w}
+        seq.push(...R.seq);pl.push(...R.pl);for(const k of ["len","up","dn","sec"])O[k]+=R.off[k];O.lvl=Math.max(O.lvl,R.off.lvl||0);P=w}
       if(ok)return {seq,pl,off:O};continue}
     const pen=new Float32Array(g.nE).fill(1),seq=[];let ok=true,P=A;
     for(const w of [nodeSnap(w1),nodeSnap(w2),A]){
@@ -247,6 +248,8 @@ function gpx(){
 // Dijkstra sur la grille de 25 m (cellules d'environ 17 m de côté au sol) reliée au réseau de chemins : les chemins sont des arcs de cellule à cellule
 // (coût du graphe), la forêt peut être traversée hors chemin (Tobler ×1,6) seulement près d'une zone « élevé » ou mieux, et jamais dans les cellules à
 // pente ≥ 30° (25-30° ×3 plus lent), cours d'eau (tampon d'une cellule), marais, réserves et zones exclues (usable).
+// Règles du tout-terrain par difficulté maximale (0 très facile … 3 difficile ; 4 = aucune limite) : distance maximale à un chemin (m) et pente maximale (°) en terrain hors chemin.
+const OFF_DIST=[25,50,100,200],OFF_SLP=[8,15,20,25],slvOf=s=>s<OFF_SLP[0]?0:s<OFF_SLP[1]?1:s<OFF_SLP[2]?2:s<OFF_SLP[3]?3:4;
 const REWK=.55,OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100,DETOUR_CAP=[1,1.3,1.8,2.6];   // plafond de durée par cran du curseur de détour
 let HZ=null,HZkey="";
 async function hazards(){
@@ -268,7 +271,8 @@ function dilate(m,W,H,r){   // dilatation carrée de rayon r (cellules), sépara
   for(let y=0;y<H;y++){let last=-1e9;for(let x=0;x<W;x++){if(m[y*W+x])last=x;if(x-last<=r)t[y*W+x]=1}last=1e9;for(let x=W-1;x>=0;x--){if(m[y*W+x])last=x;if(last-x<=r)t[y*W+x]=1}}
   for(let x=0;x<W;x++){let last=-1e9;for(let y=0;y<H;y++){if(t[y*W+x])last=y;if(y-last<=r)o[y*W+x]=1}last=1e9;for(let y=H-1;y>=0;y--){if(t[y*W+x])last=y;if(last-y<=r)o[y*W+x]=1}}
   return o}
-async function routeOff(pA,pB,envie){
+async function routeOff(pA,pB,envie,Mx){
+  const MX=Mx!=null?Mx:+($("it-max")?$("it-max").value:4);
   const g=GR,W=meta.cols,H=meta.rows,res=meta.res,gs=res*Math.cos(pA.lat*Math.PI/180);
   if(!curC())return {error:"La carte n'affiche aucune zone : choisissez une espèce ou la forte concentration."};
   const cOf=(lat,lng)=>{const q=merc(lat,lng);return [Math.floor((q[0]-meta.x0)/res),Math.floor((meta.y1-q[1])/res)]},a=cOf(pA.lat,pA.lng),b=cOf(pB.lat,pB.lng);
@@ -290,6 +294,10 @@ async function routeOff(pA,pB,envie){
   for(let i=0;i<N;i++)cnt[i+1]+=cnt[i];const fill=cnt.slice(),aTo=new Int32Array(arcs.length),aE=new Int32Array(arcs.length),aF=new Float32Array(arcs.length),aD=new Uint8Array(arcs.length),aId=new Int32Array(arcs.length);
   for(const [u,v,e,f,d,id] of arcs){const q=fill[u]++;aTo[q]=v;aE[q]=e;aF[q]=f;aD[q]=d;aId[q]=id}
   const onPath=i=>cnt[i+1]>cnt[i];
+  // difficulté maximale : hors chemin seulement à ≤ OFF_DIST[M] m d'un chemin du réseau et sous la pente OFF_SLP[M] ; dl = niveau de distance de chaque cellule (0-3, 4 au-delà de 200 m)
+  const pm=new Uint8Array(N),dl=new Uint8Array(N).fill(4);for(let i=0;i<N;i++)pm[i]=onPath(i)?1:0;
+  for(let lv=3;lv>=0;lv--){const dd=dilate(pm,ww,hh,Math.max(1,Math.round(OFF_DIST[lv]/gs)));for(let i=0;i<N;i++)if(dd[i])dl[i]=lv}
+  if(MX<4)for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const li=y*ww+x;if(al[li]&&(dl[li]>MX||slvOf(G.slope[(r0+y)*W+c0+x])>MX))al[li]=0}
   // bande de OFF_ROAD m le long des routes de classe 2 : pas de hors-chemin en forêt (on suit la route) ; les cellules de chemin restent praticables
   const ban=new Uint8Array(N);
   for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1]||g.cls[g.SE[k]]!==2)continue;
@@ -363,7 +371,7 @@ async function routeOff(pA,pB,envie){
   const costT=legs.reduce((a,l)=>a+l.cost,0);
   // reconstruction (cells, vias construits ci-dessus)
   const ll=li=>{const x=c0+(li%ww)+.5,y=r0+((li/ww)|0)+.5,X=meta.x0+x*res,Y=meta.y1-y*res;return [(2*Math.atan(Math.exp(Y/R_E))-Math.PI/2)*180/Math.PI,X/R_E*180/Math.PI]};
-  const seq=[],pl=[],off={len:0,up:0,dn:0,sec:0};let cur=null;
+  const seq=[],pl=[],off={len:0,up:0,dn:0,sec:0,lvl:0};let cur=null;
   const flush=()=>{if(cur&&cur.ll.length>1)pl.push(cur);cur=null};
   for(let i=1;i<cells.length;i++){const v=cells[i],u=cells[i-1],id=vias[i];
     if(id>=0){const k=id>>1,fw=!(id&1),kk=fw?k:k+1,k2=fw?k+1:k,e=g.SE[k];
@@ -372,7 +380,7 @@ async function routeOff(pA,pB,envie){
       const last=seq[seq.length-1];if(last&&last[0]===e&&last[2]===g.SS[kk])last[2]=g.SS[k2];else seq.push([e,g.SS[kk],g.SS[k2]])}
     else{if(!cur||cur.k!=="o"){flush();cur={k:"o",ll:[ll(u)]}}cur.ll.push(ll(v));
       const ug=(r0+((u/ww)|0))*W+c0+(u%ww),vg=(r0+((v/ww)|0))*W+c0+(v%ww),dx=(v%ww)-(u%ww),dy=((v/ww)|0)-((u/ww)|0),L_=gs*(dx&&dy?1.4142:1),dz=dm[vg]-dm[ug];
-      off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
+      if(!onPath(v))off.lvl=Math.max(off.lvl,dl[v],slvOf(sl[vg]));off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
   flush();
   return {seq,off,pl,cost:costT,detour,noGain}}
 
@@ -428,7 +436,7 @@ function summarize(R){
     if(g.smax[e]>smax&&L_>=40){smax=g.smax[e];smaxE=e}
     lines.push({e,s0,s1,k});
   }
-  const OF=R.off||{len:0,up:0,dn:0,sec:0};len+=OF.len;up+=OF.up;dn+=OF.dn;sec+=OF.sec;
+  const OF=R.off||{len:0,up:0,dn:0,sec:0,lvl:0};len+=OF.len;up+=OF.up;dn+=OF.dn;sec+=OF.sec;
   const secRaw=sec,fD=durF();sec=secRaw*fD;const h=secRaw*Math.max(1,fD)/3600,gain=up;   // durée affichée = marche × facteur ; niveau d'effort : jamais sous la durée de marche normale
   // niveau « effort » (durée, dénivelé positif) et niveau « technique » (pente, type de chemin, zone difficile d'accès)
   const lt=h<=1?0:h<=2.5?1:h<=4.5?2:h<=7?3:4,lg=gain<=100?0:gain<=300?1:gain<=700?2:gain<=1200?3:4,effort=Math.max(lt,lg);
@@ -438,7 +446,7 @@ function summarize(R){
   else if(bm>=100){lty=3;why="sentier de montagne sur "+km(bm)}
   else if(hd>=100){lty=3;why="zone difficile d'accès (pente ≥ 30° en forêt) sur "+km(hd)}
   else if(un>=150){lty=2;why="sentier non balisé de "+km(un)}
-  if(OF.len>=20){lty=Math.max(lty,3);why="tout-terrain : "+km(OF.len)+" hors chemin"}
+  if(OF.len>=20){lty=Math.max(lty,OF.lvl);why="tout-terrain : "+km(OF.len)+" hors chemin"}
   const tech=Math.max(ls,lty),lvl=Math.max(effort,tech);
   let reason;
   if(tech>=effort&&tech>0){reason=ls>=lty?"pente de "+smax+"° soutenue sur ≈ 100 m":why}
@@ -473,7 +481,7 @@ function draw(S,R){
 function show(S){
   const d=DIFF[S.lvl],c=DCOL[S.lvl],w=[];
   if(S.c2>=20)w.push(`<b>Bord de route : attention à la circulation</b> sur ${km(S.c2)} (tracé orange tireté).`);
-  if(S.off>=20)w.push(`<b>Tout-terrain (bêta)</b> : ${km(S.off)} hors chemin (tracé violet pointillé), en forêt près d'une zone favorable. Pas de balisage, terrain, ruisseaux non cartographiés et fossés possibles : vous êtes seul responsable du passage ; renoncez si le terrain vous semble dangereux.`);
+  if(S.off>=20)w.push(`<b>Tout-terrain (bêta)</b> : ${km(S.off)} hors chemin (tracé violet pointillé), en forêt près d'une zone favorable, ${offRule(+$("it-max").value)}. Pas de balisage, terrain, ruisseaux non cartographiés et fossés possibles : vous êtes seul responsable du passage ; renoncez si le terrain vous semble dangereux.`);
   wxWarn(S).forEach(x=>w.push(x));
   if(S.cross)w.push(`${S.cross} traversée${S.cross>1?"s":""} de route large (tracé rouge pointillé, ≤ 30 m) : traversez avec prudence, aux endroits sûrs.`);
   $("it-res").innerHTML=`<div class="it-card"><div class="it-big">${dur(S.sec)} <span class="it-sub">de marche · ${km(S.len)}</span></div>
@@ -500,8 +508,7 @@ async function computeLoop(){
   {const ve=prepVar();if(ve){msg.textContent=ve;return}}
   const A=snap(pts.A);if(!A){msg.textContent="Le départ est à plus de 300 m d'un chemin de cette région : déplacez le marqueur.";clearRoute();return}
   const dm=$("it-lm").value==="len",v=+$("it-lt").value,target0=dm?v*1000:v*60,M=+$("it-max").value,tt=$("it-off").checked;
-  if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}
-    if(M<3){clearRoute();msg.textContent="Le tout-terrain est au moins « difficile » : relevez la difficulté maximale ou décochez le tout-terrain.";return}}
+  if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}}
   let V=[],note="",shr=1;LOOPERR="";
   // difficulté maximale : pénalité sur les tronçons trop techniques (×6 puis ×40), puis cible réduite (×0,75, ×0,55) si c'est l'effort (durée, dénivelé) qui dépasse
   try{outer:for(shr of M<4?[1,.75,.55]:[1])for(const k of M<4?[6,40]:[0]){
@@ -530,8 +537,7 @@ async function compute(){
   let R,S0=null;const M=+$("it-max").value,tt=$("it-off").checked;
   if(tt){
     $("it-offbox").hidden=false;
-    if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer. (Le tracé affiché plus haut, s'il y en avait un, n'était pas en tout-terrain.)";return}
-    if(M<3){clearRoute();msg.textContent="Le tout-terrain est au moins « difficile » : relevez la difficulté maximale ou décochez le tout-terrain.";return}}
+    if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer. (Le tracé affiché plus haut, s'il y en avait un, n'était pas en tout-terrain.)";return}}
   try{for(const k of M<4?[6,40]:[0]){BP=M<4?techPen(M,k):null;
     if(tt){R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}else R=routeGD(A,B,+$("it-env").value);
     if(!R)break;S0=summarize(R);if(S0.lvl<=M)break}}finally{BP=null}

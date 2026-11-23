@@ -62,3 +62,19 @@ Case « Tout-terrain » dans Itinéraire (A→B seulement), désactivée par dé
 - **Rythme** (curseur) : durée affichée = durée de marche × facteur (½ jogging, ¾, 1, 1,5, 2, 3 fouille complète). Pour une boucle ciblée en durée, la cible porte sur la durée affichée (la distance diminue avec un facteur élevé). Le niveau d'effort de la difficulté ne descend jamais sous la durée de marche normale.
 - **Export swisstopo** : KML (trace + départ + arrivée) partagé par la feuille de partage du téléphone (ou téléchargé), importable dans map.geo.admin.ch (Outils avancés › Importer un fichier). Lien « Ouvrir map.geo.admin.ch » centré sur le départ (coordonnées LV95 approchées, ± 1 m). Le viewer ne documente pas de paramètre d'URL pour tracer une ligne ni charger un KML depuis l'URL, et l'import dans l'app mobile swisstopo n'est pas documenté : à vérifier sur iPhone.
 - Tests : `node tools/tests/itineraires-options.test.js [région]`.
+
+## Tout-terrain à tous les niveaux de difficulté (23 nov.)
+La case « Tout-terrain (bêta) » reste sélectionnable et active quel que soit le curseur « Difficulté maximale », en A→B comme en boucle (plus de refus sous « difficile », plus de mention « désactivé par défaut »). Le hors-chemin s'adapte au maximum choisi : une cellule n'est praticable que si elle est près d'un chemin du réseau ET sous une pente maximale, en plus des règles existantes (forêt utilisable, ≤ 100 m d'une zone « élevé » ou mieux, ni cours d'eau, marais, réserves, ni bande de 20 m le long des routes de classe 2).
+
+| difficulté maximale | distance max. à un chemin | pente max. en hors-chemin |
+|---|---|---|
+| très facile | 25 m | < 8° |
+| facile | 50 m | < 15° |
+| moyen | 100 m | < 20° |
+| difficile | 200 m | < 25° |
+| aucune limite | illimitée (toujours près d'une zone favorable) | < 30° (25-30° ×3 plus lent) |
+
+- Le niveau de difficulté du tout-terrain n'est plus d'office « difficile » : c'est le maximum de la classe de distance et de la classe de pente des cellules réellement traversées hors chemin (mêmes seuils que le tableau ; au-delà de 200 m ou 25° = très difficile).
+- Météo défavorable : inchangée (pente ≤ 25° et marges élargies si sol détrempé ou gel ; refus si pluie forte).
+- Si aucun passage hors chemin n'existe sous ces limites, le tracé reste sur les chemins (ou un message l'indique).
+- Dans la page : texte d'aide de la case (visible dès qu'on la coche) et rappel de la règle dans l'avertissement du résultat. Tests : `itineraires.test.js` (niveau ≤ maximum de 0 à 3) et `itineraires-options.test.js`.

@@ -30,8 +30,8 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   // tout-terrain en boucle
   $('it-off').checked=true;$('it-off').dispatchEvent(new Event('change'));$('it-offok').checked=true;
   await go();o.ttMsg=$('it-msg').textContent;o.ttRes=dur();o.ttOffTxt=/hors chemin/.test($('it-res').innerHTML);o.ttVars=$('it-vars').children.length;
-  // tout-terrain refusé si difficulté max < difficile
-  set('it-max',1);await go();o.ttRefus=$('it-msg').textContent;set('it-max',4);
+  // tout-terrain actif à tous les niveaux : plus de refus, tracé respectant le maximum
+  set('it-max',0);$('it-msg').textContent='';$('it-res').innerHTML='';await go();o.ttRefus=$('it-msg').textContent;o.tt0Pill=($('it-res').querySelector('.pill')||{}).textContent;o.tt0Rule=/≤ 25 m d'un chemin, pente < 8°/.test($('it-res').innerHTML);set('it-max',4);await sleep(6000);
   // KML + lien swisstopo
   $('it-off').checked=false;$('it-off').dispatchEvent(new Event('change'));await go();
   o.geo=$('it-geo')?$('it-geo').href:'';
@@ -48,7 +48,8 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  ok(!!r.loopX3,'rythme ×3 : '+r.loopX3+' (base '+r.loopBase+')');
  ok(r.maxPill===undefined||['très facile','facile'].includes(r.maxPill)||/Aucune boucle|plus facile|Cible réduite/.test(r.maxMsg),'difficulté max « facile » : '+r.maxPill+' / '+r.maxMsg);
  ok(r.ttVars>=1||/Tout-terrain|zone|Aucun|déconseillé|météo|aucune|Aucune/i.test(r.ttMsg),'tout-terrain en boucle : '+(r.ttVars?r.ttVars+' variante(s), hors chemin='+r.ttOffTxt:r.ttMsg));
- ok(/au moins « difficile »/.test(r.ttRefus),'tout-terrain refusé sous « difficile »');
+ ok(!/au moins « difficile »/.test(r.ttRefus),'tout-terrain plus refusé en « très facile » : '+r.ttRefus);
+ ok(!r.tt0Pill||r.tt0Pill==='très facile'||/plus facile|Aucune/.test(r.ttRefus),'tout-terrain très facile : niveau '+r.tt0Pill+(r.tt0Rule?' (règle affichée)':''));
  ok(/map\.geo\.admin\.ch.*crosshair=marker,2[56]\d{5},1\d{6}/.test(r.geo),'lien swisstopo : '+r.geo);
  ok(r.dl==='itineraire-magichampi.kml'&&r.kmlOk,'export KML');
  ok(Math.abs(r.lv[0]-2600000)<5&&Math.abs(r.lv[1]-1200000)<5,'conversion LV95 : '+r.lv.map(Math.round));

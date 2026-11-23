@@ -24,6 +24,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
     if(R){abOk++;const S=ITIN.summarize(R);if(!(S.len>0&&S.sec>0&&S.lvl>=0&&S.lvl<=4))o.bad=1;if(!pair&&inW(i)&&inW(j))pair=[i,j]}}
    o.ab=ab;o.abOk=abOk;o.tmax=Math.round(tmax);
    if(pair){const R=await ITIN.routeOff(mk(pair[0]),mk(pair[1]),3);o.off=R.error?R.error:Math.round(R.off.len)}
+   if(pair){o.offLv=[];for(const M of [0,1,2,3]){const R=await ITIN.routeOff(mk(pair[0]),mk(pair[1]),0,M);o.offLv.push(R.error?'err':R.off.lvl<=M?'ok':'KO'+R.off.lvl)}}
    // point 2 : jamais de hors-chemin à moins de 15 m (marge de maille) d'une route de classe 2 ; point 3 : détour gardé seulement s'il atteint des zones « moyen » ou mieux
    const c2=[];for(let i=0;i<g.SE.length;i++)if(g.cls[g.SE[i]]===2)c2.push(i);o.nOff=0;o.nearRoad=0;o.gd=0;o.gdBad=0;
    const dRoad=(x,y)=>{let b=1e9;for(const i of c2){const dx=g.SX[i]-x;if(dx>b||dx<-b)continue;b=Math.min(b,Math.hypot(dx,g.SY[i]-y))}return b};
@@ -45,6 +46,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   ok(r.nearRoad===0,'tout-terrain : 0 point hors chemin à moins de 15 m d\'une route de classe 2 ('+r.nOff+' points hors chemin testés)');
   ok(r.gdBad===0,'grand détour : aucun détour sans gain en zones moyen ou mieux ('+r.gd+' trajets)');
   ok(r.loops>=1,'boucles : '+r.loops+' proposée(s)');
+  ok(!r.offLv||!r.offLv.some(x=>/^KO/.test(x)),'tout-terrain : niveau hors chemin ≤ difficulté maximale (0 à 3) : '+(r.offLv||[]).join(','));
   ok(r.off===undefined||typeof r.off==='number'||/Tout-terrain|zone|Aucun|déconseillé|météo|aucune/i.test(r.off),'tout-terrain : '+(r.off===undefined?'pas de paire':r.off));
   ok(errs.length===0,'aucune erreur de script'+(errs.length?' : '+errs[0]:''));
   await ctx.close();
