@@ -1,5 +1,5 @@
 // version v6-22nov-photos
-const SHELL="cartes-shell-v8-22nov-tt",DATA="cartes-donnees-v2";
+const SHELL="cartes-shell-v9-23nov-itin",DATA="cartes-donnees-v2";
 self.addEventListener("install",e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(["./","leaflet.js","itineraire.js","manifest.webmanifest","icon.svg"])).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>(k.startsWith("cartes-shell-")&&k!==SHELL)||k==="cartes-donnees").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 function fresh(u){return /\/$|\.html$|data\.json$|zone\.js$|files\.json$|sw\.js$|itineraire\.js$/.test(u.pathname)}

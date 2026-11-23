@@ -10,7 +10,19 @@ const DIFF=["très facile","facile","moyen","difficile","très difficile"],DCOL=
 const FACT={1:12,2:3.5,3:1.6,4:1,5:1},TYPE_F={0:1,1:.7,2:.8,3:1},TYPE_T={0:1,1:1,2:1.3,3:1.6};   // facteur de coût (réseau) · multiplicateur de temps (type de sentier)
 const R_E=6378137,WGW=[0,0,.2,.6,1];                                                  // poids du bonus par classe d'affichage (très faible … très élevé) : rien sous « moyen », le détour ne vise que les zones moyen ou mieux
 const MIN_GAIN=100,GAIN_RATIO=.2,OFF_ROAD=20;   // détour accepté seulement s'il gagne ≥ 100 m (et ≥ 20 % de la distance ajoutée) dans des zones « moyen » ou mieux · bande de 20 m le long des routes de classe 2 où le hors-chemin est interdit
-let GR=null,GRZ=null,loading=null,map0=null,mk={A:null,B:null},pts={A:null,B:null},arm=null,layer=null,last=null;
+let BP=null,GR=null,GRZ=null,loading=null,map0=null,mk={A:null,B:null},pts={A:null,B:null},arm=null,layer=null,last=null;
+
+/* ---------- facteur de durée et difficulté maximale ---------- */
+const DUR_V=[.5,.75,1,1.5,2,3],DUR_L=["jogging (temps ×½)","marche rapide (×¾)","marche normale (×1)","cueillette (×1,5)","cueillette lente (×2)","fouille complète (temps ×3)"];
+const durF=()=>{const el=document.getElementById("it-dur");return el?DUR_V[+el.value]||1:1};
+// niveau technique d'une arête (même échelle que summarize) ; les arêtes au-dessus du maximum reçoivent une pénalité de coût (×k par niveau de trop)
+function edgeTech(e){const g=GR,L_=g.len[e];let t=0;
+  if(L_>=40){const s=g.smax[e];t=s<15?0:s<25?1:s<32?2:s<38?3:4}
+  if(g.typ[e]===3)t=Math.max(t,4);else if(g.typ[e]===2)t=Math.max(t,3);
+  if(g.hard[e]>=50&&L_>=100)t=Math.max(t,3);
+  if(g.cls[e]===5&&!g.typ[e]&&L_>=150)t=Math.max(t,2);
+  return t}
+function techPen(M,k){const g=GR,p=new Float32Array(g.nE).fill(1);for(let e=0;e<g.nE;e++){const x=edgeTech(e)-M;if(x>0)p[e]=Math.pow(k,Math.min(x,2))}return p}
 
 /* ---------- graphe ---------- */
 const merc=(lat,lng)=>[R_E*lng*Math.PI/180,R_E*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))];
@@ -94,7 +106,7 @@ function costs(envie,pen,qq){
     let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?2:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 2
     if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);return m};
   const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);
-  for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0)}
+  for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1)*(BP?BP[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0)}
   return {cf,cb}}
 function route(A,B,envie,pen,qq){
   const g=GR,{cf,cb}=costs(envie,pen,qq);
@@ -131,20 +143,27 @@ function route(A,B,envie,pen,qq){
 // Triangle départ A → W1 → W2 → A (W1, W2 à distance r de A, 60° d'écart) ; les arêtes déjà utilisées coûtent ×6 pour ne pas repasser aux mêmes endroits.
 // Les waypoints sont choisis dans les secteurs où le mode affiché est le meilleur ; r est ajusté jusqu'à ±10 % de la cible.
 function nodeSnap(u){const g=GR,c=g.adj[g.deg[u]],e=c>>1;return {e,s:(c&1)?g.len[e]:0,d:0}}
-function loopOnce(A,ax,ay,th,r,envie,q,nq,cand){
+let LOOPERR="";
+async function loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pA){
   const g=GR,pickW=ang=>{   // meilleurs noeuds près de (r, ang)
     const tx=ax+r*Math.cos(ang),ty=ay+r*Math.sin(ang),L=[];
     for(const u of cand){const dx=(g.lon[u]-g.lon0)*g.kx-tx,dy=(g.lat[u]-g.lat0)*g.ky-ty,d=Math.hypot(dx,dy);if(d<r*.3)L.push([d/r-.6*nq[u],u])}
     return L.sort((a,b)=>a[0]-b[0]).slice(0,4).map(x=>x[1])};
   const C1=pickW(th),C2=pickW(th+Math.PI/3);
   for(const w1 of C1)for(const w2 of C2){if(w1===w2)continue;
+    if(off){   // tout-terrain : trois tronçons hors chemin autorisés (départ → W1 → W2 → départ)
+      const ll=u=>({lat:g.lat[u],lng:g.lon[u]}),seq=[],pl=[],O={len:0,up:0,dn:0,sec:0};let ok=true,P=pA;
+      for(const w of [ll(w1),ll(w2),pA]){
+        const R=await routeOff(P,w,envie);if(!R||R.error){if(R&&R.error)LOOPERR=R.error;ok=false;break}
+        seq.push(...R.seq);pl.push(...R.pl);for(const k of ["len","up","dn","sec"])O[k]+=R.off[k];P=w}
+      if(ok)return {seq,pl,off:O};continue}
     const pen=new Float32Array(g.nE).fill(1),seq=[];let ok=true,P=A;
     for(const w of [nodeSnap(w1),nodeSnap(w2),A]){
       const R=route(P,w,envie,pen,q);if(!R){ok=false;break}
       seq.push(...R.seq);for(const [e] of R.seq)pen[e]=6;P=w}
     if(ok)return {seq}}
   return null}
-async function loopRoutes(A,pt,metric,target,envie){
+async function loopRoutes(A,pt,metric,target,envie,off){
   const g=GR,q=envie>0?bonusQ():null,nq=new Float32Array(g.nN),cand=[];
   if(q)for(let e=0;e<g.nE;e++){nq[g.a[e]]=Math.max(nq[g.a[e]],q[e]);nq[g.b[e]]=Math.max(nq[g.b[e]],q[e])}
   for(let u=0;u<g.nN;u++){for(let k=g.deg[u];k<g.deg[u+1];k++){const e=g.adj[k]>>1;if(g.cls[e]>=3){cand.push(u);break}}}
@@ -155,15 +174,26 @@ async function loopRoutes(A,pt,metric,target,envie){
   sc.sort((a,b)=>b[0]-a[0]);const ths=[];for(const [,t] of sc){if(ths.every(u=>{const d=Math.abs(((t-u+3*Math.PI)%(2*Math.PI))-Math.PI);return d>=Math.PI/2}))ths.push(t);if(ths.length===3)break}
   while(ths.length<3)ths.push(ths.length*2*Math.PI/3);
   for(const th of ths){
-    let r=Math.min(8000,metric==="len"?target/4:target/3600*4000/4),best=null;
+    let r=Math.min(8000,metric==="len"?target/4:target/3600*4000/4/durF()),best=null;
     for(let it=0;it<9;it++){
-      const R=loopOnce(A,ax,ay,th,r,envie,q,nq,cand);if(!R)break;
+      const R=await loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pt);if(!R)break;
       const S=summarize(R),M=metric==="len"?S.len:S.sec,err=Math.abs(M-target)/target;
       if(!best||err<best.err)best={R,S,err};
       if(err<=.1)break;r=Math.min(8000,Math.max(300,r*Math.pow(target/M,it<4?.9:.6)*(1+(it>=4?(Math.random()-.5)*.15:0))))}
     if(best)out.push(best);
     await new Promise(r=>setTimeout(r,0))}
   const ok=out.filter(x=>x.err<=.35);return ok.length?ok:out}
+function lv95(lat,lng){const p=(lat*3600-169028.66)/10000,l=(lng*3600-26782.5)/10000;
+  return [2600072.37+211455.93*l-10938.51*l*p-0.36*l*p*p-44.54*l*l*l,1200147.07+308807.95*p+3745.25*l*l+76.63*p*p-194.56*l*l*p+119.79*p*p*p]}
+// KML (importable dans map.geo.admin.ch › Outils avancés › Importer un fichier ; partage iOS/Android vers l'app swisstopo si elle l'accepte)
+function kml(){
+  if(!last||!last.ll||!last.ll.length)return;
+  const c=last.ll.map(p=>p[1].toFixed(6)+","+p[0].toFixed(6)+",0").join(" "),a=last.ll[0],b=last.ll[last.ll.length-1],pm=(n,p)=>`<Placemark><name>${n}</name><Point><coordinates>${p[1].toFixed(6)},${p[0].toFixed(6)},0</coordinates></Point></Placemark>`;
+  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Itinéraire Magichampi</name><Style id="l"><LineStyle><color>ffc0651f</color><width>4</width></LineStyle></Style><Placemark><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><styleUrl>#l</styleUrl><LineString><tessellate>1</tessellate><coordinates>${c}</coordinates></LineString></Placemark>${pm("Départ",a)}${pm("Arrivée",b)}</Document></kml>`;
+  const f=new File([x],"itineraire-magichampi.kml",{type:"application/vnd.google-earth.kml+xml"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"Itinéraire Magichampi"}).catch(()=>{});return}
+  const u=document.createElement("a");u.href=URL.createObjectURL(f);u.download=f.name;document.body.appendChild(u);u.click();setTimeout(()=>{URL.revokeObjectURL(u.href);u.remove()},500)}
+function geoLink(S){S=S||last;if(!S||!S.ll||!S.ll.length)return"#";const a=S.ll[0],q=lv95(a[0],a[1]);return`https://map.geo.admin.ch/#/map?lang=fr&center=${Math.round(q[0])},${Math.round(q[1])}&z=10&crosshair=marker,${Math.round(q[0])},${Math.round(q[1])}`}
 function gpx(){
   if(!last||!last.ll)return;
   const t=new Date().toISOString(),pts_=last.ll.map(p=>`<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}"/>`).join("");
@@ -357,7 +387,7 @@ function summarize(R){
     lines.push({e,s0,s1,k});
   }
   const OF=R.off||{len:0,up:0,dn:0,sec:0};len+=OF.len;up+=OF.up;dn+=OF.dn;sec+=OF.sec;
-  const h=sec/3600,gain=up;
+  const secRaw=sec,fD=durF();sec=secRaw*fD;const h=secRaw*Math.max(1,fD)/3600,gain=up;   // durée affichée = marche × facteur ; niveau d'effort : jamais sous la durée de marche normale
   // niveau « effort » (durée, dénivelé positif) et niveau « technique » (pente, type de chemin, zone difficile d'accès)
   const lt=h<=1?0:h<=2.5?1:h<=4.5?2:h<=7?3:4,lg=gain<=100?0:gain<=300?1:gain<=700?2:gain<=1200?3:4,effort=Math.max(lt,lg);
   const ls=smax<15?0:smax<25?1:smax<32?2:smax<38?3:4;
@@ -408,10 +438,10 @@ function show(S){
    <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b></div>
    <div class="it-row">Difficulté : <span class="pill" style="background:${c};color:#fff">${d}</span> <span class="it-sub">${esc(S.reason)}</span></div>
    ${w.map(x=>`<div class="it-warn">${x}</div>`).join("")}
-   <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button></div>
+   <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button><button type="button" class="btn" id="it-kml">Export swisstopo (KML)</button><a class="btn" id="it-geo" target="_blank" rel="noopener">Ouvrir map.geo.admin.ch</a></div>
    <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux. <a href="#" id="it-decl">Déclaration de responsabilité</a></p></div>`;
   $("it-decl").onclick=e=>{e.preventDefault();declare(false)};
-  $("it-gpx").onclick=gpx}
+  $("it-gpx").onclick=gpx;$("it-kml").onclick=kml;$("it-geo").href=geoLink(S)}
 const isLoop=()=>$("it-mode").value==="loop";
 function showVars(V,k){
   if(layer){map.removeLayer(layer);layer=null}
@@ -426,13 +456,22 @@ async function computeLoop(){
   msg.textContent="Calcul des boucles…";
   try{await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
   const A=snap(pts.A);if(!A){msg.textContent="Le départ est à plus de 300 m d'un chemin de cette région : déplacez le marqueur.";clearRoute();return}
-  const dm=$("it-lm").value==="len",v=+$("it-lt").value,target=dm?v*1000:v*60;
-  const V=await loopRoutes(A,pts.A,dm?"len":"sec",target,+$("it-env").value);
-  if(!V.length){clearRoute();msg.textContent="Aucune boucle trouvée depuis ce départ : le réseau y est trop morcelé ou trop court. Essayez un autre point de départ.";return}
-  V.sort((a,b)=>a.err-b.err);V.forEach(x=>x.S=x.S);
+  const dm=$("it-lm").value==="len",v=+$("it-lt").value,target0=dm?v*1000:v*60,M=+$("it-max").value,tt=$("it-off").checked;
+  if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}
+    if(M<3){clearRoute();msg.textContent="Le tout-terrain est au moins « difficile » : relevez la difficulté maximale ou décochez le tout-terrain.";return}}
+  let V=[],note="",shr=1;LOOPERR="";
+  // difficulté maximale : pénalité sur les tronçons trop techniques (×6 puis ×40), puis cible réduite (×0,75, ×0,55) si c'est l'effort (durée, dénivelé) qui dépasse
+  try{outer:for(shr of M<4?[1,.75,.55]:[1])for(const k of M<4?[6,40]:[0]){
+    BP=M<4?techPen(M,k):null;V=await loopRoutes(A,pts.A,dm?"len":"sec",target0*shr,+$("it-env").value,tt);
+    const okV=V.filter(x=>x.S.lvl<=M);if(okV.length||!V.length){if(okV.length)V=okV;break outer}}}finally{BP=null}
+  if(!V.length){clearRoute();msg.textContent=LOOPERR||"Aucune boucle trouvée depuis ce départ : le réseau y est trop morcelé ou trop court. Essayez un autre point de départ.";return}
+  V.sort((a,b)=>a.err-b.err);
+  const over=V.every(x=>x.S.lvl>M);
+  if(M<4&&!over&&shr<1)note=` Cible réduite à ${dm?km(target0*shr):dur(target0*shr*60)} pour respecter la difficulté maximale (${DIFF[M]}). `;
+  if(M<4&&over)note=` Aucune boucle « ${DIFF[M]} » ou plus facile trouvée ici : voici la plus facile (${DIFF[Math.min(...V.map(x=>x.S.lvl))]}). `;
   const W=V.map(x=>({S:x.S,R:x.R}));showVars(W,0);
-  const off=V.filter(x=>x.err>.1).length;
-  msg.textContent=off?off+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s), à ±10 % de la cible."}
+  const offN=V.filter(x=>x.err>.1&&shr===1).length;
+  msg.textContent=note+(offN?offN+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s)"+(shr===1?", à ±10 % de la cible.":"."))}
 async function compute(){
   if(isLoop()){clearRouteKeep();return computeLoop()}
   $("it-vars").innerHTML="";
@@ -444,16 +483,18 @@ async function compute(){
   try{g=await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
   const A=snap(pts.A),B=snap(pts.B);
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
-  let R;
-  if($("it-off").checked&&!isLoop()){
+  let R,S0=null;const M=+$("it-max").value,tt=$("it-off").checked;
+  if(tt){
     $("it-offbox").hidden=false;
     if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer. (Le tracé affiché plus haut, s'il y en avait un, n'était pas en tout-terrain.)";return}
-    R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){clearRoute();msg.textContent=R.error;return}
-  }else R=routeGD(A,B,+$("it-env").value);
+    if(M<3){clearRoute();msg.textContent="Le tout-terrain est au moins « difficile » : relevez la difficulté maximale ou décochez le tout-terrain.";return}}
+  try{for(const k of M<4?[6,40]:[0]){BP=M<4?techPen(M,k):null;
+    if(tt){R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}else R=routeGD(A,B,+$("it-env").value);
+    if(!R)break;S0=summarize(R);if(S0.lvl<=M)break}}finally{BP=null}
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
-  const S=summarize(R);draw(S,R);show(S);last=S;
-  msg.textContent=(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
+  const S=S0||summarize(R);draw(S,R);show(S);last=S;
+  msg.textContent=(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
 }
 
 
@@ -484,7 +525,7 @@ function init(){
     if(typeof LOC!=="undefined"&&LOC.ll){use(LOC.ll);return}
     if(!navigator.geolocation){$("it-msg").textContent="Position GPS indisponible ici : choisissez le départ sur la carte.";return}
     navigator.geolocation.getCurrentPosition(p=>use([p.coords.latitude,p.coords.longitude]),()=>{$("it-msg").textContent="Position refusée ou introuvable : choisissez le départ sur la carte."},{enableHighAccuracy:true,timeout:15000})};
-  const modeUI=()=>{const l=isLoop();$("it-b").hidden=l;$("it-swap").hidden=l;$("it-loopbox").hidden=!l;$("it-offrow").hidden=l;$("it-a").textContent=l?"Départ de la boucle":"Départ (A)";
+  const modeUI=()=>{const l=isLoop();$("it-b").hidden=l;$("it-swap").hidden=l;$("it-loopbox").hidden=!l;$("it-a").textContent=l?"Départ de la boucle":"Départ (A)";
     if(l&&mk.B){map.removeLayer(mk.B);mk.B=null;pts.B=null}clearRouteKeep();$("it-vars").innerHTML=""};
   $("it-mode").onchange=modeUI;$("it-off").onchange=()=>{$("it-offbox").hidden=!$("it-off").checked};$("it-offbox").hidden=true;
   const lmUI=()=>{const d=$("it-lm").value==="len",r=$("it-lt");r.min=d?2:30;r.max=d?20:360;r.step=d?1:15;r.value=d?8:120;r.oninput()};
@@ -493,7 +534,9 @@ function init(){
   $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
-  window.ITIN={routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
+  $("it-dur").oninput=()=>{$("it-durl").textContent=DUR_L[+$("it-dur").value];if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-dur").oninput();
+  $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile";if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
+  window.ITIN={kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
 }
 init();
 })();
