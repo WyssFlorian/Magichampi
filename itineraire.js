@@ -232,7 +232,7 @@ function lv95(lat,lng){const p=(lat*3600-169028.66)/10000,l=(lng*3600-26782.5)/1
 function kml(){
   if(!last||!last.ll||!last.ll.length)return;
   const c=last.ll.map(p=>p[1].toFixed(6)+","+p[0].toFixed(6)+",0").join(" "),a=last.ll[0],b=last.ll[last.ll.length-1],pm=(n,p)=>`<Placemark><name>${n}</name><Point><coordinates>${p[1].toFixed(6)},${p[0].toFixed(6)},0</coordinates></Point></Placemark>`;
-  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Itinéraire Magichampi</name><Style id="l"><LineStyle><color>ffc0651f</color><width>4</width></LineStyle></Style><Placemark><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><styleUrl>#l</styleUrl><LineString><tessellate>1</tessellate><coordinates>${c}</coordinates></LineString></Placemark>${pm("Départ",a)}${pm("Arrivée",b)}</Document></kml>`;
+  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Itinéraire Magichampi</name><Style id="l"><LineStyle><color>ffc0651f</color><width>4</width></LineStyle></Style><Placemark><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><styleUrl>#l</styleUrl><LineString><tessellate>1</tessellate><coordinates>${c}</coordinates></LineString></Placemark>${pm("Départ",a)}${(last.wps||[]).map((p,i)=>pm("Point de passage "+(i+1),p)).join("")}${pm("Arrivée",b)}</Document></kml>`;
   const f=new File([x],"itineraire-magichampi.kml",{type:"application/vnd.google-earth.kml+xml"});
   if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"Itinéraire Magichampi"}).catch(()=>{});return}
   const u=document.createElement("a");u.href=URL.createObjectURL(f);u.download=f.name;document.body.appendChild(u);u.click();setTimeout(()=>{URL.revokeObjectURL(u.href);u.remove()},500)}
@@ -240,7 +240,7 @@ function geoLink(S){S=S||last;if(!S||!S.ll||!S.ll.length)return"#";const a=S.ll[
 function gpx(){
   if(!last||!last.ll)return;
   const t=new Date().toISOString(),pts_=last.ll.map(p=>`<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}"/>`).join("");
-  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Magichampi" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>Itinéraire Magichampi</name><time>${t}</time></metadata><trk><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><trkseg>${pts_}</trkseg></trk></gpx>`;
+  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Magichampi" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>Itinéraire Magichampi</name><time>${t}</time></metadata>${(last.wps||[]).map((p,i)=>`<wpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}"><name>Point de passage ${i+1}</name></wpt>`).join("")}<trk><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><trkseg>${pts_}</trkseg></trk></gpx>`;
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([x],{type:"application/gpx+xml"}));a.download="itineraire-magichampi.gpx";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
 
@@ -468,7 +468,7 @@ function setPt(t,ll){
 function clearRouteKeep(){if(layer){map.removeLayer(layer);layer=null}last=null;$("it-res").innerHTML=""}
 function clearRoute(all){
   if(layer){map.removeLayer(layer);layer=null}last=null;$("it-res").innerHTML="";
-  if(all){["A","B"].forEach(t=>{if(mk[t]){map.removeLayer(mk[t]);mk[t]=null}pts[t]=null});$("it-msg").textContent=""}
+  if(all){["A","B"].forEach(t=>{if(mk[t]){map.removeLayer(mk[t]);mk[t]=null}pts[t]=null});wpClear();$("it-msg").textContent=""}
 }
 function draw(S,R){
   if(!map.getPane("itineraire")){const p=map.createPane("itineraire");p.style.zIndex=450}
@@ -487,6 +487,7 @@ function show(S){
   $("it-res").innerHTML=`<div class="it-card"><div class="it-big">${dur(S.sec)} <span class="it-sub">de marche · ${km(S.len)}</span></div>
    <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b></div>
    <div class="it-row">Difficulté : <span class="pill" style="background:${c};color:#fff">${d}</span> <span class="it-sub">${esc(S.reason)}</span></div>
+   ${S.legs&&S.legs.length>1?`<div class="it-row">Étapes :<ol class="it-legs">${S.legs.map(l=>`<li>${l.from} → ${l.to} : <b>${dur(l.sec)}</b> · ${km(l.len)} · ${DIFF[l.lvl]}</li>`).join("")}</ol></div>`:""}
    ${w.map(x=>`<div class="it-warn">${x}</div>`).join("")}
    <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button><button type="button" class="btn" id="it-kml">Export swisstopo (KML)</button><a class="btn" id="it-geo" target="_blank" rel="noopener">Ouvrir map.geo.admin.ch</a></div>
    <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux. <a href="#" id="it-decl">Déclaration de responsabilité</a></p></div>`;
@@ -523,6 +524,7 @@ async function computeLoop(){
   const offN=V.filter(x=>x.err>.1&&shr===1).length;
   msg.textContent=note+(VAR?" Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(last)+" ":"")+(offN?offN+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s)"+(shr===1?", à ±10 % de la cible.":"."))}
 async function compute(){
+  if(WP.length){clearRouteKeep();return computeWp()}
   if(isLoop()){clearRouteKeep();return computeLoop()}
   $("it-vars").innerHTML="";
   const msg=$("it-msg");msg.textContent="";
@@ -548,6 +550,69 @@ async function compute(){
 }
 
 
+/* ---------- points de passage obligatoires ---------- */
+// Étapes enchaînées dans l'ordre donné (ou réordonnées par la plus courte ligne droite si la case est cochée) : A → 1 → 2 … → B (ou retour en A pour une boucle).
+// Chaque étape est calculée avec les mêmes règles que A→B (difficulté, tout-terrain, détour, variétés) puis les tracés sont mis bout à bout.
+const WP=[],WP_MAX=8;
+const wIcon=n=>L.divIcon({className:"",html:`<div style="width:26px;height:26px;border-radius:50%;background:#e8731f;color:#fff;font:700 14px/26px system-ui;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)">${n}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+function wpReady(){return pts.A&&(isLoop()||pts.B)}
+function wpAdd(ll){
+  const w={ll,mk:null};w.mk=L.marker(ll,{icon:wIcon(WP.length+1),draggable:true,zIndexOffset:850,keyboard:false}).addTo(map);
+  w.mk.on("dragend",()=>{w.ll=w.mk.getLatLng();if(wpReady()&&last)compute()});WP.push(w);wpRefresh()}
+function wpClear(){WP.forEach(w=>map.removeLayer(w.mk));WP.length=0;wpRefresh()}
+function wpRefresh(){
+  WP.forEach((w,i)=>w.mk.setIcon(wIcon(i+1)));
+  const bx=$("it-wbox");if(!bx)return;bx.hidden=!WP.length;
+  $("it-wlist").innerHTML=WP.map((w,i)=>`<div class="it-wp"><b>${i+1}</b><span>${w.ll.lat.toFixed(4)}, ${w.ll.lng.toFixed(4)}</span><button type="button" class="btn" data-a="up" data-i="${i}" ${i?"":"disabled"} aria-label="Monter">↑</button><button type="button" class="btn" data-a="dn" data-i="${i}" ${i<WP.length-1?"":"disabled"} aria-label="Descendre">↓</button><button type="button" class="btn" data-a="x" data-i="${i}" aria-label="Retirer">✕</button></div>`).join("");
+  $("it-wlist").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i,a=b.dataset.a;
+    if(a==="x"){map.removeLayer(WP[i].mk);WP.splice(i,1)}else{const j=a==="up"?i-1:i+1;[WP[i],WP[j]]=[WP[j],WP[i]]}
+    wpRefresh();if(wpReady()&&last)compute();else if(!WP.length)clearRouteKeep()})}
+function wpOrder(){   // ordre le plus court en ligne droite (force brute jusqu'à 7 étapes, sinon plus proche voisin)
+  const loop=isLoop(),a=merc(pts.A.lat,pts.A.lng),z=loop?a:merc(pts.B.lat,pts.B.lng),P=WP.map(w=>merc(w.ll.lat,w.ll.lng)),n=P.length,d=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+  if(n<2)return;let best=null,bl=Infinity;
+  const tot=o=>{let t=0,c=a;for(const i of o){t+=d(c,P[i]);c=P[i]}return t+d(c,z)};
+  if(n<=7){const rec=(o,rest)=>{if(!rest.length){const t=tot(o);if(t<bl){bl=t;best=o}return}rest.forEach((x,k)=>rec([...o,x],rest.filter((_,j)=>j!==k)))};rec([],[...Array(n).keys()])}
+  else{const rest=[...Array(n).keys()],o=[];let c=a;while(rest.length){let bi=0;rest.forEach((x,k)=>{if(d(c,P[x])<d(c,P[rest[bi]]))bi=k});const x=rest.splice(bi,1)[0];o.push(x);c=P[x]}best=o}
+  const old=WP.slice();best.forEach((i,k)=>{WP[k]=old[i]});wpRefresh()}
+function wpCat(legs){
+  const off=legs.some(l=>l.off)?legs.reduce((o,l)=>{const f=l.off||{len:0,up:0,dn:0,sec:0,lvl:0};return {len:o.len+f.len,up:o.up+f.up,dn:o.dn+f.dn,sec:o.sec+f.sec,lvl:Math.max(o.lvl,f.lvl)}},{len:0,up:0,dn:0,sec:0,lvl:0}):undefined;
+  return {seq:legs.flatMap(l=>l.seq),off,pl:legs.flatMap(l=>l.pl||l.seq.filter(s=>s[1]!==s[2]).map(([e,s0,s1])=>({ll:sub(e,s0,s1),k:GR.cls[e]})))}}
+async function computeWp(){
+  const msg=$("it-msg"),loop=isLoop();$("it-vars").innerHTML="";
+  if(!pts.A||(!loop&&!pts.B)){msg.textContent=loop?"Choisissez le départ de la boucle (A).":"Choisissez le départ et l'arrivée.";return}
+  if(typeof OV!=="undefined"&&OV){msg.textContent="Zoomez sur une région (zoom 12 ou plus) : le réseau de chemins n'existe pas pour la vue d'ensemble du canton.";return}
+  if(!await declare(true)){msg.textContent="Déclaration non acceptée : l'itinéraire n'est pas calculé.";return}
+  msg.textContent="Calcul…";
+  try{await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
+  {const ve=prepVar();if(ve){msg.textContent=ve;return}}
+  const M=+$("it-max").value,tt=$("it-off").checked,envie=+$("it-env").value;
+  if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}}
+  if($("it-wopt").checked)wpOrder();
+  const P=[pts.A,...WP.map(w=>w.ll),loop?pts.A:pts.B],nm=P.map((_,i)=>i===0?"A":i===P.length-1?(loop?"A":"B"):String(i));
+  if(P.some(p=>!p))return;   // marqueur retiré ou mode changé pendant le calcul
+  const sn=P.map(p=>snap(p));
+  for(let i=0;i<P.length;i++)if(!sn[i]){clearRoute();msg.textContent=(i===0?"Le départ":i===P.length-1?"L'arrivée":"Le point de passage "+i)+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";return}
+  let legs=[],S0=null,R=null,bad=null;
+  try{for(const k of M<4?[6,40]:[0]){BP=M<4?techPen(M,k):null;legs=[];bad=null;
+    for(let i=0;i<P.length-1;i++){
+      const l=tt?await routeOff(P[i],P[i+1],envie):routeGD(sn[i],sn[i+1],envie);
+      if(!l||l.error){bad=i;msg.textContent="Étape "+nm[i]+" → "+nm[i+1]+" : "+(l&&l.error?l.error:"aucun chemin trouvé entre ces deux points sur le réseau (parties non reliées). Déplacez "+(nm[i+1]==="B"||nm[i+1]==="A"?"le marqueur "+nm[i+1]:"le point de passage "+nm[i+1])+".");break}
+      legs.push(l)}
+    if(bad!==null)break;
+    R=wpCat(legs);S0=summarize(R);if(S0.lvl<=M)break}}finally{BP=null}
+  if(bad!==null){clearRoute();return}
+  const LS=legs.map((l,i)=>{const s=summarize(l);return {from:nm[i],to:nm[i+1],len:s.len,sec:s.sec,lvl:s.lvl,reason:s.reason}});
+  S0.legs=LS;S0.wps=WP.map(w=>[w.ll.lat,w.ll.lng]);
+  if(layer){map.removeLayer(layer);layer=null}
+  draw(S0,R);show(S0);last=S0;
+  const hard=M<4?LS.filter(l=>l.lvl>M):[];
+  msg.textContent=(loop?"Boucle A → "+WP.map((_,i)=>i+1).join(" → ")+" → A : la cible de distance ou de durée est ignorée, le parcours est défini par vos points de passage. ":"")+
+    (hard.length?"Point de passage inaccessible sous « "+DIFF[M]+" » : "+hard.map(l=>"l'étape "+l.from+" → "+l.to+" reste « "+DIFF[l.lvl]+" » ("+l.reason+")").join(" ; ")+". Le tracé affiché passe quand même par vos points : choisissez une difficulté plus élevée ou déplacez-les. ":"")+
+    (VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S0)+" ":"")+
+    (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+
+    (WP.length+" point"+(WP.length>1?"s":"")+" de passage."+($("it-wopt").checked&&WP.length>1?" Ordre optimisé.":""))}
+
 /* ---------- déclaration de responsabilité (acceptation mémorisée en local) ---------- */
 const DECL_KEY="itin-decl-v1";
 function declOk(){try{return localStorage.getItem(DECL_KEY)==="1"}catch(e){return false}}
@@ -560,16 +625,19 @@ function declare(need){   // retourne une promesse : true si accepté
 function banner(t){let b=$("it-banner");if(!t){if(b)b.hidden=true;return}
   if(!b){b=document.createElement("div");b.id="it-banner";b.className="it-banner";b.innerHTML='<span id="it-bt"></span> <button type="button" class="btn" id="it-bx">Annuler</button>';document.body.appendChild(b);$("it-bx").onclick=()=>{arm=null;banner(null)}}
   $("it-bt").textContent=t;b.hidden=false}
-function start(t){arm=t;if(typeof openMenu==="function")openMenu(false);banner("Touchez la carte pour placer "+(t==="A"?"le départ (A)":"l'arrivée (B)"))}
+function start(t){arm=t;if(typeof openMenu==="function")openMenu(false);banner("Touchez la carte pour placer "+(t==="A"?"le départ (A)":t==="W"?"le point de passage "+(WP.length+1):"l'arrivée (B)"))}
 function init(){
   if(typeof map==="undefined"||!map||!$("it-go")){return setTimeout(init,300)}
   map.getContainer().addEventListener("click",e=>{
     if(!arm)return;e.stopPropagation();e.preventDefault();
     const dg=map.dragging&&map.dragging._draggable&&map.dragging._draggable._moved;if(dg)return;
-    const ll=map.mouseEventToLatLng(e),t=arm;arm=null;banner(null);setPt(t,ll);
+    const ll=map.mouseEventToLatLng(e),t=arm;arm=null;banner(null);if(t==="W")wpAdd(ll);else setPt(t,ll);
     {const d=$("sec-itin");if(d){d.open=true;setTimeout(()=>d.scrollIntoView({behavior:"smooth",block:"nearest"}),50)}}
-    if(pts.A&&pts.B)compute();else $("it-msg").textContent=t==="A"?"Départ placé. Choisissez maintenant l'arrivée.":"Arrivée placée. Choisissez maintenant le départ."},true);
+    if(t==="W"){if(pts.A&&(isLoop()?last:pts.B))compute();else $("it-msg").textContent="Point de passage "+WP.length+" placé."+(pts.A&&(isLoop()||pts.B)?" Touchez Calculer.":" Placez le départ"+(isLoop()?"":" et l'arrivée")+" si ce n'est pas fait.")}
+    else if(pts.A&&pts.B)compute();else $("it-msg").textContent=t==="A"?"Départ placé. Choisissez maintenant l'arrivée.":"Arrivée placée. Choisissez maintenant le départ."},true);
   $("it-a").onclick=()=>start("A");$("it-b").onclick=()=>start("B");
+  $("it-w").onclick=()=>{if(WP.length>=WP_MAX){$("it-msg").textContent="Maximum "+WP_MAX+" points de passage.";return}start("W")};
+  $("it-wopt").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};
   $("it-loc").onclick=()=>{
     const use=ll=>{setPt("A",L.latLng(ll[0],ll[1]));if(pts.B)compute();else $("it-msg").textContent="Départ = ma position. Choisissez l'arrivée."};
     if(typeof LOC!=="undefined"&&LOC.ll){use(LOC.ll);return}
@@ -581,7 +649,7 @@ function init(){
   const lmUI=()=>{const d=$("it-lm").value==="len",r=$("it-lt");r.min=d?2:30;r.max=d?20:360;r.step=d?1:15;r.value=d?8:120;r.oninput()};
   $("it-lm").onchange=lmUI;$("it-lt").oninput=()=>{const d=$("it-lm").value==="len",v=+$("it-lt").value;$("it-ltl").textContent=d?v+" km":dur(v*60)};
   lmUI();modeUI();
-  $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);compute()};
+  $("it-go").onclick=compute;$("it-clr").onclick=()=>clearRoute(true);$("it-swap").onclick=()=>{if(!pts.A||!pts.B)return;const a=pts.A,b=pts.B;setPt("A",b);setPt("B",a);WP.reverse();wpRefresh();compute()};
   $("it-env").oninput=()=>{$("it-envl").textContent=["plus court","léger détour","détour","grand détour"][+$("it-env").value];if(pts.A&&pts.B&&last)compute()};
   $("it-env").oninput();
   $("it-var").onchange=()=>{$("it-varbox").hidden=!$("it-var").checked;
@@ -592,7 +660,7 @@ function init(){
   $("it-varbox").hidden=true;
   $("it-dur").oninput=()=>{$("it-durl").textContent=DUR_L[+$("it-dur").value];if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-dur").oninput();
   $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile";if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
-  window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
+  window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
 }
 init();
 })();
