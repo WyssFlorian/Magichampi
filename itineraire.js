@@ -186,46 +186,84 @@ function route(A,B,envie,pen,qq){
 // Triangle départ A → W1 → W2 → A (W1, W2 à distance r de A, 60° d'écart) ; les arêtes déjà utilisées coûtent ×6 pour ne pas repasser aux mêmes endroits.
 // Les waypoints sont choisis dans les secteurs où le mode affiché est le meilleur ; r est ajusté jusqu'à ±10 % de la cible.
 function nodeSnap(u){const g=GR,c=g.adj[g.deg[u]],e=c>>1;return {e,s:(c&1)?g.len[e]:0,d:0}}
-let LOOPERR="";
-async function loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pA){
-  const g=GR,pickW=ang=>{   // meilleurs noeuds près de (r, ang)
+let LOOPERR="",LOOPQ=true;   // LOOPQ : qualité des boucles (forêt, allers-retours) ; false = ancien comportement (comparaisons de test)
+/* qualité d'une boucle : part en forêt, part de tronçons parcourus deux fois, impasses (aller-retour qui n'atteint aucune zone « moyen » ou mieux en forêt) */
+function loopMetrics(R){
+  const g=GR;if(!curC()||typeof meta==="undefined")return null;
+  const pls=R.pl?R.pl.map(p=>p.ll):R.seq.filter(([,s0,s1])=>s0!==s1).map(([e,s0,s1])=>sub(e,s0,s1)),pts=[];
+  for(const l of pls)for(const p of l)pts.push(p);
+  const ST=20,sm=[];let acc=0,nxt=0;   // échantillons tous les 20 m
+  for(let i=0;i<pts.length;i++){
+    if(!i){sm.push(pts[0]);nxt=ST;continue}
+    const dx=(pts[i][1]-pts[i-1][1])*g.kx,dy=(pts[i][0]-pts[i-1][0])*g.ky,d=Math.hypot(dx,dy);
+    while(d>0&&acc+d>=nxt){const t=(nxt-acc)/d;sm.push([pts[i-1][0]+t*(pts[i][0]-pts[i-1][0]),pts[i-1][1]+t*(pts[i][1]-pts[i-1][1])]);nxt+=ST}
+    acc+=d}
+  const n=sm.length;if(n<4)return null;
+  const forest=new Uint8Array(n),good=new Uint8Array(n),rep=new Uint8Array(n),cells=new Map();
+  for(let i=0;i<n;i++){
+    const q=merc(sm[i][0],sm[i][1]),c=Math.floor((q[0]-meta.x0)/meta.res),r=Math.floor((meta.y1-q[1])/meta.res);
+    if(c>=0&&r>=0&&c<meta.cols&&r<meta.rows){const gi=r*meta.cols+c,v=curC()[gi],fo=G.fx[gi]>0;forest[i]=fo?1:0;good[i]=fo&&v!==255&&v>=2&&v<5?1:0}
+    const kx=Math.floor((sm[i][1]-g.lon0)*g.kx/ST),ky=Math.floor((sm[i][0]-g.lat0)*g.ky/ST);
+    for(let a=-1;a<=1&&!rep[i];a++)for(let b=-1;b<=1;b++){const l=cells.get((kx+a)+","+(ky+b));if(l&&l.some(j=>i-j>=4)){rep[i]=1;break}}
+    const k=kx+","+ky;let l=cells.get(k);if(!l)cells.set(k,l=[]);l.push(i)}
+  let nf_=0,ng=0,nr=0,nd=0;
+  for(let i=0;i<n;i++){nf_+=forest[i];ng+=good[i];nr+=rep[i]}
+  for(let i=0;i<n;){if(!rep[i]){i++;continue}let j=i,reach=false;while(j<n&&rep[j])j++;   // tronçon répété i…j-1 : atteint-il une zone favorable en forêt ?
+    for(let k=Math.max(0,i-2);k<Math.min(n,j+2);k++)if(good[k]){reach=true;break}
+    if(!reach&&j-i>=4)nd+=j-i;i=j}
+  return {forest:nf_/n,good:ng/n,rep:nr/n,dead:nd/n,len:n*ST}}
+// coût de sélection d'une boucle : écart à la cible, impasses lourdement, répétitions, moins de forêt / de zones favorables
+const loopCost=(err,m)=>m?err+3*m.dead+.7*m.rep-.5*m.good-.3*m.forest:err;
+let nf=null;   // part de forêt (0-1) des noeuds, pour le choix des étapes
+async function loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pA,all){
+  const g=GR,pickW=ang=>{   // meilleurs noeuds près de (r, ang) : on préfère les noeuds en forêt et dans les zones favorables
     const tx=ax+r*Math.cos(ang),ty=ay+r*Math.sin(ang),L=[];
-    for(const u of cand){const dx=(g.lon[u]-g.lon0)*g.kx-tx,dy=(g.lat[u]-g.lat0)*g.ky-ty,d=Math.hypot(dx,dy);if(d<r*.3)L.push([d/r-.6*nq[u],u])}
+    for(const u of cand){const dx=(g.lon[u]-g.lon0)*g.kx-tx,dy=(g.lat[u]-g.lat0)*g.ky-ty,d=Math.hypot(dx,dy);if(d<r*.3)L.push([d/r-.6*nq[u]-(LOOPQ?.5*nf[u]:0),u])}
     return L.sort((a,b)=>a[0]-b[0]).slice(0,4).map(x=>x[1])};
-  const C1=pickW(th),C2=pickW(th+Math.PI/3);
-  for(const w1 of C1)for(const w2 of C2){if(w1===w2)continue;
-    if(off){   // tout-terrain : trois tronçons hors chemin autorisés (départ → W1 → W2 → départ)
-      const ll=u=>({lat:g.lat[u],lng:g.lon[u]}),seq=[],pl=[],O={len:0,up:0,dn:0,sec:0,lvl:0};let ok=true,P=pA;
+  const C1=pickW(th),C2=pickW(th+Math.PI/3),res=[],maxN=!all?1:off?4:12;
+  for(const w1 of C1)for(const w2 of C2){if(w1===w2)continue;if(res.length>=maxN)break;
+    if(off){   // tout-terrain : trois tronçons hors chemin autorisés (départ → W1 → W2 → départ) ; les cellules déjà empruntées coûtent ×4
+      const ll=u=>({lat:g.lat[u],lng:g.lon[u]}),seq=[],pl=[],O={len:0,up:0,dn:0,sec:0,lvl:0};let ok=true,P=pA;const used=LOOPQ?new Set():null;
       for(const w of [ll(w1),ll(w2),pA]){
-        const R=await routeOff(P,w,envie);if(!R||R.error){if(R&&R.error)LOOPERR=R.error;ok=false;break}
-        seq.push(...R.seq);pl.push(...R.pl);for(const k of ["len","up","dn","sec"])O[k]+=R.off[k];O.lvl=Math.max(O.lvl,R.off.lvl||0);P=w}
-      if(ok)return {seq,pl,off:O};continue}
+        const R=await routeOff(P,w,envie,undefined,used);if(!R||R.error){if(R&&R.error)LOOPERR=R.error;ok=false;break}
+        seq.push(...R.seq);pl.push(...R.pl);for(const k of ["len","up","dn","sec"])O[k]+=R.off[k];O.lvl=Math.max(O.lvl,R.off.lvl||0);P=w;
+        if(used)for(const gi of R.cellsG)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)used.add(gi+dy*meta.cols+dx)}
+      if(ok){const o={seq,pl,off:O};if(!all)return o;res.push(o)}continue}
     const pen=new Float32Array(g.nE).fill(1),seq=[];let ok=true,P=A;
     for(const w of [nodeSnap(w1),nodeSnap(w2),A]){
       const R=route(P,w,envie,pen,q);if(!R){ok=false;break}
-      seq.push(...R.seq);for(const [e] of R.seq)pen[e]=6;P=w}
-    if(ok)return {seq}}
-  return null}
+      seq.push(...R.seq);for(const [e] of R.seq)pen[e]=LOOPQ?12:6;P=w}
+    if(ok){if(!all)return {seq};res.push({seq})}}
+  return all?res:null}
 async function loopRoutes(A,pt,metric,target,envie,off){
   const g=GR,q=envie>0?bonusQ():null,nq=new Float32Array(g.nN),cand=[];
+  nf=new Float32Array(g.nN);let mxf=1;for(let e=0;e<g.nE;e++)if(g.fo[e]>mxf)mxf=g.fo[e];
   if(q)for(let e=0;e<g.nE;e++){nq[g.a[e]]=Math.max(nq[g.a[e]],q[e]);nq[g.b[e]]=Math.max(nq[g.b[e]],q[e])}
+  for(let e=0;e<g.nE;e++){const f=g.fo[e]/mxf;nf[g.a[e]]=Math.max(nf[g.a[e]],f);nf[g.b[e]]=Math.max(nf[g.b[e]],f)}
   for(let u=0;u<g.nN;u++){for(let k=g.deg[u];k<g.deg[u+1];k++){const e=g.adj[k]>>1;if(g.cls[e]>=3){cand.push(u);break}}}
   const ax=(pt.lng-g.lon0)*g.kx,ay=(pt.lat-g.lat0)*g.ky,out=[];
-  // secteurs : 12 directions, score = somme des meilleurs noeuds des deux fenêtres ; on garde 3 directions écartées d'au moins 90°
-  const sc=[];for(let i=0;i<12;i++){const th=i*Math.PI/6;let v=0;for(const u of cand){const x=(g.lon[u]-g.lon0)*g.kx-ax,y=(g.lat[u]-g.lat0)*g.ky-ay,an=Math.atan2(y,x),d=Math.hypot(x,y);
-      const da=Math.abs(((an-th-Math.PI/6+3*Math.PI)%(2*Math.PI))-Math.PI);if(da<Math.PI/4&&d>500&&d<8000)v+=nq[u]}sc.push([v,th])}
-  sc.sort((a,b)=>b[0]-a[0]);const ths=[];for(const [,t] of sc){if(ths.every(u=>{const d=Math.abs(((t-u+3*Math.PI)%(2*Math.PI))-Math.PI);return d>=Math.PI/2}))ths.push(t);if(ths.length===3)break}
+  // secteurs : 12 directions, score = somme des meilleurs noeuds des deux fenêtres (zones favorables + forêt) ; on garde 3 directions écartées d'au moins 90°
+  const NT=LOOPQ&&!off?5:3,sc=[];for(let i=0;i<12;i++){const th=i*Math.PI/6;let v=0;for(const u of cand){const x=(g.lon[u]-g.lon0)*g.kx-ax,y=(g.lat[u]-g.lat0)*g.ky-ay,an=Math.atan2(y,x),d=Math.hypot(x,y);
+      const da=Math.abs(((an-th-Math.PI/6+3*Math.PI)%(2*Math.PI))-Math.PI);if(da<Math.PI/4&&d>500&&d<8000)v+=nq[u]+(LOOPQ?.5*nf[u]:0)}sc.push([v,th])}
+  sc.sort((a,b)=>b[0]-a[0]);const ths=[];for(const [,t] of sc){if(ths.every(u=>{const d=Math.abs(((t-u+3*Math.PI)%(2*Math.PI))-Math.PI);return d>=Math.PI/2}))ths.push(t);if(ths.length===NT)break}
   while(ths.length<3)ths.push(ths.length*2*Math.PI/3);
+  const MXv=+($("it-max")?$("it-max").value:4),mkC=R=>{const S=summarize(R),m=loopMetrics(R),mm=metric==="len"?S.len:S.sec,err=Math.abs(mm-target)/target;S.met=m;return {R,S,err,M:m,cost:loopCost(err,m)+(S.lvl>MXv?1:0)}};
   for(const th of ths){
     let r=Math.min(8000,metric==="len"?target/4:target/3600*4000/4/durF()),best=null;
     for(let it=0;it<9;it++){
       const R=await loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pt);if(!R)break;
-      const S=summarize(R),M=metric==="len"?S.len:S.sec,err=Math.abs(M-target)/target;
-      if(!best||err<best.err)best={R,S,err};
-      if(err<=.1)break;r=Math.min(8000,Math.max(300,r*Math.pow(target/M,it<4?.9:.6)*(1+(it>=4?(Math.random()-.5)*.15:0))))}
+      const c=mkC(R),M=metric==="len"?c.S.len:c.S.sec;
+      if(!best||c.err<best.err)best=c;
+      if(c.err<=.1)break;r=Math.min(8000,Math.max(300,r*Math.pow(target/M,it<4?.9:.6)*(1+(it>=4?(Math.random()-.5)*.15:0))))}
+    // exploration : plusieurs couples d'étapes autour du rayon trouvé ; on garde la boucle de coût minimal (forêt, peu de répétitions, pas d'impasse) à ±15 % de la cible
+    if(LOOPQ&&best){
+      for(const k of off?[1,.93,1.07]:[1,.88,.94,1.06,1.12]){const L_=await loopOnce(A,ax,ay,th,r*k,envie,q,nq,cand,off,pt,true);
+        for(const R of L_){const c=mkC(R);if(c.err<=.15&&(c.cost<best.cost||best.err>.15))best=c}}}
     if(best)out.push(best);
     await new Promise(r=>setTimeout(r,0))}
-  const ok=out.filter(x=>x.err<=.35);return ok.length?ok:out}
+  const ok=out.filter(x=>x.err<=.35),res=ok.length?ok:out;
+  if(LOOPQ){const good=res.filter(x=>!x.M||x.M.dead<=.03);return (good.length?good:res).sort((a,b)=>a.cost-b.cost)}
+  return res}
 function lv95(lat,lng){const p=(lat*3600-169028.66)/10000,l=(lng*3600-26782.5)/10000;
   return [2600072.37+211455.93*l-10938.51*l*p-0.36*l*p*p-44.54*l*l*l,1200147.07+308807.95*p+3745.25*l*l+76.63*p*p-194.56*l*l*p+119.79*p*p*p]}
 // KML (importable dans map.geo.admin.ch › Outils avancés › Importer un fichier ; partage iOS/Android vers l'app swisstopo si elle l'accepte)
@@ -250,7 +288,7 @@ function gpx(){
 // pente ≥ 30° (25-30° ×3 plus lent), cours d'eau (tampon d'une cellule), marais, réserves et zones exclues (usable).
 // Règles du tout-terrain par difficulté maximale (0 très facile … 3 difficile ; 4 = aucune limite) : distance maximale à un chemin (m) et pente maximale (°) en terrain hors chemin.
 const OFF_DIST=[25,50,100,200],OFF_SLP=[8,15,20,25],slvOf=s=>s<OFF_SLP[0]?0:s<OFF_SLP[1]?1:s<OFF_SLP[2]?2:s<OFF_SLP[3]?3:4;
-const REWK=.55,OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100,DETOUR_CAP=[1,1.3,1.8,2.6];   // plafond de durée par cran du curseur de détour
+const USED_K=4,REWK=.55,OFFX=1.6,OFF_SLOPE=30,OFF_NEAR=100,DETOUR_CAP=[1,1.3,1.8,2.6];   // plafond de durée par cran du curseur de détour
 let HZ=null,HZkey="";
 async function hazards(){
   const key=ZD+"|"+meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows;if(HZ&&HZkey===key)return HZ;
@@ -271,7 +309,7 @@ function dilate(m,W,H,r){   // dilatation carrée de rayon r (cellules), sépara
   for(let y=0;y<H;y++){let last=-1e9;for(let x=0;x<W;x++){if(m[y*W+x])last=x;if(x-last<=r)t[y*W+x]=1}last=1e9;for(let x=W-1;x>=0;x--){if(m[y*W+x])last=x;if(last-x<=r)t[y*W+x]=1}}
   for(let x=0;x<W;x++){let last=-1e9;for(let y=0;y<H;y++){if(t[y*W+x])last=y;if(y-last<=r)o[y*W+x]=1}last=1e9;for(let y=H-1;y>=0;y--){if(t[y*W+x])last=y;if(last-y<=r)o[y*W+x]=1}}
   return o}
-async function routeOff(pA,pB,envie,Mx){
+async function routeOff(pA,pB,envie,Mx,used){
   const MX=Mx!=null?Mx:+($("it-max")?$("it-max").value:4);
   const g=GR,W=meta.cols,H=meta.rows,res=meta.res,gs=res*Math.cos(pA.lat*Math.PI/180);
   if(!curC())return {error:"La carte n'affiche aucune zone : choisissez une espèce ou la forte concentration."};
@@ -316,6 +354,7 @@ async function routeOff(pA,pB,envie,Mx){
   const hpop=()=>{const v=hv[0],k0=hk[0],k=hk[--hn],w=hv[hn];let i=0;for(;;){let c=2*i+1;if(c>=hn)break;if(c+1<hn&&hk[c+1]<hk[c])c++;if(hk[c]>=k)break;hk[i]=hk[c];hv[i]=hv[c];i=c}hk[i]=k;hv[i]=w;popK=k0;return v};let popK=0;
   const dm=G.dem,sl=G.slope,tob=(L_,g_)=>L_/(6000/3600*Math.exp(-3.5*Math.abs(g_+.05)));
   // Dijkstra à force de récompense str (0 = plus rapide ; 1 = envie choisie) ; rt = durée réelle (s) sans récompense.
+  const usd=used&&used.size?used:null,giOf=li=>(r0+((li/ww)|0))*W+c0+(li%ww);   // cellules déjà empruntées (boucle) : coût ×USED_K, pour ne pas repasser au même endroit
   const cc=new Map(),solve=(str,S0,T0)=>{
     const e1=envie*str,{cf,cb}=cc.get(str)||(cc.set(str,costs(e1,null,e1>0?qq:null)),cc.get(str)),R0=cc.get(0)||(cc.set(0,costs(0,null,null)),cc.get(0)),
       dist=new Float64Array(N).fill(Infinity),rt=new Float64Array(N),prev=new Int32Array(N).fill(-1),via=new Int32Array(N).fill(-1);
@@ -323,13 +362,13 @@ async function routeOff(pA,pB,envie,Mx){
     // récompense hors chemin : bien plus forte que sur chemin (jusqu'à ×0,1 dans une cellule très élevée avec « grand détour »)
     const rew=cw=>cw!==255&&cw<5&&e1>0?1-Math.min(.97,REWK*e1*WGW[cw]):1;
     while(hn){const u=hpop(),d=popK;if(d>dist[u])continue;if(u===T0)break;
-      for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],e=aE[k],w=d+(aD[k]?cb[e]:cf[e])*aF[k];if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+(aD[k]?R0.cb[e]:R0.cf[e])*aF[k];prev[v]=u;via[v]=aId[k];hpush(w,v)}}
+      for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],e=aE[k],w=d+(aD[k]?cb[e]:cf[e])*aF[k]*(usd&&usd.has(giOf(v))?USED_K:1);if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+(aD[k]?R0.cb[e]:R0.cf[e])*aF[k];prev[v]=u;via[v]=aId[k];hpush(w,v)}}
       const ux=u%ww,uy=(u/ww)|0,ug=(r0+uy)*W+c0+ux;
       for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const x=ux+dx,y=uy+dy;if(x<0||y<0||x>=ww||y>=hh)continue;const v=y*ww+x;
         if(ban[v]||ban[u])continue;   // dans la bande de 20 m le long d'une route de classe 2 : seulement par les arcs de la route (pas de pas hors chemin)
         if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
         if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
-        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(curC()[vg]);
+        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(curC()[vg])*(usd&&usd.has(vg)?USED_K:1);
         const w=d+t;if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+t0;prev[v]=u;via[v]=-1;hpush(w,v)}}}
     return {dist,rt,prev,via}};
   // plafond de durée : la durée réelle ne dépasse pas CAP[envie] × celle du trajet le plus rapide ; sinon la récompense est réduite par paliers
@@ -382,7 +421,7 @@ async function routeOff(pA,pB,envie,Mx){
       const ug=(r0+((u/ww)|0))*W+c0+(u%ww),vg=(r0+((v/ww)|0))*W+c0+(v%ww),dx=(v%ww)-(u%ww),dy=((v/ww)|0)-((u/ww)|0),L_=gs*(dx&&dy?1.4142:1),dz=dm[vg]-dm[ug];
       if(!onPath(v))off.lvl=Math.max(off.lvl,dl[v],slvOf(sl[vg]));off.len+=L_;if(dz>0)off.up+=dz;else off.dn-=dz;off.sec+=tob(L_,dz/L_)*OFFX*(sl[vg]>=25?3:1)}}
   flush();
-  return {seq,off,pl,cost:costT,detour,noGain}}
+  return {seq,off,pl,cost:costT,detour,noGain,cellsG:cells.map(giOf)}}
 
 
 /* ---------- météo des 7 jours : avertissements et durcissement du tout-terrain ---------- */
@@ -487,6 +526,7 @@ function show(S){
   $("it-res").innerHTML=`<div class="it-card"><div class="it-big">${dur(S.sec)} <span class="it-sub">de marche · ${km(S.len)}</span></div>
    <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b></div>
    <div class="it-row">Difficulté : <span class="pill" style="background:${c};color:#fff">${d}</span> <span class="it-sub">${esc(S.reason)}</span></div>
+   ${S.met?`<div class="it-row">En forêt : <b>${Math.round(S.met.forest*100)} %</b> du tracé · tronçons parcourus deux fois : <b>${Math.round(S.met.rep*100)} %</b></div>`:""}
    ${S.legs&&S.legs.length>1?`<div class="it-row">Étapes :<ol class="it-legs">${S.legs.map(l=>`<li>${l.from} → ${l.to} : <b>${dur(l.sec)}</b> · ${km(l.len)} · ${DIFF[l.lvl]}</li>`).join("")}</ol></div>`:""}
    ${w.map(x=>`<div class="it-warn">${x}</div>`).join("")}
    <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button><button type="button" class="btn" id="it-kml">Export swisstopo (KML)</button><a class="btn" id="it-geo" target="_blank" rel="noopener">Ouvrir map.geo.admin.ch</a></div>
@@ -516,11 +556,12 @@ async function computeLoop(){
     BP=M<4?techPen(M,k):null;V=await loopRoutes(A,pts.A,dm?"len":"sec",target0*shr,+$("it-env").value,tt);
     const okV=V.filter(x=>x.S.lvl<=M);if(okV.length||!V.length){if(okV.length)V=okV;break outer}}}finally{BP=null}
   if(!V.length){clearRoute();msg.textContent=LOOPERR||"Aucune boucle trouvée depuis ce départ : le réseau y est trop morcelé ou trop court. Essayez un autre point de départ.";return}
-  V.sort((a,b)=>a.err-b.err);
+  V.sort((a,b)=>LOOPQ?a.cost-b.cost:a.err-b.err);
   const over=V.every(x=>x.S.lvl>M);
   if(M<4&&!over&&shr<1)note=` Cible réduite à ${dm?km(target0*shr):dur(target0*shr*60)} pour respecter la difficulté maximale (${DIFF[M]}). `;
   if(M<4&&over)note=` Aucune boucle « ${DIFF[M]} » ou plus facile trouvée ici : voici la plus facile (${DIFF[Math.min(...V.map(x=>x.S.lvl))]}). `;
   const W=V.map(x=>({S:x.S,R:x.R}));showVars(W,0);
+  if(LOOPQ&&last.met&&last.met.dead>.03)note+=" Une partie du tracé est un aller-retour qui n'atteint aucune forêt : le réseau de chemins autour du départ n'offre pas mieux à cette distance. ";
   const offN=V.filter(x=>x.err>.1&&shr===1).length;
   msg.textContent=note+(VAR?" Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(last)+" ":"")+(offN?offN+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s)"+(shr===1?", à ±10 % de la cible.":"."))}
 async function compute(){
@@ -660,7 +701,7 @@ function init(){
   $("it-varbox").hidden=true;
   $("it-dur").oninput=()=>{$("it-durl").textContent=DUR_L[+$("it-dur").value];if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-dur").oninput();
   $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile";if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
-  window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,get graph(){return GR},draw,hazards};   // pour les tests
+  window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v}};   // pour les tests
 }
 init();
 })();
