@@ -11,6 +11,13 @@ const DIFF=["très facile","facile","moyen","difficile","très difficile"],DCOL=
 const FACT={1:12,2:3.5,3:1.6,4:1,5:1},TYPE_F={0:1,1:.7,2:.8,3:1},TYPE_T={0:1,1:1,2:1.3,3:1.6};   // facteur de coût (réseau) · multiplicateur de temps (type de sentier)
 const R_E=6378137,WGW=[0,0,.2,.6,1];                                                  // poids du bonus par classe d'affichage (très faible … très élevé) : rien sous « moyen », le détour ne vise que les zones moyen ou mieux
 const MIN_GAIN=100,GAIN_RATIO=.2,OFF_ROAD=20;   // détour accepté seulement s'il gagne ≥ 100 m (et ≥ 20 % de la distance ajoutée) dans des zones « moyen » ou mieux · bande de 20 m le long des routes de classe 2 où le hors-chemin est interdit
+/* ---------- limite de dénivelé (positif seul, ou positif et négatif) ---------- */
+// Pénalité additive (s par mètre de dénivelé) ajoutée au coût des arêtes / pas hors chemin ; on la renforce (DV_LAM) jusqu'à respecter la limite.
+const DV_LAM=[0,10,40,160,640];let DV=null;
+function dvLim(){const el=$("it-dv"),m=el?el.value:"0";return m==="0"?null:{both:m==="both",m:+$("it-dvm").value}}
+const dvOk=S=>{const l=dvLim();return !l||(S.up<=l.m+.5&&(!l.both||S.dn<=l.m+.5))};
+const setDV=lam=>{const l=dvLim();DV=l&&lam>0?{lam,both:l.both}:null};
+const dvTxt=l=>l.both?"+ et − ≤ "+l.m+" m":"+ ≤ "+l.m+" m";
 let BP=null,GR=null,GRZ=null,loading=null,map0=null,mk={A:null,B:null},pts={A:null,B:null},arm=null,layer=null,last=null;
 
 /* ---------- facteur de durée et difficulté maximale ---------- */
@@ -144,12 +151,13 @@ function routeGD(A,B,envie){
   R0.noGain=true;return R0}
 
 /* ---------- plus court chemin (Dijkstra, tas binaire) ---------- */
-function costs(envie,pen,qq){
+function costs(envie,pen,qq,noDV){
   const g=GR,q=qq||(envie>0?bonusQ():null),mult=e=>{const k=g.cls[e],t=g.typ[e];
     let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?2:FACT[2]):k===1?FACT[1]:TYPE_F[t];   // sentier balisé sur une route forestière : 0,7 ; sur une route de classe 2 : 2
     if(q&&k!==1)m*=1-Math.min(.6,.2*envie*q[e]);return m};
   const cf=new Float32Array(g.nE),cb=new Float32Array(g.nE);
-  for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1)*(BP?BP[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0)}
+  for(let e=0;e<g.nE;e++){const m=mult(e)*(pen?pen[e]:1)*(BP?BP[e]:1);cf[e]=g.tf[e]*m+(g.cls[e]===1?120:0);cb[e]=g.tb[e]*m+(g.cls[e]===1?120:0);
+    if(DV&&!noDV){cf[e]+=DV.lam*(g.up[e]+(DV.both?g.dn[e]:0));cb[e]+=DV.lam*(g.dn[e]+(DV.both?g.up[e]:0))}}
   return {cf,cb}}
 function route(A,B,envie,pen,qq){
   const g=GR,{cf,cb}=costs(envie,pen,qq);
@@ -356,7 +364,7 @@ async function routeOff(pA,pB,envie,Mx,used){
   // Dijkstra à force de récompense str (0 = plus rapide ; 1 = envie choisie) ; rt = durée réelle (s) sans récompense.
   const usd=used&&used.size?used:null,giOf=li=>(r0+((li/ww)|0))*W+c0+(li%ww);   // cellules déjà empruntées (boucle) : coût ×USED_K, pour ne pas repasser au même endroit
   const cc=new Map(),solve=(str,S0,T0)=>{
-    const e1=envie*str,{cf,cb}=cc.get(str)||(cc.set(str,costs(e1,null,e1>0?qq:null)),cc.get(str)),R0=cc.get(0)||(cc.set(0,costs(0,null,null)),cc.get(0)),
+    const e1=envie*str,{cf,cb}=cc.get(str)||(cc.set(str,costs(e1,null,e1>0?qq:null)),cc.get(str)),R0=cc.get(0)||(cc.set(0,costs(0,null,null,true)),cc.get(0)),
       dist=new Float64Array(N).fill(Infinity),rt=new Float64Array(N),prev=new Int32Array(N).fill(-1),via=new Int32Array(N).fill(-1);
     hn=0;dist[S0]=0;hpush(0,S0);
     // récompense hors chemin : bien plus forte que sur chemin (jusqu'à ×0,1 dans une cellule très élevée avec « grand détour »)
@@ -368,7 +376,7 @@ async function routeOff(pA,pB,envie,Mx,used){
         if(ban[v]||ban[u])continue;   // dans la bande de 20 m le long d'une route de classe 2 : seulement par les arcs de la route (pas de pas hors chemin)
         if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
         if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
-        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(curC()[vg])*(usd&&usd.has(vg)?USED_K:1);
+        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(curC()[vg])*(usd&&usd.has(vg)?USED_K:1)+(DV?DV.lam*(DV.both?Math.abs(dm[vg]-dm[ug]):Math.max(0,dm[vg]-dm[ug])):0);
         const w=d+t;if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+t0;prev[v]=u;via[v]=-1;hpush(w,v)}}}
     return {dist,rt,prev,via}};
   // plafond de durée : la durée réelle ne dépasse pas CAP[envie] × celle du trajet le plus rapide ; sinon la récompense est réduite par paliers
@@ -517,6 +525,7 @@ function draw(S,R){
   pl.forEach(p=>L.polyline(p.ll,p.k==="o"?{pane:"itineraire",color:"#6a1b9a",weight:5,dashArray:"2 7",lineCap:"round",interactive:false}:p.k===1?{pane:"itineraire",color:"#c62828",weight:5,dashArray:"4 6",interactive:false}:p.k===2?{pane:"itineraire",color:"#e8731f",weight:5,dashArray:"10 6",interactive:false}:{pane:"itineraire",color:"#1565c0",weight:5,lineCap:"round",interactive:false}).addTo(layer));
   const all=pl.flatMap(p=>p.ll);S.ll=all;if(all.length)map.fitBounds(L.latLngBounds(all),{padding:[40,40],maxZoom:17});
 }
+function dvMsg(S){const l=dvLim();return l&&!dvOk(S)?"Aucun trajet respectant la limite de dénivelé ("+dvTxt(l)+") trouvé : voici le moins pentu (+"+Math.round(S.up)+" m / −"+Math.round(S.dn)+" m). ":""}
 function show(S){
   const d=DIFF[S.lvl],c=DCOL[S.lvl],w=[];
   if(S.c2>=20)w.push(`<b>Bord de route : attention à la circulation</b> sur ${km(S.c2)} (tracé orange tireté).`);
@@ -524,7 +533,7 @@ function show(S){
   wxWarn(S).forEach(x=>w.push(x));
   if(S.cross)w.push(`${S.cross} traversée${S.cross>1?"s":""} de route large (tracé rouge pointillé, ≤ 30 m) : traversez avec prudence, aux endroits sûrs.`);
   $("it-res").innerHTML=`<div class="it-card"><div class="it-big">${dur(S.sec)} <span class="it-sub">de marche · ${km(S.len)}</span></div>
-   <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b></div>
+   <div class="it-row">Dénivelé : <b>+${Math.round(S.up)} m / −${Math.round(S.dn)} m</b>${dvLim()?` <span class="it-sub">${dvOk(S)?"✓ sous":"⚠ au-dessus de"} la limite (${dvTxt(dvLim())})</span>`:""}</div>
    <div class="it-row">Difficulté : <span class="pill" style="background:${c};color:#fff">${d}</span> <span class="it-sub">${esc(S.reason)}</span></div>
    ${S.met?`<div class="it-row">En forêt : <b>${Math.round(S.met.forest*100)} %</b> du tracé · tronçons parcourus deux fois : <b>${Math.round(S.met.rep*100)} %</b></div>`:""}
    ${S.legs&&S.legs.length>1?`<div class="it-row">Étapes :<ol class="it-legs">${S.legs.map(l=>`<li>${l.from} → ${l.to} : <b>${dur(l.sec)}</b> · ${km(l.len)} · ${DIFF[l.lvl]}</li>`).join("")}</ol></div>`:""}
@@ -552,15 +561,17 @@ async function computeLoop(){
   if(tt){$("it-offbox").hidden=false;if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer.";return}}
   let V=[],note="",shr=1;LOOPERR="";
   // difficulté maximale : pénalité sur les tronçons trop techniques (×6 puis ×40), puis cible réduite (×0,75, ×0,55) si c'est l'effort (durée, dénivelé) qui dépasse
-  try{outer:for(shr of M<4?[1,.75,.55]:[1])for(const k of M<4?[6,40]:[0]){
-    BP=M<4?techPen(M,k):null;V=await loopRoutes(A,pts.A,dm?"len":"sec",target0*shr,+$("it-env").value,tt);
-    const okV=V.filter(x=>x.S.lvl<=M);if(okV.length||!V.length){if(okV.length)V=okV;break outer}}}finally{BP=null}
+  const DL=dvLim();
+  try{outer:for(shr of M<4||DL?[1,.75,.55]:[1])for(const k of M<4?[6,40]:[0])for(const lam of DL?DV_LAM:[0]){
+    BP=M<4?techPen(M,k):null;setDV(lam);V=await loopRoutes(A,pts.A,dm?"len":"sec",target0*shr,+$("it-env").value,tt);
+    const okV=V.filter(x=>x.S.lvl<=M&&dvOk(x.S));if(okV.length||!V.length){if(okV.length)V=okV;break outer}}}finally{BP=null;DV=null}
   if(!V.length){clearRoute();msg.textContent=LOOPERR||"Aucune boucle trouvée depuis ce départ : le réseau y est trop morcelé ou trop court. Essayez un autre point de départ.";return}
   V.sort((a,b)=>LOOPQ?a.cost-b.cost:a.err-b.err);
   const over=V.every(x=>x.S.lvl>M);
-  if(M<4&&!over&&shr<1)note=` Cible réduite à ${dm?km(target0*shr):dur(target0*shr*60)} pour respecter la difficulté maximale (${DIFF[M]}). `;
+  if((M<4||DL)&&!over&&shr<1)note=` Cible réduite à ${dm?km(target0*shr):dur(target0*shr*60)} pour respecter ${M<4&&DL?"la difficulté maximale ("+DIFF[M]+") et la limite de dénivelé":M<4?"la difficulté maximale ("+DIFF[M]+")":"la limite de dénivelé"}. `;
   if(M<4&&over)note=` Aucune boucle « ${DIFF[M]} » ou plus facile trouvée ici : voici la plus facile (${DIFF[Math.min(...V.map(x=>x.S.lvl))]}). `;
   const W=V.map(x=>({S:x.S,R:x.R}));showVars(W,0);
+  if(DL&&V.every(x=>!dvOk(x.S)))note+=` Aucune boucle sous la limite de dénivelé (${dvTxt(DL)}) trouvée ici : voici la moins pentue (+${Math.round(Math.min(...V.map(x=>x.S.up)))} m). `;
   if(LOOPQ&&last.met&&last.met.dead>.03)note+=" Une partie du tracé est un aller-retour qui n'atteint aucune forêt : le réseau de chemins autour du départ n'offre pas mieux à cette distance. ";
   const offN=V.filter(x=>x.err>.1&&shr===1).length;
   msg.textContent=note+(VAR?" Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(last)+" ":"")+(offN?offN+" boucle(s) sur "+V.length+" s'écartent de plus de 10 % de la cible (réseau limité autour du départ).":V.length+" boucle(s) proposée(s)"+(shr===1?", à ±10 % de la cible.":"."))}
@@ -581,13 +592,13 @@ async function compute(){
   if(tt){
     $("it-offbox").hidden=false;
     if(!$("it-offok").checked){clearRoute();msg.textContent="Tout-terrain : cochez « Je comprends » ci-dessous, puis touchez Calculer. (Le tracé affiché plus haut, s'il y en avait un, n'était pas en tout-terrain.)";return}}
-  try{for(const k of M<4?[6,40]:[0]){BP=M<4?techPen(M,k):null;
+  try{outer:for(const k of M<4?[6,40]:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=M<4?techPen(M,k):null;setDV(lam);
     if(tt){R=await routeOff(pts.A,pts.B,+$("it-env").value);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}else R=routeGD(A,B,+$("it-env").value);
-    if(!R)break;S0=summarize(R);if(S0.lvl<=M)break}}finally{BP=null}
+    if(!R)break outer;S0=summarize(R);if(S0.lvl<=M&&dvOk(S0))break outer}}finally{BP=null;DV=null}
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=S0||summarize(R);draw(S,R);show(S);last=S;
-  msg.textContent=(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
+  msg.textContent=(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":"");
 }
 
 
@@ -635,13 +646,13 @@ async function computeWp(){
   const sn=P.map(p=>snap(p));
   for(let i=0;i<P.length;i++)if(!sn[i]){clearRoute();msg.textContent=(i===0?"Le départ":i===P.length-1?"L'arrivée":"Le point de passage "+i)+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";return}
   let legs=[],S0=null,R=null,bad=null;
-  try{for(const k of M<4?[6,40]:[0]){BP=M<4?techPen(M,k):null;legs=[];bad=null;
+  try{outer:for(const k of M<4?[6,40]:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=M<4?techPen(M,k):null;setDV(lam);legs=[];bad=null;
     for(let i=0;i<P.length-1;i++){
       const l=tt?await routeOff(P[i],P[i+1],envie):routeGD(sn[i],sn[i+1],envie);
       if(!l||l.error){bad=i;msg.textContent="Étape "+nm[i]+" → "+nm[i+1]+" : "+(l&&l.error?l.error:"aucun chemin trouvé entre ces deux points sur le réseau (parties non reliées). Déplacez "+(nm[i+1]==="B"||nm[i+1]==="A"?"le marqueur "+nm[i+1]:"le point de passage "+nm[i+1])+".");break}
       legs.push(l)}
-    if(bad!==null)break;
-    R=wpCat(legs);S0=summarize(R);if(S0.lvl<=M)break}}finally{BP=null}
+    if(bad!==null)break outer;
+    R=wpCat(legs);S0=summarize(R);if(S0.lvl<=M&&dvOk(S0))break outer}}finally{BP=null;DV=null}
   if(bad!==null){clearRoute();return}
   const LS=legs.map((l,i)=>{const s=summarize(l);return {from:nm[i],to:nm[i+1],len:s.len,sec:s.sec,lvl:s.lvl,reason:s.reason}});
   S0.legs=LS;S0.wps=WP.map(w=>[w.ll.lat,w.ll.lng]);
@@ -651,7 +662,7 @@ async function computeWp(){
   msg.textContent=(loop?"Boucle A → "+WP.map((_,i)=>i+1).join(" → ")+" → A : la cible de distance ou de durée est ignorée, le parcours est défini par vos points de passage. ":"")+
     (hard.length?"Point de passage inaccessible sous « "+DIFF[M]+" » : "+hard.map(l=>"l'étape "+l.from+" → "+l.to+" reste « "+DIFF[l.lvl]+" » ("+l.reason+")").join(" ; ")+". Le tracé affiché passe quand même par vos points : choisissez une difficulté plus élevée ou déplacez-les. ":"")+
     (VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S0)+" ":"")+
-    (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+
+    (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+dvMsg(S0)+
     (WP.length+" point"+(WP.length>1?"s":"")+" de passage."+($("it-wopt").checked&&WP.length>1?" Ordre optimisé.":""))}
 
 /* ---------- déclaration de responsabilité (acceptation mémorisée en local) ---------- */
@@ -700,6 +711,8 @@ function init(){
   $("it-varnone").onclick=()=>{$("it-varlist").querySelectorAll("[data-sp]").forEach(c=>c.checked=false);varSave();varCount()};
   $("it-varbox").hidden=true;
   $("it-dur").oninput=()=>{$("it-durl").textContent=DUR_L[+$("it-dur").value];if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-dur").oninput();
+  const dvUp=()=>{const on=$("it-dv").value!=="0";$("it-dvrow").hidden=!on;$("it-dvl").textContent=$("it-dvm").value+" m";if(on&&pts.A&&(isLoop()||pts.B)&&last)compute()};
+  $("it-dv").onchange=dvUp;$("it-dvm").oninput=dvUp;dvUp();
   $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile";if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
   window.ITIN={get last(){return last},prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v}};   // pour les tests
 }
