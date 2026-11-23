@@ -78,3 +78,13 @@ La case « Tout-terrain (bêta) » reste sélectionnable et active quel que soit
 - Météo défavorable : inchangée (pente ≤ 25° et marges élargies si sol détrempé ou gel ; refus si pluie forte).
 - Si aucun passage hors chemin n'existe sous ces limites, le tracé reste sur les chemins (ou un message l'indique).
 - Dans la page : texte d'aide de la case (visible dès qu'on la coche) et rappel de la règle dans l'avertissement du résultat. Tests : `itineraires.test.js` (niveau ≤ maximum de 0 à 3) et `itineraires-options.test.js`.
+
+## Boucles : forêt et allers-retours (23 nov.)
+Cas signalé : à Semsales, des boucles allaient et revenaient par le même tronçon dans les champs.
+- **Choix des étapes** : secteurs et noeuds scorés avec la part de forêt des arêtes en plus de la zone favorable (poids 0,5).
+- **Qualité mesurée** (`loopMetrics`, échantillons de 20 m) : part du tracé en forêt, part en zone « moyen » ou mieux en forêt, part de tronçons déjà parcourus (cellule voisine visitée ≥ 80 m plus tôt) et **impasses** = tronçons répétés qui n'atteignent aucune zone « moyen » ou mieux en forêt (un aller-retour qui atteint une telle zone reste permis, avec une pénalité légère).
+- **Sélection** : après l'ajustement du rayon, plusieurs couples d'étapes sont testés (3 rayons en tout-terrain, 5 sinon, 5 directions sur chemins) ; coût = écart à la cible + 3 × impasses + 0,7 × répétitions − 0,5 × zone favorable − 0,3 × forêt (+1 si la difficulté maximale est dépassée), cible à ±15 %. Les boucles à plus de 3 % d'impasses sont écartées s'il en reste d'autres ; sinon un message l'annonce.
+- **Chemins** : arêtes déjà utilisées ×12 (au lieu de ×6). **Tout-terrain** : les cellules déjà empruntées par un tronçon précédent (et leurs voisines) coûtent ×4 pour les tronçons suivants.
+- Le résultat affiche « En forêt : x % · tronçons parcourus deux fois : y % ».
+- Mesure (Semsales 46,5747 / 6,9311, région ple, cible 2 h, rythme ×1,5, léger détour, aucune limite ; 3 essais, moyennes sur les boucles proposées) : sur chemins, impasses 27 % → 7 %, répétitions 29 % → 11 %, forêt 0 % → 8 % ; tout-terrain, impasses 25 % → 1 %, répétitions 49 % → 20 %, forêt 18 % → 16-23 % (variable). La forêt est à plus de 3 km à l'est du village : une boucle de 5 km n'y entre guère.
+- Test : `node tools/tests/boucle-champs.test.js [essais]` (compare `ITIN.setLoopQ(false)` et `true`).
