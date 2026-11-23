@@ -1,0 +1,23 @@
+const {chromium,devices}=require('playwright');
+(async()=>{
+ const region=process.argv[2]||'ple';
+ const b=await chromium.launch();
+ const ctx=await b.newContext({...devices['iPhone 13']});
+ const p=await ctx.newPage();
+ const cdp=await ctx.newCDPSession(p);
+ await p.goto(`http://localhost:8765/?r=${region}`,{waitUntil:'load'});
+ await p.waitForFunction(()=>typeof render==='function'&&window.G&&window.meta,{timeout:180000}).catch(()=>console.log('wait fail'));
+ await p.waitForTimeout(3000);
+ console.log(await p.evaluate(()=>JSON.stringify({zid:ZID,cells:meta.rows*meta.cols,nsp:SPECIES.length,mobile:MOBILE,max:STATIC_MAX,heap:performance.memory&&performance.memory.usedJSHeapSize/1e6})));
+ await p.evaluate(()=>{state.sp="multi";state.tiers=[1];saveState();render()});
+ await p.waitForTimeout(1500);
+ await cdp.send('Profiler.enable');await cdp.send('Profiler.setSamplingInterval',{interval:500});await cdp.send('Profiler.start');
+ const t=await p.evaluate(()=>{const t=performance.now();const b=document.querySelector('#tiers input[data-tier="2"]');b.click();return performance.now()-t});
+ const {profile}=await cdp.send('Profiler.stop');
+ console.log('multi tier2 on (1x cpu):',t.toFixed(0),'ms; species active',await p.evaluate(()=>activeSpecies().length));
+ const self={};const byId={};profile.nodes.forEach(n=>byId[n.id]=n);
+ const dt=profile.timeDeltas;profile.samples.forEach((s,i)=>{const n=byId[s];const k=n.callFrame.functionName+':'+n.callFrame.lineNumber;self[k]=(self[k]||0)+dt[i]/1000});
+ Object.entries(self).sort((a,b)=>b[1]-a[1]).slice(0,12).forEach(([k,v])=>console.log(v.toFixed(0).padStart(7),'ms',k));
+ console.log('heap MB',await p.evaluate(()=>performance.memory.usedJSHeapSize/1e6));
+ await b.close();
+})();
