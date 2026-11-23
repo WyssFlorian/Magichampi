@@ -40,7 +40,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   $('it-max').value=0;$('it-max').dispatchEvent(new Event('input'));await sleep(500);await go();o.maxMsg=$('it-msg').textContent;
   $('it-max').value=4;$('it-max').dispatchEvent(new Event('input'));await sleep(2500);
   // boucle
-  $('it-mode').value='loop';$('it-mode').dispatchEvent(new Event('change'));ITIN.setPt('A',mk(A));await go();o.loop=big();o.loopMsg=$('it-msg').textContent;o.loopLegs=$('it-res').querySelectorAll('.it-legs li').length;
+  $('it-mode').value='loop';$('it-mode').dispatchEvent(new Event('change'));ITIN.setPt('A',mk(A));$('it-lt').value=20;await go();o.loop=big();o.loopMsg=$('it-msg').textContent;o.loopLegs=$('it-res').querySelectorAll('.it-legs li').length;
   // tout-terrain
   $('it-off').checked=true;$('it-off').dispatchEvent(new Event('change'));$('it-offok').checked=true;await go();o.tt=big();o.ttMsg=$('it-msg').textContent;
   // clic carte pour placer un point (mode « armé »)
