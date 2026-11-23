@@ -118,3 +118,9 @@ Cas signalé : à Semsales, des boucles allaient et revenaient par le même tron
 - **Panneau** : visibles seulement le type, les points, le plafond, 3 préréglages (Balade facile, Cueillette, Sportif) et Calculer ; le reste est dans « Réglages » (une ligne de résumé). Modifier un réglage désélectionne le préréglage.
 - **Retours** : progression « direction i/n » + Annuler ; résultat sur une ligne avec « Détails » ; variantes de boucle avec D+ et forêt ; tronçons au-dessus de la difficulté maximale en noir pointillé.
 - Détails et mesures : `docs/evaluation-itineraires.md`, section 6. Test : `node tools/tests/itineraires-panneau.test.js [région]`.
+
+## Vague 3 (23 nov.) : tracés plus propres
+- **Boucles** : repassage *spatial* (couloir d'environ 30 m autour des arêtes déjà prises, ×8, 60 m exemptés aux étapes) ; à l'exploration, essais avec et sans couloir + forme à 4 étapes en plus du triangle ; le coût de sélection pèse davantage les répétitions (2 au lieu de 0,7). Les boucles tout-terrain gardent leur pénalité par cellule.
+- **A→B** : longueur ≤ 1,35 × le plus court chemin sous les mêmes limites (1,6 × en « grand détour »), pénalités relâchées par paliers ; la difficulté maximale, le dénivelé et le plafond strict restent prioritaires. Message « Détour limité à +35 % ».
+- **Tout-terrain** : part hors chemin plafonnée selon l'envie de détour (50 / 60 / 70 / 80 %), tracé hors chemin lissé (visibilité directe) au lieu de l'escalier de 25 m.
+- Détails et mesures : `docs/evaluation-itineraires.md`, section 7. Test : `node tools/tests/itineraires-trace.test.js [région]`.
