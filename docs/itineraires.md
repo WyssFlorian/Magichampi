@@ -94,3 +94,13 @@ Cas signalé : à Semsales, des boucles allaient et revenaient par le même tron
 - Une fois un trajet affiché, saisir le tracé (souris : 9 px de tolérance ; doigt : 20 px) et le glisser ajoute un point de passage là où on lâche, inséré dans l'étape touchée (liste réordonnable, 8 max). Les étapes sont recalculées avec les mêmes règles (difficulté, dénivelé, tout-terrain).
 - Un simple appui ne change rien ; la carte ne se déplace pas pendant le glissement, la vue n'est pas recadrée. Si le nouveau point est inaccessible (à plus de 300 m d'un chemin, ou étape sans chemin), il n'est pas ajouté et le tracé précédent est rétabli. L'ordre optimisé est désactivé pour garder l'ordre du glissement.
 - Test : `node tools/tests/itineraires-glisser.test.js [région]`.
+
+## Moins de kilomètres hors forêt (23 nov. 2026)
+- Le coût d'une arête (A→B, boucle, points de passage, tout-terrain par les arcs du réseau) est multiplié par `1 + OFFP × (1 − fo/100)`, `fo` étant la part de l'arête en forêt déjà stockée dans `graphe.json`. `OFFP = 4` : une arête entièrement hors forêt coûte 5 fois plus. Les traversées de classe 1 ne changent pas. Les contraintes restent celles d'avant (difficulté maximale, limite de dénivelé, classe 2 pénalisée, détour gardé seulement s'il apporte des zones « moyen » ou mieux). Dans le choix d'une boucle, le poids de la part en forêt passe de 0,3 à 1 (`LFW`).
+- Mesure (`ITIN.setOffP(0)` = ancien comportement ; 34 à 36 trajets A→B de 1,5 à 6 km entre points du réseau choisis au hasard, graine fixe, « léger détour » ; boucles de 6 km autour de 22 à 23 points). Part hors forêt = part des arêtes (`fo`), puis, entre parenthèses, part selon la grille de forêt de la carte (plus sévère : elle exclut la lisière) :
+  - Riviera-Chablais : A→B 56,9 % → 50,3 % (74,6 → 71,4), longueur +5 % ; boucles 54,6 → 54,0 avec poids 0,3, 53,8 avec 0,8 et 52,3 avec 1,5.
+  - Région lausannoise : A→B 56,3 → 45,9 % (64,2 → 57,6), longueur +11 % ; boucles 67,8 → 63,3 % (75 → 70,6).
+  - Gros-de-Vaud : A→B 63,7 → 48,2 % (90,3 → 84,5), longueur +17 % ; boucles 59,8 → 49,7 %.
+  - Pays-d'Enhaut et Diablerets (`pde`) : A→B 68,0 → 60,0 % (85,9 → 85,5), longueur +6 % ; boucles 70,7 → 65,3 %.
+  - Réglage de OFFP sur Riviera-Chablais : 2 → −4,2 points pour +3 % de longueur, 4 → −6,6 pts pour +5 %, 8 → −10,7 pts pour +12 %. 4 retenu.
+- Limites : en plaine, le réseau n'offre souvent pas d'alternative boisée, et départ ou arrivée en localité restent hors forêt ; le gain se voit surtout là où un chemin boisé parallèle existe. Test : `node tools/tests/itineraires.test.js` (inchangé, passe sur ple et lsn).
