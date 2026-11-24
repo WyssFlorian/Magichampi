@@ -1322,7 +1322,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Gel : somme des degrés sous 0 °C des nuits des 7 derniers jours, divisée par 3 (une nuit à −3 °C compte comme une nuit de gel, une nuit à −6 °C comme deux).</li>
       </ul>
       <p><b>Zones de forêt</b> : la forêt est découpée par les routes et chemins (swissTLM3D) et par paliers d'altitude de 150 m ; les grandes zones sont recoupées en carrés d'environ 600 m. Une zone prend la valeur de ses 20 % meilleures cellules, pour ne pas noyer un bon coin dans une grande zone moyenne.</p>
-      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte.</p>
+      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte. L'étoile suit les mêmes filtres que la carte : elle ignore les forêts que la carte n'affiche pas (en concentration, sous le niveau « moyen »), celles hachurées en rouge pour la chasse et celles hachurées en gris (zones difficiles d'accès) tant que ces cases sont cochées.</p>
       <p><b>Géographie</b> (bouton ⛰ ou option) : Lignes de niveau (case « Lignes de niveau », utilisable seule) : tracées à partir du relief swissALTI3D ramené à 25 m, tous les 20 m (plus marquées tous les 100 m) dès le zoom 14, tous les 50 m au zoom 13 ; blanches sur la photo, brunes sur la carte nationale. En brun foncé, les pentes d'au moins 45° sur 25 m (falaises, barres rocheuses) ; en brun clair, les pentes de 38 à 45° (très raides, prudence). En bleu, les cours d'eau à ciel ouvert (swissTLM3D 2026), les rivières dès le zoom 11, les ruisseaux dès le zoom 13, plus fins ; les tronçons canalisés sous terre ne sont pas tracés. En vert, les routes dès le zoom 12, comme sur la carte nationale : double trait pour les routes de 1re et 2e classe, trait simple pour la 3e classe, puis les chemins de 4e classe dès le zoom 14 et de 5e classe dès le zoom 15 ; tous les traits s'épaississent avec le zoom. Les sentiers balisés restent en jaune. Le bouton affiche aussi les arrêts de transports publics (dès le zoom 13) et les parkings (dès le zoom 14). Dans Plus d'options, section Géographie, une case par couche permet de masquer séparément les cours d'eau, les routes, les arrêts, les parkings ou les sentiers. Une petite barre de quelques mètres peut ne pas apparaître : la carte nationale reste la référence.</p>
       <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
       <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
@@ -2475,9 +2475,18 @@ function patchArea(){
 // 0,2 pour un massif de 0,5 ha ou moins, 1 dès 20 ha (progression logarithmique)
 const BEST_A0=.5,BEST_A1=20;
 function sizeW(a){return .2+.8*clamp(Math.log(Math.max(a,1e-3)/BEST_A0)/Math.log(BEST_A1/BEST_A0),0,1)}
+// une cellule n'entre en compte que si la carte l'affiche : classe visible (mêmes seuils que le rendu), et hors des hachures
+// de chasse (battues) ou de zone difficile d'accès tant que ces cases sont cochées
+function bestFilters(){
+  const multi=state.sp==="multi",minK=(multi&&state.mode!=="now")?2:1;
+  const hunt=!OV&&$("o-hunt")&&$("o-hunt").checked&&huntMask&&huntMask.any&&huntArr?huntArr:null;
+  const hard=$("o-hard")&&$("o-hard").checked&&state.relief&&hardMask&&hardMask.any&&hardArr?hardArr:null;
+  return {minK,skip:hunt||hard?i=>!!((hunt&&hunt[i])||(hard&&hard[i])):()=>false};
+}
 function findBest(){
   if(!currentClass)return null;const R=viewRect();if(!R)return null;
-  const cols=meta.cols,C=currentClass,multi=state.sp==="multi",ok=i=>C[i]!==255&&!(state.resp&&G.rg&&G.rg[i]);
+  const {minK,skip}=bestFilters();
+  const cols=meta.cols,C=currentClass,multi=state.sp==="multi",ok=i=>C[i]>=minK&&!(state.resp&&G.rg&&G.rg[i])&&!skip(i);
   const PA=patchArea(),now=state.mode==="now";
   let sp=null,st=null,sts=null;
   if(!multi){sp=SPECIES.find(s=>s.id===state.sp);st=staticFor(sp)}
@@ -2492,7 +2501,7 @@ function findBest(){
     let p;if(!multi)p=pOf(st,i);else{p=0;for(const [s,t] of sts){if(multiCls[s.id][i]>=3){const v=pOf(t,i);if(v>0)p+=v}}}
     if(p>e.bp){e.bp=p;e.bi=i}e.q+=p;e.nq++}
   let best=null,bv=-1;
-  Z.forEach((e,z)=>{if(e.k<1||e.bi<0)return;
+  Z.forEach((e,z)=>{if(e.k<minK||e.bi<0)return;
     let q=e.nq?e.q/e.nq:0;if(multi)q=Math.min(1,q/Math.max(1,e.k));
     else if(state.view==="zone"&&z>0){q=st.zone.mean[z];if(now&&zoneNow)q*=Math.min(1,zoneNow.W[z]/.35)}
     const good=e.nk*zoneHa,v=(e.k+q)*sizeW(e.pa)*(.6+.4*Math.min(1,good/3));
@@ -3265,7 +3274,7 @@ function cellFree(){const key=meta.x0+"|"+meta.y1+"|"+meta.cols+"|"+meta.rows;if
       if(inRing(x,y,rings[0])&&!rings.slice(1).some(h=>inRing(x,y,h)))F[i]=k+1}});
   return freeArr=F}
 // --- couche hachurée : masque de la région chargée, dessiné à l'écran avec un motif de hachures de taille fixe en pixels ---
-let huntMask=null,huntMaskI=null,huntKey="",huntLayer=null,huntDay="";
+let huntArr=null,huntMask=null,huntMaskI=null,huntKey="",huntLayer=null,huntDay="";
 // canton de chaque cellule de forêt : celui de la commune de sa zone ; les forêts sans zone (près d'une localité ou d'une route)
 // prennent le canton de la forêt zonée la plus proche sur la ligne ou la colonne (au plus 2 km)
 const CANT_CODES=["","VD","FR","VS","NE"];let cantArr=null,cantKey="";
@@ -3313,9 +3322,9 @@ function huntBuild(){
   const n=meta.cols*meta.rows,C=cellCantons(),on=CANT_CODES.map(c=>!!(c&&huntColl(c,ds).length)),onI=CANT_CODES.map(c=>!!(c&&huntOn(c,ds).length)),FR_=cellFree(),HG=huntGeo(),cants=new Set();let any=false;
   if(!huntMask){huntMask=document.createElement("canvas");huntMaskI=document.createElement("canvas")}
   huntMask.width=huntMaskI.width=meta.cols;huntMask.height=huntMaskI.height=meta.rows;
-  const cx=huntMask.getContext("2d"),img=cx.createImageData(meta.cols,meta.rows),px=img.data,cxI=huntMaskI.getContext("2d"),imgI=cxI.createImageData(meta.cols,meta.rows),pxI=imgI.data;let anyI=false;
+  huntArr=new Uint8Array(n);const cx=huntMask.getContext("2d"),img=cx.createImageData(meta.cols,meta.rows),px=img.data,cxI=huntMaskI.getContext("2d"),imgI=cxI.createImageData(meta.cols,meta.rows),pxI=imgI.data;let anyI=false;
   for(let i=0;i<n;i++){const f=G.fx[i];if(!f||!C[i])continue;cants.add(CANT_CODES[C[i]]);if(f===4||FR_[i]||!usable(i))continue;
-    if((on[C[i]]||onI[C[i]])&&HG[i]){px[i*4+3]=255;any=true}}
+    if((on[C[i]]||onI[C[i]])&&HG[i]){px[i*4+3]=255;huntArr[i]=1;any=true}}
   if(!exclMask)exclMask=document.createElement("canvas");exclMask.width=meta.cols;exclMask.height=meta.rows;
   {const ex=exclMask.getContext("2d"),im=ex.createImageData(meta.cols,meta.rows),q=im.data;let a=false;
    if(state.resp)for(let i=0;i<n;i++)if(G.fx[i]===4){q[i*4]=110;q[i*4+1]=110;q[i*4+2]=110;q[i*4+3]=185;a=true}
@@ -3357,7 +3366,7 @@ const HuntLayer=L.Layer.extend({
     if(shR&&huntMask.any)hatch(huntMask,"rgba(214,0,0,.9)");
     if(shI&&huntMaskI.any)hatch(huntMaskI,"rgba(240,130,0,.95)")}});
 /* ---------- zones difficiles d'accès : forêt à pente ≥ 30° ou dans un marais d'importance nationale, hachures gris clair ---------- */
-const HARD_SLOPE=30;let hardMask=null,hardKey="",hardLayer=null,hardRs=null;
+const HARD_SLOPE=30;let hardArr=null,hardMask=null,hardKey="",hardLayer=null,hardRs=null;
 function hardBuild(){
   const W=meta.cols,H=meta.rows,key=meta.x0+"|"+meta.y1+"|"+W+"|"+H+"|"+(hardRs?1:0);if(key===hardKey&&hardMask)return;hardKey=key;
   const mar=new Uint8Array(W*H);
@@ -3367,8 +3376,8 @@ function hardBuild(){
       P.forEach(poly=>{x.beginPath();poly.forEach(ring);x.fill("evenodd")})});
     const d=x.getImageData(0,0,W,H).data;for(let i=0;i<W*H;i++)mar[i]=d[i*4+3]>127?1:0}
   if(!hardMask)hardMask=document.createElement("canvas");hardMask.width=W;hardMask.height=H;
-  const cx=hardMask.getContext("2d"),img=cx.createImageData(W,H),px=img.data;let any=false;
-  for(let i=0;i<W*H;i++){if(!G.fx[i])continue;if(G.slope[i]>=HARD_SLOPE||mar[i]){px[i*4+3]=255;any=true}}
+  const cx=hardMask.getContext("2d"),img=cx.createImageData(W,H),px=img.data;let any=false;hardArr=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){if(!G.fx[i])continue;if(G.slope[i]>=HARD_SLOPE||mar[i]){px[i*4+3]=255;hardArr[i]=1;any=true}}
   cx.putImageData(img,0,0);hardMask.any=any}
 const HardLayer=L.Layer.extend({
   onAdd(m){this._c=L.DomUtil.create("canvas","leaflet-zoom-hide");this._c.style.pointerEvents="none";m.getPane("hard").appendChild(this._c);
@@ -3391,8 +3400,10 @@ function hardUpdate(){if(!map||!G)return;const cb=$("o-hard");if(!cb)return;
   if(cb.checked&&state.relief){try{hardBuild()}catch(e){console.warn(e)}
     if(!hardLayer){map.createPane("hard").style.zIndex=414;map.getPane("hard").style.pointerEvents="none";hardLayer=new HardLayer()}
     if(!map.hasLayer(hardLayer))hardLayer.addTo(map);else hardLayer._draw()}
-  else if(hardLayer&&map.hasLayer(hardLayer))map.removeLayer(hardLayer)}
+  else if(hardLayer&&map.hasLayer(hardLayer))map.removeLayer(hardLayer);
+  updateBest()}
 function huntUpdate(){if(!map||!G)return;try{huntBuild();exclUpdate()}catch(e){console.warn(e)}
+  updateBest();
   const on=!OV&&(($("o-hunt")&&$("o-hunt").checked)||($("o-hunti")&&$("o-hunti").checked));if(!huntLayer){map.createPane("hunt").style.zIndex=415;map.getPane("hunt").style.pointerEvents="none";huntLayer=new HuntLayer()}
   if(on&&!map.hasLayer(huntLayer))huntLayer.addTo(map);else if(!on&&map.hasLayer(huntLayer))map.removeLayer(huntLayer);else if(on)huntLayer._draw();
   const el=$("hunt-day");if(el&&huntMask){const ds=huntDay,c={VD:[],FR:[]},K=huntMask.cants;["VD","FR"].forEach(k=>{if(K.has(k))c[k]=huntOn(k,ds)});
