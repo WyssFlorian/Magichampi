@@ -875,7 +875,7 @@ async function computeAny(){
       if(!R)break outer;S0=summarize(R);if(S0.lvl<=M&&dvOk(S0))break outer}}finally{if(RUN===run){BP=null;DV=null}}
     if(!R||!capOver(S0,CAP))break}
   if(R&&!capOver(S0,CAP)&&S0.lvl<=M&&dvOk(S0))break}
-  if(ALEA&&!tt&&R&&!capOver(S0,CAP)){   // les 5 des 10 meilleurs points accessibles : insérés tant que plafond, difficulté et dénivelé restent respectés
+  if(ALEA&&!tt&&R&&!capOver(S0,CAP)&&dvOk(S0)){   // les 5 des 10 meilleurs points accessibles : insérés tant que plafond, difficulté et dénivelé restent respectés
     try{BP=M<4?techPen(M,kU):null;setDV(lU);const X=await AW(enrich(R,A,B,evUsed,M,CAP),run);if(X){if(X.R!==R){R=X.R;S0=summarize(R)}nTop=X.n;topTot=X.tot}}finally{if(RUN===run){BP=null;DV=null}}}
   if(R&&capOver(S0,CAP)){clearRoute();msg.textContent=capMsg(S0,CAP);return}
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
