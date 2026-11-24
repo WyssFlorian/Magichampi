@@ -124,3 +124,10 @@ Cas signalé : à Semsales, des boucles allaient et revenaient par le même tron
 - **A→B** : longueur ≤ 1,35 × le plus court chemin sous les mêmes limites (1,6 × en « grand détour »), pénalités relâchées par paliers ; la difficulté maximale, le dénivelé et le plafond strict restent prioritaires. Message « Détour limité à +35 % ».
 - **Tout-terrain** : part hors chemin plafonnée selon l'envie de détour (50 / 60 / 70 / 80 %), tracé hors chemin lissé (visibilité directe) au lieu de l'escalier de 25 m.
 - Détails et mesures : `docs/evaluation-itineraires.md`, section 7. Test : `node tools/tests/itineraires-trace.test.js [région]`.
+
+## Tout-terrain progressif, meilleurs points, parcours aléatoire (24 nov. 2026)
+- **Progression** : s = min(difficulté, 3) + envie de détour (0 à 6). Hors chemin autorisé d'abord dans une bande étroite le long des chemins (s = 0 : ≈ 10 m, pente < 8°), qui passe à ≈ 30 m / < 12° avec allers-retours vers les zones à bon score (s = 4, moyen + détour), puis aux règles de la difficulté choisie (s = 6, difficile + grand détour = comportement d'avant). Les cellules hors bande restent praticables comme simple liaison (coût × 4). Sans détour, une récompense légère (×0,6) fait longer les bords, durée ≤ 1,1 × le plus rapide.
+- **5 des 10 meilleurs points** : pics de score le long du réseau (`peaks`), filtrés par accessibilité (détour, difficulté), 10 meilleurs, 5 tirés au hasard et insérés un à un tant que plafond, difficulté et dénivelé tiennent (`enrich`). Boucles : générées à 84 % de la cible, la place libre sert aux points. Tout-terrain : les 10 meilleures zones, 5 retenues au plus (2 par étape en boucle).
+- **Aléa** : graine tirée à chaque « Calculer » (bruit de coût lissé, choix des secteurs et étapes, points). Si rien n'est trouvé, relance sans aléa. `ITIN.setSeed(n)` fixe la graine, `ITIN.setAlea(false)` revient au comportement déterministe (tests).
+- Correction : la durée « réelle » du tout-terrain (plafond de détour) ignore la pénalité de difficulté.
+- Outils : `tools/profil/tt-essai.js`, `tools/profil/tt-bande.js`, test `tools/tests/itineraires-progressif.test.js`.

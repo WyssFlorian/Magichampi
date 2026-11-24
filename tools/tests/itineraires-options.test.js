@@ -9,7 +9,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.stack||e.message));
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));
   if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
- await p.goto('https://loc.test/index.html?r='+Z);await p.waitForFunction(()=>window.ITIN&&typeof currentClass!=='undefined'&&currentClass,null,{timeout:90000});await p.waitForTimeout(2500);
+ await p.goto('https://loc.test/index.html?r='+Z);await p.waitForFunction(()=>window.ITIN&&typeof currentClass!=='undefined'&&currentClass,null,{timeout:90000});await p.evaluate(()=>ITIN.setSeed(20261123));await p.waitForTimeout(2500);
  await p.screenshot({path:'/tmp/it0.png'});
  const r=await p.evaluate(async()=>{
   const o={},g=await ITIN.loadGraph(),$=i=>document.getElementById(i),wait=()=>new Promise(r=>setTimeout(r,50));
@@ -31,7 +31,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   $('it-off').checked=true;$('it-off').dispatchEvent(new Event('change'));$('it-offok').checked=true;
   await go();o.ttMsg=$('it-msg').textContent;o.ttRes=dur();o.ttOffTxt=/hors chemin/.test($('it-res').innerHTML);o.ttVars=$('it-vars').children.length;
   // tout-terrain actif à tous les niveaux : plus de refus, tracé respectant le maximum
-  set('it-max',0);$('it-msg').textContent='';$('it-res').innerHTML='';await go();o.ttRefus=$('it-msg').textContent;o.tt0Pill=($('it-res').querySelector('.pill')||{}).textContent;o.tt0Rule=/≤ 25 m d'un chemin, pente < 8°/.test($('it-res').innerHTML);set('it-max',4);await sleep(6000);
+  set('it-max',0);$('it-msg').textContent='';$('it-res').innerHTML='';await go();o.ttRefus=$('it-msg').textContent;o.tt0Pill=($('it-res').querySelector('.pill')||{}).textContent;o.tt0Rule=/≤ \d+ m d'un chemin, pente < 8°/.test($('it-res').innerHTML);set('it-max',4);await sleep(6000);
   // GPX + lien swisstopo
   $('it-off').checked=false;$('it-off').dispatchEvent(new Event('change'));await go();
   o.geo=$('it-geo')?$('it-geo').href:'';
