@@ -5,7 +5,7 @@ const ROOT=path.resolve(__dirname,'../..'),Z=process.argv[2]||'pde';
 const MIME={'.html':'text/html','.js':'application/javascript','.json':'application/json','.geojson':'application/json','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webmanifest':'application/json'};
 let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
 (async()=>{
- const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1');localStorage.setItem('champi-tour2','vu')}catch(e){}});
+ const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1');window.__TTOFF=true;document.addEventListener('DOMContentLoaded',()=>{const c=document.getElementById('it-offok');if(c)c.checked=true});localStorage.setItem('champi-tour2','vu')}catch(e){}});
  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.stack||e.message));
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));
   if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
@@ -23,8 +23,9 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   const cx=meta.x0+meta.cols*meta.res/2,cy=meta.y1-meta.rows*meta.res/2,ll=L.Projection.SphericalMercator.unproject(L.point(cx,cy));
   const set=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new Event('input'))},sel=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new Event('change'))};
   sel('it-mode','loop');sel('it-lm','len');set('it-lt',8);sel('it-dv','0');set('it-max',4);set('it-env',0);ITIN.setPt('A',L.latLng(ll.lat,ll.lng));
+  ITIN.setAlea(false);ITIN.setLoopEnr(false);   // le test mesure le couloir seul (sans aléa ni insertion des meilleurs points, qui ajoutent des allers-retours)
   const loop=async(pc,sq)=>{ITIN.setCorridor(pc,sq);await ITIN.compute();const S=ITIN.last;return S&&S.met?{len:Math.round(S.len),rep:+S.met.rep.toFixed(3),fo:+S.met.forest.toFixed(2),n:$('it-vars').querySelectorAll('button').length}:null};
-  o.loopOld=await loop(1,0);o.loopNew=await loop(8,1);ITIN.setCorridor(8,1);
+  o.loopOld=await loop(1,0);o.loopNew=await loop(8,1);ITIN.setCorridor(8,1);ITIN.setAlea(true);ITIN.setLoopEnr(true);
   // 3) tout-terrain : part hors chemin plafonnée (détour 2 : 70 %) et tracé lissé (pas de pas de 25 m en escalier : segments longs)
   sel('it-mode','ab');set('it-env',2);
   const inW=k=>{const c=(g.SM[2*k]-meta.x0)/meta.res,r=(meta.y1-g.SM[2*k+1])/meta.res;return c>150&&r>150&&c<meta.cols-150&&r<meta.rows-150};

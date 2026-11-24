@@ -5,7 +5,7 @@ const ROOT=path.resolve(__dirname,'../..'),ZS=process.argv.slice(2).length?proce
 const MIME={'.html':'text/html','.js':'application/javascript','.json':'application/json','.geojson':'application/json','.svg':'image/svg+xml','.webmanifest':'application/json'};
 (async()=>{const b=await chromium.launch();
 for(const z of ZS){
- const ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1')}catch(e){}});
+ const ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1');document.addEventListener('DOMContentLoaded',()=>{const c=document.getElementById('it-offok');if(c)c.checked=true})}catch(e){}});
  const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
  await p.goto('https://loc.test/index.html?r='+z);
@@ -33,7 +33,7 @@ for(const z of ZS){
    const cx=meta.x0+meta.cols*meta.res/2,cy=meta.y1-meta.rows*meta.res/2,ll=map.options.crs.unproject?L.Projection.SphericalMercator.unproject(L.point(cx,cy)):null;
    const A=L.latLng(ll.lat,ll.lng),B=L.latLng(ll.lat+0.02,ll.lng+0.025);
    $("it-mode").value=o.mode;$("it-mode").onchange();$("it-max").value=o.max??4;$("it-dv").value=o.dv||"0";$("it-dvm").value=o.dvm||300;$("it-env").value=o.env||0;
-   $("it-off").checked=!!o.off;$("it-offok").checked=!!o.off;$("it-lm").value="len";$("it-lt").value=o.lt||8;
+   ITIN.setTT(!!o.off);$("it-offok").checked=!!o.off;$("it-lm").value="len";$("it-lt").value=o.lt||8;
    ITIN.setPt("A",A);if(o.mode==="ab")ITIN.setPt("B",B);
    let long=0;const po=new PerformanceObserver(l=>{for(const e of l.getEntries())long=Math.max(long,e.duration)});try{po.observe({entryTypes:["longtask"]})}catch(e){}
    const t0=performance.now();await ITIN.compute();const t=performance.now()-t0;await new Promise(r=>setTimeout(r,50));po.disconnect();
