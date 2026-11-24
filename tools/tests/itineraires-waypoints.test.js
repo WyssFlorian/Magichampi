@@ -1,4 +1,4 @@
-// Test Playwright des points de passage obligatoires (A→B et boucle, ordre, retrait, difficulté, GPX/KML). iPhone 13, sans réseau.
+// Test Playwright des points de passage obligatoires (A→B et boucle, ordre, retrait, difficulté, GPX). iPhone 13, sans réseau.
 // usage : node tools/tests/itineraires-waypoints.test.js [région]   (défaut : pde)
 const {chromium,devices}=require('playwright');const fs=require('fs'),path=require('path');
 const ROOT=path.resolve(__dirname,'../..'),Z=process.argv[2]||'pde';
@@ -35,7 +35,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   // exports
   let gp='',km='';const orig=URL.createObjectURL;URL.createObjectURL=f=>{f.text().then(t=>/<gpx/.test(t)?gp=t:km=t);return orig(f)};Object.defineProperty(navigator,'canShare',{value:undefined,configurable:true});
   const nav=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(this.download)o.dl=this.download;else nav.call(this)};
-  $('it-gpx').click();$('it-kml').click();await sleep(400);o.gpxWpt=(gp.match(/<wpt /g)||[]).length;o.kmlWpt=(km.match(/Point de passage/g)||[]).length;
+  $('it-gpx').click();await sleep(400);o.gpxWpt=(gp.match(/<wpt /g)||[]).length;o.kmlWpt=0;
   // difficulté maximale très facile : message clair éventuel
   $('it-max').value=0;$('it-max').dispatchEvent(new Event('input'));await sleep(500);await go();o.maxMsg=$('it-msg').textContent;
   $('it-max').value=4;$('it-max').dispatchEvent(new Event('input'));await sleep(2500);

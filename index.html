@@ -1184,6 +1184,8 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="it-lab">Type : <select id="it-mode" class="coin-sel"><option value="ab">Itinéraire de A à B</option><option value="loop">Balade en boucle</option></select></label>
         <div class="it-btns"><button class="btn" type="button" id="it-a">Départ (A)</button><button class="btn" type="button" id="it-b">Arrivée (B)</button><button class="btn" type="button" id="it-loc">A = ma position</button><button class="btn" type="button" id="it-swap" title="Inverser">⇅</button></div>
         <div class="it-btns"><button class="btn" type="button" id="it-w">＋ Point de passage</button></div>
+        <label class="chk"><input type="checkbox" id="it-draw"> <span>Dessiner parcours (chaque appui sur la carte ajoute un point)</span></label>
+        <p class="it-note">Hors du mode dessin, la carte n'ajoute rien par erreur : faites un <b>appui long</b> (ou clic droit) pour poser un point de passage.</p>
         <div id="it-wbox" hidden><p class="it-note">Points par lesquels le parcours doit passer, dans l'ordre (A → 1 → 2 … → B, ou retour en A pour une boucle). Glissez un marqueur pour le déplacer.</p><div id="it-wlist"></div><label class="chk"><input type="checkbox" id="it-wopt"> <span>Réordonner pour raccourcir le trajet</span></label></div>
         <div id="it-loopbox"><label class="it-lab">Plafond (jamais dépassé) : <select id="it-lm" class="coin-sel"><option value="none">aucun</option><option value="len">distance</option><option value="dur">durée de marche</option></select> <b id="it-ltl"></b><input type="range" id="it-lt" min="2" max="20" step="1" value="8"></label><p class="it-note">Le tracé ne dépasse jamais ce plafond (durée = marche × rythme choisi) ; si c'est impossible, un message l'indique et rien n'est tracé.</p></div>
         <div class="it-btns it-pres" role="group" aria-label="Préréglages"><button class="btn" type="button" data-pre="balade" aria-pressed="false">Balade facile</button><button class="btn" type="button" data-pre="cueillette" aria-pressed="false">Cueillette</button><button class="btn" type="button" data-pre="sportif" aria-pressed="false">Sportif</button></div>
@@ -1204,6 +1206,7 @@ details.more[open]>summary{margin-bottom:4px}
         <div class="it-btns"><button class="btn primary" type="button" id="it-go">Calculer</button><button class="btn" type="button" id="it-clr">Effacer</button></div>
         <div id="it-prog" class="it-prog" role="status" hidden><span class="it-spin" aria-hidden="true"></span><span id="it-progt">Calcul…</span><button class="btn" type="button" id="it-cancel">Annuler</button></div>
         <div id="it-msg" class="it-msg" role="status"></div><div id="it-vars" class="it-btns"></div><div id="it-res"></div>
+        <details class="it-reg" id="it-saved"><summary>Parcours enregistrés</summary><p class="it-note">Gardés dans ce navigateur et inclus dans « Sauvegarder » (menu Coins). « GPX » exporte ou partage le parcours (ouvrir avec swisstopo).</p><div id="it-slist"></div></details>
     </details>
 
 
@@ -2827,7 +2830,7 @@ const TOUR=[
   {m:"pied",el:"#sec-sorties",t:"Les sorties des sociétés",b:"Les 🍄 sont les lieux de rendez-vous des sociétés mycologiques. Touche-les pour la date, le thème et l'inscription. Les dates de l'an prochain sont estimées : vérifie le programme de la société."},
   {m:"cepe",el:"#sec-coins",t:"Tes coins secrets",b:"« ＋ Nouveau coin » : ta position GPS ou un point sur la carte, le champignon, la date et une photo. Ils restent sur ton téléphone ; tu peux les partager si tu veux."},
   {m:"pied",el:"#sec-warn",t:"Cueillette responsable",b:"Lis cet encadré avant de partir : règles de cueillette, réserves et horaires. Avec « Cueillette responsable » (menu ☰), les zones de cueillette interdite (réserves, marais, zone centrale du Jorat) sont grisées. Les hachures rouges signalent les massifs de chasse (bande boisée de moins de 50 m = massif coupé). Ne cueille que ce que tu connais parfaitement !"},
-  {m:"cepe",el:"#sec-itin",t:"Itinéraire découverte (bêta)",b:"Choisis un départ A et une arrivée B, ou une balade en boucle, puis touche un préréglage (Balade facile, Cueillette, Sportif) ou ouvre « Réglages » pour tout ajuster ; « Annuler » arrête un calcul en cours. Le « plafond » en distance ou en durée de marche (rythme compris) n'est jamais dépassé, pour tous les types d'itinéraire : si c'est impossible, un message l'indique et rien n'est tracé. Ajoute jusqu'à 8 points de passage obligatoires, ou saisis le tracé du doigt (ou à la souris) et glisse-le : un point de passage est ajouté là où tu lâches, et les étapes sont recalculées. Règle l'envie de détour vers les zones favorables ou « Optimiser par variété ». Le rythme va de ×½ (jogging) à ×3 (fouille complète) sur le temps de marche, et la difficulté maximale limite pentes et distance au chemin. La « limite de dénivelé » plafonne la montée seule ou la montée et la descente (si c'est impossible, le tracé le moins pentu est proposé avec un message). Le « tout-terrain » (bêta, à tous les niveaux) peut quitter le chemin : lis bien l'avertissement. Exporte en GPX, en KML ou ouvre le tracé sur swisstopo."},
+  {m:"cepe",el:"#sec-itin",t:"Itinéraire découverte (bêta)",b:"Choisis un départ A et une arrivée B, ou une balade en boucle, puis touche un préréglage (Balade facile, Cueillette, Sportif) ou ouvre « Réglages » pour tout ajuster ; « Annuler » arrête un calcul en cours. Le « plafond » en distance ou en durée de marche (rythme compris) n'est jamais dépassé, pour tous les types d'itinéraire : si c'est impossible, un message l'indique et rien n'est tracé. Ajoute jusqu'à 8 points de passage obligatoires, ou saisis le tracé du doigt (ou à la souris) et glisse-le : un point de passage est ajouté là où tu lâches, et les étapes sont recalculées. Règle l'envie de détour vers les zones favorables ou « Optimiser par variété ». Le rythme va de ×½ (jogging) à ×3 (fouille complète) sur le temps de marche, et la difficulté maximale limite pentes et distance au chemin. La « limite de dénivelé » plafonne la montée seule ou la montée et la descente (si c'est impossible, le tracé le moins pentu est proposé avec un message). Le « tout-terrain » (bêta, à tous les niveaux) peut quitter le chemin : lis bien l'avertissement. Exporte en GPX (à ouvrir avec l'app swisstopo). Pour poser des points sans erreur : cochez « Dessiner parcours » ou faites un appui long sur la carte. Enregistre un parcours dans « Parcours enregistrés » (rechargement, GPX, suppression ; inclus dans la sauvegarde des coins)."},
   {m:"pied",el:"#map",t:"Y aller",b:"Dans la fiche d'un lieu (touche une forêt), « Trajet jusqu'à cet endroit » ouvre Google Maps avec la destination ; seules les coordonnées du lieu sont transmises."},
   {m:"girolle",el:".menu-btn",t:"Bonne cueillette !",b:"Tout le reste est dans le menu ☰ : régions, espèces affichées, couches, alertes, et « Météo et outils », avec les grands boutons « ? Guide » (revoir cette visite) et « Hors ligne » (télécharger la carte, <span class='mb'></span>). À toi de jouer !"}];
 let tourEl=null,tourI=0;
@@ -2854,16 +2857,17 @@ function tourEnd(){if(!tourEl)return;removeEventListener("scroll",tourPlace,true
   try{localStorage.setItem("champi-tour2","vu")}catch(e){}window.scrollTo({top:0,behavior:"smooth"})}
 /* ---------- sauvegarde des coins dans un fichier de l'appareil (photos comprises) ---------- */
 const BK_KEY="champi-backup-at";
-function bkInfo(){let at=null;try{at=localStorage.getItem(BK_KEY)}catch(e){}const n=state.coins.length,el=$("bk-msg");if(!el)return;
+const bkRoutes=()=>{try{return window.ITIN_SAVED?window.ITIN_SAVED.list():[]}catch(e){return[]}};
+function bkInfo(){let at=null;try{at=localStorage.getItem(BK_KEY)}catch(e){}const n=state.coins.length+bkRoutes().length,el=$("bk-msg");if(!el)return;
   if(!n){el.className="small";el.textContent="";return}
   let mod=null;try{mod=localStorage.getItem("champi-coins-mod")}catch(e){}
   if(!at){el.className="small bk-warn";el.textContent="Jamais sauvegardés";return}
   const d=new Date(+at);el.className="small"+(mod&&+mod>+at?" bk-warn":"");el.textContent=(mod&&+mod>+at?"Modifiés depuis la sauvegarde du ":"Sauvegardés le ")+d.toLocaleDateString("fr-CH")}
 const blobToData=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(b)});
-async function bkSave(){const el=$("bk-msg");if(!state.coins.length){el.textContent="Aucun coin à sauvegarder.";return}
+async function bkSave(){const el=$("bk-msg");const parc=bkRoutes();if(!state.coins.length&&!parc.length){el.textContent="Aucun coin ni parcours à sauvegarder.";return}
   el.className="small";el.textContent="Préparation…";
   const coins=[];for(const c of state.coins){const o=Object.assign({},c);if(c.photo&&c.id){try{const db=await pdb();const b=await new Promise((res,rej)=>{const q=db.transaction("photos").objectStore("photos").get(c.id);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});if(b)o.photoData=await blobToData(b)}catch(e){}}coins.push(o)}
-  const doc=JSON.stringify({app:"champi-coins",v:1,carte:document.title,date:new Date().toISOString(),coins});
+  const doc=JSON.stringify({app:"champi-coins",v:2,carte:document.title,date:new Date().toISOString(),coins,parcours:parc});
   const d=new Date(),fn=`coins-champignons-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}.json`;
   let ok=false;
   try{const dl=window.claude&&await window.claude.use("downloads");if(dl){const r=await dl.save({filename:fn,data:new Blob([doc],{type:"application/json"})});ok=!r||r.status!=="cancelled"}}
@@ -2872,16 +2876,17 @@ async function bkSave(){const el=$("bk-msg");if(!state.coins.length){el.textCont
   if(ok){try{localStorage.setItem(BK_KEY,String(Date.now()))}catch(e){}bkInfo()}else el.textContent="Sauvegarde impossible ici : utilisez « Partager mes coins » pour vous les envoyer."}
 async function bkRestore(file){const el=$("bk-msg");el.className="small";
   let o;try{o=JSON.parse(await file.text())}catch(e){el.textContent="Fichier illisible.";return}
-  if(!o||o.app!=="champi-coins"||!Array.isArray(o.coins)){el.textContent="Ce n'est pas une sauvegarde de coins.";return}
+  if(!o||o.app!=="champi-coins"||(!Array.isArray(o.coins)&&!Array.isArray(o.parcours))){el.textContent="Ce n'est pas une sauvegarde de coins.";return}
   let add=0,dup=0;
-  for(const c of o.coins){if(!c||!isFinite(c.lat)||!isFinite(c.lng))continue;
+  for(const c of (Array.isArray(o.coins)?o.coins:[])){if(!c||!isFinite(c.lat)||!isFinite(c.lng))continue;
     if(state.coins.some(x=>(c.id&&x.id===c.id)||(Math.abs(x.lat-c.lat)<1e-4&&Math.abs(x.lng-c.lng)<1.5e-4&&x.name===c.name))){dup++;continue}
     const nc={id:c.id||"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:String(c.name||"Coin").slice(0,60),lat:+c.lat,lng:+c.lng};
     if(SPECIES.some(x=>x.id===c.sp))nc.sp=c.sp;if(/^\d{4}-\d{2}-\d{2}$/.test(c.date||""))nc.date=c.date;
     if(typeof c.photoData==="string"&&c.photoData.startsWith("data:image/")){try{const b=await (await fetch(c.photoData)).blob();await photoPut(nc.id,b);nc.photo=1}catch(e){}}
     state.coins.push(nc);add++}
   saveCoins();renderCoins();try{localStorage.setItem(BK_KEY,String(Date.now()))}catch(e){}bkInfo();
-  el.textContent=`${add} coin${add>1?"s":""} restauré${add>1?"s":""}${dup?`, ${dup} déjà présent${dup>1?"s":""}`:""}.`}
+  let pr={add:0,dup:0};try{if(window.ITIN_SAVED&&Array.isArray(o.parcours))pr=window.ITIN_SAVED.merge(o.parcours)}catch(e){}
+  bkInfo();el.textContent=`${add} coin${add>1?"s":""} restauré${add>1?"s":""}${dup?`, ${dup} déjà présent${dup>1?"s":""}`:""}`+(Array.isArray(o.parcours)?` · ${pr.add} parcours restauré${pr.add>1?"s":""}${pr.dup?`, ${pr.dup} déjà présent${pr.dup>1?"s":""}`:""}`:"")+".";}
 function setupBackup(){
   $("bk-save").onclick=bkSave;$("bk-file").onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)bkRestore(f);e.target.value=""};
   // demande au navigateur de ne pas effacer de lui-même les données de la carte (sans effet sur un vidage manuel)
