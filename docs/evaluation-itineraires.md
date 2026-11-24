@@ -110,3 +110,31 @@ Mesures avant → après (`node tools/profil/itineraires-mesure.js ple gdv`, CPU
 Écart à l'objectif (« 5 à 10 × ») : atteint sur `gdv` (5 à 7 ×), seulement 2 × sur `ple` (en répétition 3,7 ×), où le plus court chemin domine encore ; le tout-terrain (routeOff) n'est pas touché par le cache, et le cas infaisable de `ple` (6 essais complets) reste long.
 Qualité : les boucles sont un peu différentes (le choix des étapes change). `gdv` : mêmes longueurs, forêt 64 % (avant 51 %), répétitions 6 % (avant 3 %). `ple` : forêt 77 % (avant 71 %), mais répétitions 13 % (avant 5 %) : à traiter avec la proposition 6 (vague 3). Tout-terrain : `gdv` 5 583 m, répétitions 1 % (avant 4 865 m, 12 %) ; `ple` 5 759 m (avant 4 885 m). Le résultat dépend du budget de temps : sur une machine très chargée, une boucle tout-terrain peut encore dépasser le plafond et être refusée (test « options » rarement instable).
 Tests : `itineraires-panneau.test.js` (panneau, préréglages, progression, annulation, résultat condensé, cache, distance par les chemins, boucle < 6 s à CPU ×4) ; `itineraires-denivele.test.js` passe à une graine fixe (il échouait une fois sur trois).
+
+## 7. Vague 3 réalisée (23 nov. 2026) : propositions 6, 7 et 8
+- **6. Boucles moins d'allers-retours.** La pénalité de repassage est devenue *spatiale* : en plus de l'arête déjà prise (×12), toute arête dont un échantillon de 25 m tombe dans une maille de 20 m voisine d'un tracé déjà pris (couloir d'environ 30 m) coûte ×8 (`corridor()`, index maille → arêtes calculé une fois par graphe). Les 60 premiers et derniers mètres de chaque tronçon sont exemptés (on part de l'étape et on y arrive). À l'exploration, chaque couple d'étapes est essayé **avec et sans couloir** (le coût de sélection choisit), et une **forme à 4 étapes** (A → W1 → W2 plus loin → W3 → A, 1 essai par exploration) s'ajoute au triangle ; ces deux ajouts sautent quand le budget de temps est écoulé. Le poids des répétitions dans le coût de sélection passe de 0,7 à 2.
+- **7. Plafond de détour A→B.** `routeCap()` : la longueur ne dépasse pas 1,35 × celle du plus court chemin sous les mêmes limites (difficulté, dénivelé) mais sans détour ni pénalité hors forêt, 1,6 × en « grand détour ». Au-delà, les pénalités sont relâchées par paliers (hors forêt ÷ 2 puis ÷ 4, envie de détour réduite, enfin le plus court chemin). Le plafond strict distance / durée, la difficulté maximale et le dénivelé gardent la priorité. Le message dit « Détour limité à +35 % ». Appliqué aussi aux étapes des points de passage.
+- **8. Tout-terrain plus mesuré.** La part hors chemin est plafonnée selon l'envie de détour (50 / 60 / 70 / 80 % de la longueur) : au-delà, les pas hors chemin sont renchéris par paliers (×1,5 à ×5) tant que la durée reste sous 1,3 × le plus rapide (ou le plafond de durée si plus large). Le tracé hors chemin est lissé par visibilité directe sur les cellules praticables (fin de l'escalier de 25 m) ; la longueur comptée est celle du tracé lissé, le dénivelé et la durée restent calculés sur les pas d'origine.
+
+Mesures avant (fin de la vague 2) → après (`node tools/profil/itineraires-mesure.js ple gdv`, CPU ×4, départ au centre ; la qualité A→B passe maintenant par `ITIN.routeCap`) :
+
+| qualité A→B (60 trajets) | ple avant | ple après | gdv avant | gdv après |
+|---|---|---|---|---|
+| longueur / plus court : 90e centile · max | 1,30 · 1,55 | **1,20 · 1,33** | 1,27 · 1,63 | **1,18 · 1,33** |
+| idem « grand détour » : 90e centile · max | 1,31 · 1,91 | 1,30 · **1,55** | 1,27 · 1,63 | 1,22 · **1,45** |
+| part hors forêt (arêtes, médiane) | 53 % | 53 % | 51 % | 51 % |
+
+| scénario | ple avant | ple après | gdv avant | gdv après |
+|---|---|---|---|---|
+| A→B tout-terrain détour 2 | 7 937 m dont 6 543 m hors chemin (82 %) · 0,9 s | 7 090 m dont 4 627 m (65 %) · 1,0 s | 6 108 m, 1 535 m hors chemin | inchangé (6 105 m, 1 532 m) |
+| Boucle 8 km : répétitions · forêt · temps (1er calcul / répétition) | 13 % · 77 % · 1,6 s / 0,9 s | **6 %** · 71 % · 2,2 s / 1,0 s | 6 % · 64 % · 1,3 s | **1 %** · 38 % · 2,4 s / 1,2 s |
+| Boucle 8 km détour 2 : répétitions · forêt | 13 % · 77 % | 11 % · 77 % | 0 % · 56 % | 0 % · 56 % |
+| Boucle 6 km tout-terrain : répétitions | 14 % | 15 % | 1 % | 1 % |
+
+Constats honnêtes :
+- Les répétitions baissent là où la vague 2 les avait fait monter (`ple` 13 → 6 %, objectif « environ 5 % » atteint). Sur `gdv`, **la boucle gagne en non-répétition mais perd en forêt (64 → 38 %)** : sans zone « moyen » ou mieux autour du départ, tout tronçon répété est une impasse, et le coût de sélection préfère alors la boucle sans repassage, qui emprunte des routes moins boisées. Le poids de la forêt n'a pas été touché.
+- Le temps de calcul des boucles augmente (≈ ×1,3 à ×1,8 au premier calcul : index de couloir, variantes avec et sans couloir, forme à 4 étapes) mais reste largement sous le seuil de 6 s des tests. Cas infaisable (`ple`, « facile » + D± ≤ 200 m) : 6,2 s → 9,8 s (budget total de 9 s) ; la recherche aboutit maintenant à une boucle de 3,9 km (difficulté 3, forêt 27 %, 25 % de repassage) signalée par la note « Aucune boucle facile trouvée » au lieu du message d'impossibilité.
+- Les boucles tout-terrain ne profitent pas du couloir (leur pénalité de repassage est celle des cellules, ×4) : répétitions inchangées.
+- Le plafond de détour ne coûte presque rien en temps (un plus court chemin de référence de plus, 10 à 40 ms).
+- Mesure du « escalier » du script : 2,5 % → 2,0 % de longueur en trop face à une simplification de 8 m ; peu parlante, car le tracé affiché est maintenant lissé.
+Test : `node tools/tests/itineraires-trace.test.js [région]` (plafond de détour, répétitions avec et sans couloir, part hors chemin, lissage).

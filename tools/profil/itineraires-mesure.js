@@ -18,7 +18,7 @@ for(const z of ZS){
   const foL=R=>{let t=0,f=0;for(const [e,s0,s1] of R.seq){const l=Math.abs(s1-s0);t+=l;f+=l*g.fo[e]/100}return t?1-f/t:0};
   for(let qn=0,n=0;qn<2000&&n<60;qn++){const i=Math.floor(rnd()*g.SX.length),j=Math.floor(rnd()*g.SX.length),d=Math.hypot(g.SX[i]-g.SX[j],g.SY[i]-g.SY[j]);if(d<1500||d>6000)continue;
    const A=ITIN.snap(mk(i)),B=ITIN.snap(mk(j));if(!A||!B)continue;
-   ITIN.setOffP(0);const R0=ITIN.route(A,B,0);ITIN.setOffP(4);const R4=ITIN.route(A,B,0),R3=ITIN.routeGD(A,B,3);if(!R0||!R4||!R3)continue;n++;
+   ITIN.setOffP(0);const R0=ITIN.route(A,B,0);ITIN.setOffP(4);const R4=(ITIN.routeCap||ITIN.route)(A,B,0),R3=(ITIN.routeCap||ITIN.routeGD)(A,B,3);if(!R0||!R4||!R3)continue;n++;
    out.ratio0.push(len(R4)/len(R0));out.ratioE3.push(len(R3)/len(R0));out.crow.push(len(R0)/d);out.fo0.push(foL(R0));out.fo4.push(foL(R4))}
   const st=a=>{a=a.slice().sort((x,y)=>x-y);const P=k=>+a[Math.min(a.length-1,Math.floor(k*a.length))].toFixed(2);return {n:a.length,p50:P(.5),p90:P(.9),max:+a[a.length-1].toFixed(2),mean:+(a.reduce((x,y)=>x+y,0)/a.length).toFixed(2)}};
   const r={};for(const k in out)r[k]=st(out[k]);return r});
