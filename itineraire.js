@@ -541,7 +541,7 @@ async function routeOff(pA,pB,envie,Mx,used,opts){
   const fz=new Uint8Array(N);   // fz : cellule praticable mais hors de la bande progressive (liaison seulement : coût × FARK, jamais une zone visitée)
   if(prog){const dd=dilate(pm,ww,hh,Math.max(1,Math.round(PR.dist/gs)));for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const li=y*ww+x;if(al[li]&&(!dd[li]||G.slope[(r0+y)*W+c0+x]>=PR.slope))fz[li]=1}}
   const hardP=!prog&&envie>=3;   // difficulté et détour au maximum : suivre un chemin DANS une zone colorée coûte ×PATHK (chemin = accès seulement), on traverse la zone hors chemin
-  const light=envie===0,eff=envie>0?envie:OFF_LIGHT,capF=envie>0?DETOUR_CAP[envie]:OFF_LCAP;
+  const eff=envie>0?envie:OFF_LIGHT,capF=envie>0?DETOUR_CAP[envie]:OFF_LCAP;
   // bande de OFF_ROAD m le long des routes de classe 2 : pas de hors-chemin en forêt (on suit la route) ; les cellules de chemin restent praticables
   const ban=new Uint8Array(N);
   for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1]||g.cls[g.SE[k]]!==2)continue;
@@ -1129,7 +1129,7 @@ function init(){
   const modeUI=()=>{cancelRun();const l=isLoop();$("it-b").hidden=l;$("it-swap").hidden=l;const nn=$("it-lm").querySelector('[value="none"]');nn.disabled=nn.hidden=l;if(l&&$("it-lm").value==="none"){$("it-lm").value="len";lmUI()}   // pas de boucle sans plafond
     $("it-a").textContent=l?"Départ de la boucle":"Départ (A)";
     if(l&&mk.B){map.removeLayer(mk.B);mk.B=null;pts.B=null}clearRouteKeep();$("it-vars").innerHTML=""};
-  $("it-mode").onchange=modeUI;$("it-max").addEventListener("change",offBoxUpd);$("it-offbox").hidden=true;
+  $("it-mode").onchange=modeUI;$("it-max").addEventListener("change",offBoxUpd);offBoxUpd();
   function lmUI(){const no=$("it-lm").value==="none",d=$("it-lm").value==="len",r=$("it-lt");$("it-ltl").hidden=r.hidden=no;if(no){$("it-ltl").textContent="";return}r.min=d?2:30;r.max=d?20:360;r.step=d?1:15;r.value=d?8:120;r.oninput()}
   $("it-lm").onchange=lmUI;$("it-lt").oninput=()=>{const d=$("it-lm").value==="len",v=+$("it-lt").value;$("it-ltl").textContent=d?v+" km":dur(v*60)};
   $("it-lm").value="none";lmUI();modeUI();
