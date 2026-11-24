@@ -274,6 +274,10 @@ function covers(R,p,tol){const g=GR,E=cellIdx(g),t2=(tol||40)**2;
     for(let k=E.s[e];k<E.s[e+1];k++){const s=g.SS[k];if(s<lo-25||s>hi+25)continue;if((g.SX[k]-p.x)**2+(g.SY[k]-p.y)**2<=t2)return true}}
   return false}
 function shuffle(a,rnd){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function junctions(r){const g=GR,out=[],n_=r.seq.length;   // points de jonction du tracé (début de chaque tronçon + fin) avec leur position en m
+  const at=(e,s)=>{const a=g.a[e],b=g.b[e],f=Math.min(1,Math.max(0,s/Math.max(g.len[e],1)));return [(g.lon[a]+(g.lon[b]-g.lon[a])*f-g.lon0)*g.kx,(g.lat[a]+(g.lat[b]-g.lat[a])*f-g.lat0)*g.ky]};
+  for(let i=0;i<n_;i++)out.push({e:r.seq[i][0],s:r.seq[i][1],d:0,xy:at(r.seq[i][0],r.seq[i][1])});
+  const L_=r.seq[n_-1];out.push({e:L_[0],s:L_[2],d:0,xy:at(L_[0],L_[2])});return out}
 async function enrich(R,A,B,envie,M,CAP,o){
   o=o||{};const g=GR,loop=!!o.loop,t0=performance.now(),dl=t0+(o.ms||1500),rnd=RND;
   if(!curC())return null;
@@ -284,10 +288,7 @@ async function enrich(R,A,B,envie,M,CAP,o){
   const on=[],off=[];for(const p of top)(covers(R,p)?on:off).push(p);
   let cur=R,S=summarize(R),n=on.length,tries=0;
   const q=envie>0?bonusQ():undefined,okS=(S2,len)=>(!CAP||!capOver(S2,CAP))&&(M>=4||S2.lvl<=Math.max(M,S.lvl))&&(dvOk(S2)||!dvOk(S))&&(loop||len<=Lmax+1e-6);
-  const jx=r=>{const out=[],n_=r.seq.length;
-    const at=(e,s)=>{const a=g.a[e],b=g.b[e],f=Math.min(1,Math.max(0,s/Math.max(g.len[e],1)));return [(g.lon[a]+(g.lon[b]-g.lon[a])*f-g.lon0)*g.kx,(g.lat[a]+(g.lat[b]-g.lat[a])*f-g.lat0)*g.ky]};
-    for(let i=0;i<n_;i++)out.push({e:r.seq[i][0],s:r.seq[i][1],d:0,xy:at(r.seq[i][0],r.seq[i][1])});
-    const L_=r.seq[n_-1];out.push({e:L_[0],s:L_[2],d:0,xy:at(L_[0],L_[2])});return out};
+  const jx=junctions;
   for(const p of shuffle(off,rnd)){
     if(n>=TOP_WANT||tries>=TOP_N||performance.now()>dl)break;tries++;stop(RUN);
     const J=jx(cur),nJ=J.length-1;if(nJ<1)break;
@@ -302,6 +303,35 @@ async function enrich(R,A,B,envie,M,CAP,o){
     if(best){cur=best.R;S=best.S;n++}
     await new Promise(r=>setTimeout(r,0));stop(RUN)}
   return LASTTOP={R:cur,n,tot:top.length}}
+
+// Remplissage : la distance / durée choisie est un plafond strict, mais le tracé doit s'en approcher (à 1 km / 30 min près). Tant qu'il reste de la place, on insère un détour vers un point du réseau
+// (de préférence en forêt) dont l'ajout rapproche le plus la longueur / durée du plafond sans le dépasser, en respectant la difficulté maximale et la limite de dénivelé.
+const FILL_WANT={len:500,dur:900};   // écart visé (m, s) : sous la tolérance de 1 km / 30 min
+async function fill(R,A,B,envie,M,CAP,o){
+  o=o||{};const g=GR,t0=performance.now(),dl=t0+(o.ms||2500),rnd=RND,gap=S=>CAP.lim-capVal(S,CAP),want=FILL_WANT[CAP.m];
+  let cur=R,S=summarize(R),n=0;if(gap(S)<=want)return {R,n:0,S};
+  const S0=S,okS=S2=>!capOver(S2,CAP)&&(M>=4||S2.lvl<=Math.max(M,S0.lvl))&&(dvOk(S2)||!dvOk(S0)),q=envie>0?bonusQ():undefined;
+  let mxf=1;if(!g.FX){for(let e=0;e<g.nE;e++)if(g.fo[e]>mxf)mxf=g.fo[e];g.FX=mxf}mxf=g.FX;
+  for(let round=0;round<10&&gap(S)>want&&performance.now()<dl;round++){
+    const room=CAP.m==="len"?gap(S):gap(S)/3600*4000/durF(),dT=room/2.6,J=junctions(cur),nJ=J.length-1;if(nJ<1)break;
+    const cs=[],nS=g.SX.length,st=Math.max(1,Math.floor(nS/3000)),o0=Math.floor(rnd()*st);for(let i=o0;i<nS;i+=st){const e=g.SE[i];if(g.cls[e]===1||(M<4&&edgeTech(e)>M))continue;
+      let m=0,bd=1e18;for(let a=0;a<=nJ;a++){const d=(J[a].xy[0]-g.SX[i])**2+(J[a].xy[1]-g.SY[i])**2;if(d<bd){bd=d;m=a}}const d=Math.sqrt(bd);
+      if(d<.12*dT||d>2.4*dT)continue;cs.push({p:{e,s:g.SS[i]},m,sc:g.fo[e]/mxf+rnd()*.6})}
+    cs.length=Math.min(cs.length,Infinity);
+    cs.sort((a,b)=>b.sc-a.sc);cs.length=Math.min(cs.length,14);let best=null,bsc=-1e9;const m0=o.loop?loopMetrics(cur):null;
+    for(const c of cs){if(performance.now()>dl)break;stop(RUN);
+      const P={e:c.p.e,s:c.p.s,d:0},legs=new Map(),leg=(a,b)=>{const k=a+">"+b;if(!legs.has(k)){const x=a==="P"?P:J[a],y=b==="P"?P:J[b];legs.set(k,route(x,y,envie,undefined,q))}return legs.get(k)};
+      for(const [i0,i1] of [[c.m-1,c.m+1],[c.m-1,c.m],[c.m,c.m+1],[c.m-2,c.m],[c.m,c.m+2]]){
+        if(i0<0||i1>nJ||i0>=i1)continue;const r1=leg(i0,"P"),r2=leg("P",i1);if(!r1||!r2)continue;
+        const R2={seq:[...cur.seq.slice(0,i0),...r1.seq,...r2.seq,...cur.seq.slice(i1)]},S2=summarize(R2);
+        if(!okS(S2)||capVal(S2,CAP)<=capVal(S,CAP)+50)continue;
+        let sc=(capVal(S2,CAP)-capVal(S,CAP))/CAP.lim;   // gain relatif ; pour une boucle, moins les impasses et repassages ajoutés
+        if(m0){const m2=loopMetrics(R2);if(m2){if(m2.dead-m0.dead>.03||m2.rep-m0.rep>.08)continue;sc-=2*(m2.dead-m0.dead)+(m2.rep-m0.rep)}}
+        if(sc>bsc){bsc=sc;best={R:R2,S:S2}}}
+      await new Promise(r=>setTimeout(r,0));stop(RUN);
+      if(best&&gap(best.S)<=want)break}
+    if(!best)break;cur=best.R;S=best.S;n++}
+  return {R:cur,n,S}}
 
 /* ---------- balade en boucle ---------- */
 // Triangle départ A → W1 → W2 → A (W1, W2 à distance r de A, 60° d'écart) ; les arêtes déjà utilisées coûtent ×6 pour ne pas repasser aux mêmes endroits.
@@ -327,7 +357,8 @@ const rng=a=>()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul
 // graine : tirée au hasard à chaque appui sur « Calculer » (parcours différent à chaque fois, toujours sous les mêmes contraintes) ; fixée par ITIN.setSeed(n) (tests, comparaisons)
 let ALEA=true;   // false = ancien comportement déterministe (comparaisons de test) : ni bruit de coût ni insertion des meilleurs points
 let SEEDV=SEED,SEEDFIX=null,RND=rng(SEED),NZ=null,NZA=0,LNZ=1,LRETRY=false;   // LNZ : part d'aléa des boucles (0 = relance sans aléa quand rien n'est trouvé)
-function newSeed(){SEEDV=SEEDFIX!=null?SEEDFIX:((Math.random()*2147483647)|0)+1;RND=rng(SEEDV);NZ=null;LNZ=1;LRETRY=false}
+let SHX=1,LPREV=null;   // SHX : agrandissement de la boucle générée au 2e passage quand la 1re reste loin du plafond ; LPREV : boucles du 1er passage (gardées si le 2e fait moins bien)
+function newSeed(){SEEDV=SEEDFIX!=null?SEEDFIX:((Math.random()*2147483647)|0)+1;RND=rng(SEEDV);NZ=null;LNZ=1;LRETRY=false;SHX=1;LPREV=null}
 // bruit spatial de coût (champ aléatoire lissé sur ≈ 150 m et ≈ 450 m) : écarte légèrement le plus court chemin vers une variante voisine ; seuls les contrôles de plafond / difficulté / dénivelé décident ensuite
 const hz2=(a,b,c)=>{let h=(Math.imul(a,374761393)+Math.imul(b,668265263)+Math.imul(c,1274126177))|0;h=Math.imul(h^h>>>13,1274126177);return(((h^h>>>16)>>>0)/4294967296)*2-1};
 const nzf=(x,y,sz,o,seed)=>{const ix=Math.floor(x/sz),iy=Math.floor(y/sz),fx=x/sz-ix,fy=y/sz-iy,sm=t=>t*t*(3-2*t),a=hz2(ix,iy,seed+o),b=hz2(ix+1,iy,seed+o),c=hz2(ix,iy+1,seed+o),d=hz2(ix+1,iy+1,seed+o),u=a+(b-a)*sm(fx);return u+((c+(d-c)*sm(fx))-u)*sm(fy)};
@@ -411,7 +442,8 @@ function legsOnce(ws,A,envie,q,L1,all,cor){   // parcours A → étapes → A su
     if(!R)return [];
     seq.push(...R.seq);for(const [e] of R.seq)pen[e]=LOOPQ?12:6;if(cs)corridor(R,pen,cs);P=w}
   return [{seq,sq:ws.length>2}]}
-function mkLoopC(R,metric,target,MXv,hard){const aim=target*.93,S=summarize(R),m=loopMetrics(R),mm=metric==="len"?S.len:S.sec,ov=mm>(hard||target),err=mm>target?1+(mm-target)/target:Math.abs(mm-aim)/aim;S.met=m;return {R,S,err,over:ov,M:m,cost:loopCost(err,m)+(S.lvl>MXv?1:0)}}
+const aimOf=(t,metric)=>t-Math.min(.07*t,metric==="len"?300:420);   // visée sous un plafond : au plus 7 % en dessous, mais jamais plus de 300 m / 7 min (sinon 12 km visaient 11,2 km)
+function mkLoopC(R,metric,target,MXv,hard){const aim=aimOf(target,metric),S=summarize(R),m=loopMetrics(R),mm=metric==="len"?S.len:S.sec,ov=mm>(hard||target),err=mm>target?1+(mm-target)/target:Math.abs(mm-aim)/aim;S.met=m;return {R,S,err,over:ov,M:m,cost:loopCost(err,m)+(S.lvl>MXv?1:0)}}
 async function loopRoutes(A,pt,metric,target,envie,off,hard){
   const run=RUN,rnd=RND,dl=performance.now()+BUDGET,late=()=>performance.now()>dl,_d=(DLN=dl),g=GR,q=envie>0?bonusQ():null,nq=new Float32Array(g.nN);
   if(!g.LX){   // part de forêt des noeuds et noeuds candidats : propres au réseau, calculés une fois
@@ -423,7 +455,7 @@ async function loopRoutes(A,pt,metric,target,envie,off,hard){
   if(q)for(let e=0;e<g.nE;e++){nq[g.a[e]]=Math.max(nq[g.a[e]],q[e]);nq[g.b[e]]=Math.max(nq[g.b[e]],q[e])}
   const ax=(pt.lng-g.lon0)*g.kx,ay=(pt.lat-g.lat0)*g.ky,out=[];
   // distance visée en mètres de chemin : longueur de la boucle (ou durée marchée à 4 km/h ÷ rythme) ; la boucle fait environ 3,5 fois la distance d'une étape
-  const Lm=metric==="len"?target*.93:target*.93/3600*4000/durF();DN=netDist(A,Math.min(15000,Lm*.8));
+  const Lm=metric==="len"?aimOf(target,"len"):aimOf(target,"sec")/3600*4000/durF();DN=netDist(A,Math.min(15000,Lm*.8));
   {const us=[],dns=[],ans=[],rhos=[];   // noeuds candidats atteints par les chemins : distance par les chemins, direction et distance à vol d'oiseau, calculées une fois
     for(const u of cand){if(DN[u]===Infinity)continue;const x=(g.lon[u]-g.lon0)*g.kx-ax,y=(g.lat[u]-g.lat0)*g.ky-ay;us.push(u);dns.push(DN[u]);ans.push(Math.atan2(y,x));rhos.push(Math.hypot(x,y))}
     NEAR={u:us,dn:dns,an:ans,rho:rhos}}
@@ -433,7 +465,7 @@ async function loopRoutes(A,pt,metric,target,envie,off,hard){
   sc.sort((a,b)=>b[0]-a[0]);const ths=[];for(const [,t] of sc){if(ths.every(u=>{const d=Math.abs(((t-u+3*Math.PI)%(2*Math.PI))-Math.PI);return d>=Math.PI/2}))ths.push(t);if(ths.length===NT)break}
   while(ths.length<3)ths.push(ths.length*2*Math.PI/3);
   // plafond strict : `target` est un maximum ; on vise 93 % du plafond (marge de ±7 %) et toute boucle au-dessus du plafond est marquée `over` (err > 1)
-  const aim=target*.93,MXv=+($("it-max")?$("it-max").value:4),mkC=R=>mkLoopC(R,metric,target,MXv,hard);
+  const aim=aimOf(target,metric),MXv=+($("it-max")?$("it-max").value:4),mkC=R=>mkLoopC(R,metric,target,MXv,hard);
   let ti=0;
   for(const th of ths){
     prog("Calcul des boucles… direction "+(++ti)+"/"+ths.length+(PGT?" (essai "+PGT+")":""));
@@ -443,7 +475,7 @@ async function loopRoutes(A,pt,metric,target,envie,off,hard){
       const R=await AW(loopOnce(A,ax,ay,th,r,envie,q,nq,cand,off,pt),run);if(!R)break;
       const c=mkC(R),M=metric==="len"?c.S.len:c.S.sec;
       if(!best||c.err<best.err)best=c;
-      if(c.err<=.1||(late()&&!best.over&&best.err<=.35))break;
+      if(c.err<=.06||(late()&&!best.over&&best.err<=.35))break;
       if(pM!==null&&Math.abs(pM-M)<1&&++stall>=2)break;pM=M;   // la boucle ne change plus avec la distance d'étape : inutile d'insister
       if(M<aim){if(!lo||r>lo.r)lo={r,M}}else if(!hi||r<hi.r)hi={r,M}
       let nr=r*Math.pow(aim/M,it<4?.9:.6)*(1+(it>=4?(rnd()-.5)*.15:0));
@@ -806,7 +838,7 @@ async function computeLoop(){
   // (≤ 6 recherches au lieu de 30), avec un budget total de 3 × BUDGET : ensuite on garde la meilleure boucle trouvée
   const ladder=[];for(const s of M<4||DL?[1,.75,.55]:[1])for(const k of M<4?[6,40]:[0])for(const lam of DL?DV_LAM:[0])ladder.push([s,k,lam]);
   NZA=(NZAMP[+$("it-env").value]||.12)*.8;NZ=LRETRY||!ALEA?null:mkNoise(NZA,SEEDV);
-  const ENR=ALEA&&LOOPENR&&!LRETRY&&!tt&&!!curC(),SH=ENR?ENRSH:1;   // avec insertion des meilleurs points : on génère la boucle plus courte, la place libre sert aux points
+  const ENR=ALEA&&LOOPENR&&!LRETRY&&!tt&&!!curC(),SH=ENR?ENRSH*SHX:1;   // avec insertion des meilleurs points : on génère la boucle plus courte, la place libre sert aux points
   let best=null,lastV=[],lastS=1,lo=0,hi=ladder.length-1,j=0,tries=0;const T0=performance.now();
   try{while(lo<=hi){
     j=tries===0?0:(lo+hi)>>1;tries++;PGT=ladder.length>1?tries:0;const [s,k,lam]=ladder[j];
@@ -818,6 +850,7 @@ async function computeLoop(){
     if(performance.now()-T0>3*BUDGET&&(best||lastV.length))break}
   }finally{if(RUN===run){BP=null;DV=null;PGT=0}}
   if(best){V=best.V;shr=best.s}else{V=lastV;shr=lastS}
+  if(LPREV&&!V.some(x=>!x.over)){V=LPREV;LPREV=null;SHX=1;shr=1}   // le 2e passage n'a rien donné : on garde le 1er
   if(!V.length&&!LRETRY){LRETRY=true;LNZ=0;return computeLoop()}   // rien trouvé avec l'aléa : on relance sans aléa ni insertion de points (comme avant)
   if(!V.length){clearRoute();msg.textContent=LOOPERR||"Aucune boucle trouvée depuis ce départ : le réseau y est trop morcelé ou trop court. Essayez un autre point de départ.";return}
   {const fe=V.filter(x=>!x.over);   // plafond strict : aucune boucle au-dessus du plafond n'est affichée
@@ -832,8 +865,18 @@ async function computeLoop(){
       for(let i=0;i<Math.min(3,V.length);i++){const x=V[i],X=await AW(enrich(x.R,A,A,env,M,cp,{loop:true,reach:Lm*.45,ms:1300}),run);if(!X)continue;
         const c=X.R!==x.R?mkLoopC(X.R,dm?"len":"sec",tg,M):x;if(X.R!==x.R&&!c.over&&c.S.lvl<=Math.max(M,x.S.lvl)&&(dvOk(c.S)||!dvOk(x.S)))V[i]=c;V[i].top=X.n;V[i].topTot=X.tot}
     }finally{if(RUN===run){BP=null;DV=null}}
-    for(const x of V)if(x.top==null)x.top=0;
+    for(const x of V)if(x.top==null)x.top=0;}
+  if(best&&!tt){   // approcher la distance / durée choisie (à 1 km / 30 min près) : détours supplémentaires tant que le plafond, la difficulté et le dénivelé le permettent
+    const tg=target0*shr,cp={m:dm?"len":"dur",lim:target0},env=+$("it-env").value;   // plafond réel (et non la cible réduite par la difficulté) : les détours restent soumis à la difficulté et au dénivelé
+    try{BP=M<4?techPen(M,best.k):null;setDV(best.lam);prog("Ajustement à la cible…");
+      for(let i=0;i<Math.min(3,V.length);i++){const x=V[i],F=await AW(fill(x.R,A,A,env,M,cp,{ms:1500,loop:true}),run);if(!F||!F.n)continue;
+        const c=mkLoopC(F.R,dm?"len":"sec",tg,M);if(!c.over&&c.S.lvl<=Math.max(M,x.S.lvl)&&(dvOk(c.S)||!dvOk(x.S))&&(!c.M||!x.M||c.M.dead-x.M.dead<=.04&&c.M.rep-x.M.rep<=.12)){c.top=x.top;c.topTot=x.topTot;V[i]=c}}
+    }finally{if(RUN===run){BP=null;DV=null}}}
+  if(ENR&&best){
     V.sort((a,b)=>(b.top||0)-(a.top||0)||a.cost-b.cost);topN=V[0].topTot?V[0]:null}
+  {const mt=dm?"len":"sec",val=x=>dm?x.S.len:x.S.sec,gp=x=>target0-val(x),tolG=dm?600:1080;   // encore loin du plafond (cible réduite par la difficulté exclue) : 2e passage avec une boucle générée plus grande, sans la marge réservée aux meilleurs points
+    if(SHX===1&&best&&!tt&&shr===1&&!LRETRY&&V.length&&gp(V[0])>tolG){const f=Math.min(1/ENRSH,aimOf(target0,mt)/val(V[0]));if(f>1.03){LPREV=V;SHX=f;return computeLoop()}}
+    if(LPREV){if(LPREV.length&&gp(LPREV[0])<gp(V[0]))V=LPREV;LPREV=null;SHX=1;topN=V[0].topTot?V[0]:null}}
   const over=V.every(x=>x.S.lvl>M);
   if((M<4||DL)&&!over&&shr<1)note=` Cible réduite à ${dm?km(target0*shr):dur(target0*shr*60)} pour respecter ${M<4&&DL?"la difficulté maximale ("+DIFF[M]+") et la limite de dénivelé":M<4?"la difficulté maximale ("+DIFF[M]+")":"la limite de dénivelé"}. `;
   if(M<4&&over)note=` Aucune boucle « ${DIFF[M]} » ou plus facile trouvée ici : voici la plus facile (${DIFF[Math.min(...V.map(x=>x.S.lvl))]}). `;
@@ -864,7 +907,7 @@ async function computeAny(){
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
   let R,S0=null;const M=+$("it-max").value,tt=ttOn(pts.A);
   if(!offGate(M,pts.A,tt,msg,clearRoute))return;
-  const CAP=capOf(),env0=+$("it-env").value;let evUsed=env0,nTop=0,topTot=0,kU=0,lU=0;
+  const CAP=capOf(),env0=+$("it-env").value;let evUsed=env0,nTop=0,topTot=0,kU=0,lU=0,nFill=0;
   NZ=ALEA?mkNoise(NZAMP[env0]||.12,SEEDV):null;NZA=NZAMP[env0]||.12;
   for(const nzOn of NZ?[NZ,null]:[null]){   // parcours aléatoire d'abord ; s'il ne respecte pas tous les réglages, le calcul sans aléa
   NZ=nzOn;evUsed=env0;R=null;S0=null;
@@ -877,11 +920,13 @@ async function computeAny(){
   if(R&&!capOver(S0,CAP)&&S0.lvl<=M&&dvOk(S0))break}
   if(ALEA&&!tt&&R&&!capOver(S0,CAP)&&dvOk(S0)){   // les 5 des 10 meilleurs points accessibles : insérés tant que plafond, difficulté et dénivelé restent respectés
     try{BP=M<4?techPen(M,kU):null;setDV(lU);const X=await AW(enrich(R,A,B,evUsed,M,CAP),run);if(X){if(X.R!==R){R=X.R;S0=summarize(R)}nTop=X.n;topTot=X.tot}}finally{if(RUN===run){BP=null;DV=null}}}
+  if(CAP&&!tt&&R&&!capOver(S0,CAP)&&S0.lvl<=M&&dvOk(S0)){   // approcher le plafond choisi (à 1 km / 30 min près) : détours supplémentaires, le plafond strict, la difficulté et le dénivelé restent respectés
+    try{BP=M<4?techPen(M,kU):null;setDV(lU);prog("Ajustement à la cible…");const F=await AW(fill(R,A,B,evUsed,M,CAP),run);if(F&&F.n){R=F.R;S0=F.S;nFill=F.n}}finally{if(RUN===run){BP=null;DV=null}}}
   if(R&&capOver(S0,CAP)){clearRoute();msg.textContent=capMsg(S0,CAP);return}
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=S0||summarize(R);draw(S,R);show(S);last=S;
-  setMsg("",(CAP&&evUsed!==env0?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.capped?"Détour limité à +"+Math.round((DET_CAP[Math.min(3,evUsed)]-1)*100)+" % du plus court chemin (le tracé idéal faisait +"+R.capped+" %). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+(topTot?"Passe par "+nTop+" des "+topTot+" meilleurs points accessibles (objectif : "+TOP_WANT+"). ":"")+(tt&&R.cand?(R.stops?R.stops+" aller-retour(s) / détour(s) vers les meilleures zones accessibles ("+R.cand+" candidates, objectif : "+TOP_WANT+"). ":"Aucune des "+R.cand+" meilleures zones n'est accessible sans dépasser le plafond de détour. "):"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":""));
+  setMsg("",(CAP&&evUsed!==env0?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.capped?"Détour limité à +"+Math.round((DET_CAP[Math.min(3,evUsed)]-1)*100)+" % du plus court chemin (le tracé idéal faisait +"+R.capped+" %). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+(nFill?"Détour(s) ajouté(s) pour s'approcher de "+capTxt(CAP)+". ":"")+(topTot?"Passe par "+nTop+" des "+topTot+" meilleurs points accessibles (objectif : "+TOP_WANT+"). ":"")+(tt&&R.cand?(R.stops?R.stops+" aller-retour(s) / détour(s) vers les meilleures zones accessibles ("+R.cand+" candidates, objectif : "+TOP_WANT+"). ":"Aucune des "+R.cand+" meilleures zones n'est accessible sans dépasser le plafond de détour. "):"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":""));
 }
 
 
