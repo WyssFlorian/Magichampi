@@ -4,7 +4,7 @@ const {chromium,devices}=require('playwright');const fs=require('fs'),path=requi
 const ROOT=path.resolve(__dirname,'../..'),Z=process.argv[2]||'ple',MODE=process.argv[3]||'ab',OFF=!!process.env.OFF;
 const CFG=process.env.CFG?JSON.parse(process.env.CFG):[[0,0],[1,1],[2,2],[3,3],[0,3],[3,0]],NP=+(process.env.NP||6),PER=!!process.env.PER;
 const MIME={'.html':'text/html','.js':'application/javascript','.json':'application/json','.geojson':'application/json','.svg':'image/svg+xml','.webmanifest':'application/json'};
-(async()=>{const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1')}catch(e){}});
+(async()=>{const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1');document.addEventListener('DOMContentLoaded',()=>{const c=document.getElementById('it-offok');if(c)c.checked=true})}catch(e){}});
  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.stack||e.message));if(process.env.DBG)p.on('console',m=>{if(/DBG/.test(m.text()))console.log(m.text())});
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
  await p.goto('https://loc.test/index.html?r='+Z);await p.waitForFunction(()=>window.ITIN&&typeof currentClass!=='undefined'&&currentClass,null,{timeout:90000});await p.waitForTimeout(2500);
@@ -15,7 +15,7 @@ const MIME={'.html':'text/html','.js':'application/javascript','.json':'applicat
     if(!inW(i)||!inW(j)||g.cls[g.SE[i]]<4||g.cls[g.SE[j]]<4||d<1500||d>3000)continue;pairs.push([i,j])}
   for(const [env,max] of CFG){const agg=[];
    for(const [pi,[i,j]] of pairs.entries()){const row=[];
-    for(const sd of [11,22]){$("it-mode").value=MODE;$("it-mode").onchange();$("it-max").value=max;$("it-env").value=env;$("it-off").checked=OFF;$("it-offok").checked=OFF;$("it-lm").value="len";$("it-lt").value=MODE==='ab'?10:6;
+    for(const sd of [11,22]){$("it-mode").value=MODE;$("it-mode").onchange();$("it-max").value=max;$("it-env").value=env;ITIN.setTT(OFF);$("it-offok").checked=OFF;$("it-lm").value="len";$("it-lt").value=MODE==='ab'?10:6;
      ITIN.setPt("A",mk(i));if(MODE==='ab')ITIN.setPt("B",mk(j));if(ITIN.setSeed)ITIN.setSeed(sd+pi);const t0=performance.now();await ITIN.compute();const S=ITIN.last,t=Math.round(performance.now()-t0);
      const m=/Passe par (\d+) des (\d+)/.exec($("it-msg").textContent)||/passe par (\d+) des (\d+)/.exec($("it-msg").textContent);
      row.push({len:S?Math.round(S.len):0,off:S?Math.round(S.off||0):0,lvl:S?S.lvl:-1,ms:t,top:m?+m[1]:-1,sig:S&&S.ll?Math.round(S.ll.reduce((a,x)=>a+x[0]*1e5%977+x[1]*1e5%911,0)):0,err:S?'':$("it-msg").textContent.slice(0,90)})}

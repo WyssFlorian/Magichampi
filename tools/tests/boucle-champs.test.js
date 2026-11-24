@@ -6,7 +6,7 @@ const ROOT=path.resolve(__dirname,'../..'),Z='ple',N=+process.argv[2]||3;
 const MIME={'.html':'text/html','.js':'application/javascript','.json':'application/json','.geojson':'application/json','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webmanifest':'application/json'};
 let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
 (async()=>{
- const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1')}catch(e){}});
+ const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1');window.__TTOFF=true;document.addEventListener('DOMContentLoaded',()=>{const c=document.getElementById('it-offok');if(c)c.checked=true})}catch(e){}});
  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.stack||e.message));
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));
   if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
@@ -18,7 +18,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   $('it-lm').value='dur';$('it-lm').dispatchEvent(new Event('change'));set('it-lt',120);set('it-env',1);set('it-dur',3);set('it-max',4);   // 2 h, léger détour, cueillette ×1,5, aucune limite
   const out={};
   for(const off of [false,true])for(const q of [false,true]){
-    $('it-off').checked=off;$('it-off').dispatchEvent(new Event('change'));$('it-offok').checked=true;ITIN.setLoopQ(q);
+    ITIN.setTT(off);$('it-offok').checked=true;ITIN.setLoopQ(q);
     const rows=[];
     for(let i=0;i<N;i++){$('it-res').innerHTML='';$('it-vars').innerHTML='';$('it-msg').textContent='';const t0=performance.now();$('it-go').click();
       for(let k=0;k<900;k++){await sleep(100);const m=$('it-msg').textContent;if(m&&!/^Calcul/.test(m))break}

@@ -5,7 +5,7 @@ const ROOT=path.resolve(__dirname,'../..'),Z=process.argv[2]||'pde';
 const MIME={'.html':'text/html','.js':'application/javascript','.json':'application/json','.geojson':'application/json','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webmanifest':'application/json'};
 let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
 (async()=>{
- const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1')}catch(e){}});
+ const b=await chromium.launch(),ctx=await b.newContext({...devices['iPhone 13'],serviceWorkers:'block'});await ctx.addInitScript(()=>{try{localStorage.setItem('itin-decl-v1','1');window.__TTOFF=true;document.addEventListener('DOMContentLoaded',()=>{const c=document.getElementById('it-offok');if(c)c.checked=true})}catch(e){}});
  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.stack||e.message));
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));
   if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
@@ -28,12 +28,12 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   // difficulté maximale facile : les boucles proposées respectent le maximum (ou le message l'annonce)
   set('it-max',1);await go();o.maxMsg=$('it-msg').textContent;o.maxPill=($('it-res').querySelector('.pill')||{}).textContent;set('it-max',4);
   // tout-terrain en boucle
-  $('it-off').checked=true;$('it-off').dispatchEvent(new Event('change'));$('it-offok').checked=true;
+  ITIN.setTT(true);$('it-offok').checked=true;
   await go();o.ttMsg=$('it-msg').textContent;o.ttRes=dur();o.ttOffTxt=/hors chemin/.test($('it-res').innerHTML);o.ttVars=$('it-vars').children.length;
   // tout-terrain actif à tous les niveaux : plus de refus, tracé respectant le maximum
   set('it-max',0);$('it-msg').textContent='';$('it-res').innerHTML='';await go();o.ttRefus=$('it-msg').textContent;o.tt0Pill=($('it-res').querySelector('.pill')||{}).textContent;o.tt0Rule=/≤ \d+ m d'un chemin, pente < 8°/.test($('it-res').innerHTML);set('it-max',4);await sleep(6000);
   // GPX + lien swisstopo
-  $('it-off').checked=false;$('it-off').dispatchEvent(new Event('change'));await go();
+  ITIN.setTT(false);await go();
   o.geo=$('it-geo')?$('it-geo').href:'';
   let gpxTxt='';const orig=URL.createObjectURL;URL.createObjectURL=f=>{f.text().then(t=>gpxTxt=t);return orig(f)};Object.defineProperty(navigator,'canShare',{value:undefined,configurable:true});
   const nav=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(this.download)o.dl=this.download;else nav.call(this)};
