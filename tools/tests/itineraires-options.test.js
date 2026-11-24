@@ -1,4 +1,4 @@
-// Test Playwright des options d'itinéraire : tout-terrain en boucle, difficulté maximale, rythme, export KML. iPhone 13, sans réseau.
+// Test Playwright des options d'itinéraire : tout-terrain en boucle, difficulté maximale, rythme, export GPX. iPhone 13, sans réseau.
 // usage : node tools/tests/itineraires-options.test.js [région]   (défaut : pde)
 const {chromium,devices}=require('playwright');const fs=require('fs'),path=require('path');
 const ROOT=path.resolve(__dirname,'../..'),Z=process.argv[2]||'pde';
@@ -10,7 +10,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  await p.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='loc.test')return r.abort();const f=path.join(ROOT,decodeURIComponent(u.pathname));
   if(!fs.existsSync(f)||fs.statSync(f).isDirectory())return r.fulfill({status:404,body:''});r.fulfill({status:200,contentType:MIME[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)})});
  await p.goto('https://loc.test/index.html?r='+Z);await p.waitForFunction(()=>window.ITIN&&typeof currentClass!=='undefined'&&currentClass,null,{timeout:90000});await p.waitForTimeout(2500);
- await p.screenshot({path:'/tmp/claude-0/-home-user/ea4a3b60-0907-5ac3-b898-957dbdb50d0e/scratchpad/it0.png'});
+ await p.screenshot({path:'/tmp/it0.png'});
  const r=await p.evaluate(async()=>{
   const o={},g=await ITIN.loadGraph(),$=i=>document.getElementById(i),wait=()=>new Promise(r=>setTimeout(r,50));
   const mk=k=>L.latLng(g.lat0+g.SY[k]/g.ky,g.lon0+g.SX[k]/g.kx);
@@ -32,12 +32,12 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   await go();o.ttMsg=$('it-msg').textContent;o.ttRes=dur();o.ttOffTxt=/hors chemin/.test($('it-res').innerHTML);o.ttVars=$('it-vars').children.length;
   // tout-terrain actif à tous les niveaux : plus de refus, tracé respectant le maximum
   set('it-max',0);$('it-msg').textContent='';$('it-res').innerHTML='';await go();o.ttRefus=$('it-msg').textContent;o.tt0Pill=($('it-res').querySelector('.pill')||{}).textContent;o.tt0Rule=/≤ 25 m d'un chemin, pente < 8°/.test($('it-res').innerHTML);set('it-max',4);await sleep(6000);
-  // KML + lien swisstopo
+  // GPX + lien swisstopo
   $('it-off').checked=false;$('it-off').dispatchEvent(new Event('change'));await go();
   o.geo=$('it-geo')?$('it-geo').href:'';
-  let kmlTxt='';const orig=URL.createObjectURL;URL.createObjectURL=f=>{f.text().then(t=>kmlTxt=t);return orig(f)};Object.defineProperty(navigator,'canShare',{value:undefined,configurable:true});
+  let gpxTxt='';const orig=URL.createObjectURL;URL.createObjectURL=f=>{f.text().then(t=>gpxTxt=t);return orig(f)};Object.defineProperty(navigator,'canShare',{value:undefined,configurable:true});
   const nav=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(this.download)o.dl=this.download;else nav.call(this)};
-  if($('it-kml'))$('it-kml').click();await sleep(300);o.kmlOk=/<LineString>/.test(kmlTxt)&&/Départ/.test(kmlTxt);
+  o.noKml=!$('it-kml');$('it-gpx').click();await sleep(300);o.kmlOk=/<trkpt /.test(gpxTxt)&&/<gpx/.test(gpxTxt);
   o.lv=ITIN.lv95(46.95105,7.43864);   // Berne, ancien observatoire ≈ 2600000, 1200000
   // A→B difficulté maximale
   $('it-mode').value='ab';$('it-mode').dispatchEvent(new Event('change'));
@@ -51,8 +51,8 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  ok(!/au moins « difficile »/.test(r.ttRefus),'tout-terrain plus refusé en « très facile » : '+r.ttRefus);
  ok(!r.tt0Pill||r.tt0Pill==='très facile'||/plus facile|Aucune/.test(r.ttRefus),'tout-terrain très facile : niveau '+r.tt0Pill+(r.tt0Rule?' (règle affichée)':''));
  ok(/map\.geo\.admin\.ch.*crosshair=marker,2[56]\d{5},1\d{6}/.test(r.geo),'lien swisstopo : '+r.geo);
- ok(r.dl==='itineraire-magichampi.kml'&&r.kmlOk,'export KML');
+ ok(r.dl==='itineraire-magichampi.gpx'&&r.kmlOk&&r.noKml,'export GPX seul (pas de KML)');
  ok(Math.abs(r.lv[0]-2600000)<5&&Math.abs(r.lv[1]-1200000)<5,'conversion LV95 : '+r.lv.map(Math.round));
  ok(errs.length===0,'aucune erreur de script'+(errs.length?' : '+errs[0]:''));
- await p.screenshot({path:'/tmp/claude-0/-home-user/ea4a3b60-0907-5ac3-b898-957dbdb50d0e/scratchpad/it1.png'});
+ await p.screenshot({path:'/tmp/it1.png'});
  await b.close();process.exit(fail?1:0)})();

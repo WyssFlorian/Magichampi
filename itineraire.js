@@ -386,21 +386,21 @@ async function loopRoutes(A,pt,metric,target,envie,off){
   return res}
 function lv95(lat,lng){const p=(lat*3600-169028.66)/10000,l=(lng*3600-26782.5)/10000;
   return [2600072.37+211455.93*l-10938.51*l*p-0.36*l*p*p-44.54*l*l*l,1200147.07+308807.95*p+3745.25*l*l+76.63*p*p-194.56*l*l*p+119.79*p*p*p]}
-// KML (importable dans map.geo.admin.ch › Outils avancés › Importer un fichier ; partage iOS/Android vers l'app swisstopo si elle l'accepte)
-function kml(){
-  if(!last||!last.ll||!last.ll.length)return;
-  const c=last.ll.map(p=>p[1].toFixed(6)+","+p[0].toFixed(6)+",0").join(" "),a=last.ll[0],b=last.ll[last.ll.length-1],pm=(n,p)=>`<Placemark><name>${n}</name><Point><coordinates>${p[1].toFixed(6)},${p[0].toFixed(6)},0</coordinates></Point></Placemark>`;
-  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Itinéraire Magichampi</name><Style id="l"><LineStyle><color>ffc0651f</color><width>4</width></LineStyle></Style><Placemark><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><styleUrl>#l</styleUrl><LineString><tessellate>1</tessellate><coordinates>${c}</coordinates></LineString></Placemark>${pm("Départ",a)}${(last.wps||[]).map((p,i)=>pm("Point de passage "+(i+1),p)).join("")}${pm("Arrivée",b)}</Document></kml>`;
-  const f=new File([x],"itineraire-magichampi.kml",{type:"application/vnd.google-earth.kml+xml"});
-  if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"Itinéraire Magichampi"}).catch(()=>{});return}
-  const u=document.createElement("a");u.href=URL.createObjectURL(f);u.download=f.name;document.body.appendChild(u);u.click();setTimeout(()=>{URL.revokeObjectURL(u.href);u.remove()},500)}
 function geoLink(S){S=S||last;if(!S||!S.ll||!S.ll.length)return"#";const a=S.ll[0],q=lv95(a[0],a[1]);return`https://map.geo.admin.ch/#/map?lang=fr&center=${Math.round(q[0])},${Math.round(q[1])}&z=10&crosshair=marker,${Math.round(q[0])},${Math.round(q[1])}`}
+// GPX seul (fichier « itineraire-….gpx », type MIME application/gpx+xml) : sur téléphone, la feuille de partage s'ouvre (choisir l'app swisstopo) ; sinon téléchargement.
+const xe=t=>String(t).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+function gpxText(ll,wps,name){
+  const nm=xe(name||"Itinéraire Magichampi"),pts_=ll.map(p=>`<trkpt lat="${(+p[0]).toFixed(6)}" lon="${(+p[1]).toFixed(6)}"/>`).join("");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Magichampi" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>${nm}</name><time>${new Date().toISOString()}</time></metadata>${(wps||[]).map((p,i)=>`<wpt lat="${(+p[0]).toFixed(6)}" lon="${(+p[1]).toFixed(6)}"><name>Point de passage ${i+1}</name></wpt>`).join("")}<trk><name>${nm} (proposition, sans garantie de sécurité)</name><type>hiking</type><trkseg>${pts_}</trkseg></trk></gpx>`}
+function gpxFile(ll,wps,name){
+  const fn=(String(name||"itineraire-magichampi").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,"").toLowerCase()||"itineraire-magichampi")+".gpx";
+  return new File([gpxText(ll,wps,name)],fn,{type:"application/gpx+xml"})}
+function gpxOut(f,share){
+  if(share&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:f.name}).catch(()=>{});return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function gpx(){
   if(!last||!last.ll)return;
-  const t=new Date().toISOString(),pts_=last.ll.map(p=>`<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}"/>`).join("");
-  const x=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Magichampi" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>Itinéraire Magichampi</name><time>${t}</time></metadata>${(last.wps||[]).map((p,i)=>`<wpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}"><name>Point de passage ${i+1}</name></wpt>`).join("")}<trk><name>Itinéraire Magichampi (proposition, sans garantie de sécurité)</name><trkseg>${pts_}</trkseg></trk></gpx>`;
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([x],{type:"application/gpx+xml"}));a.download="itineraire-magichampi.gpx";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
-
+  gpxOut(gpxFile(last.ll,last.wps,"Itinéraire Magichampi"),true)}
 
 /* ---------- tout-terrain (bêta) ---------- */
 // Dijkstra sur la grille de 25 m (cellules d'environ 17 m de côté au sol) reliée au réseau de chemins : les chemins sont des arcs de cellule à cellule
@@ -675,10 +675,12 @@ function show(S){
    ${S.met?`<div class="it-row">En forêt : <b>${Math.round(S.met.forest*100)} %</b> du tracé · tronçons parcourus deux fois : <b>${Math.round(S.met.rep*100)} %</b></div>`:""}
    ${S.legs&&S.legs.length>1?`<div class="it-row">Étapes :<ol class="it-legs">${S.legs.map(l=>`<li>${l.from} → ${l.to} : <b>${dur(l.sec)}</b> · ${km(l.len)} · ${DIFF[l.lvl]}</li>`).join("")}</ol></div>`:""}</details>
    ${w.map(x=>`<div class="it-warn">${x}</div>`).join("")}
-   <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button><button type="button" class="btn" id="it-kml">Export swisstopo (KML)</button><a class="btn" id="it-geo" target="_blank" rel="noopener">Ouvrir map.geo.admin.ch</a></div>
+   <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button><a class="btn" id="it-geo" target="_blank" rel="noopener">Ouvrir map.geo.admin.ch</a></div>
+   <p class="it-note">Ouvrez le fichier GPX avec l'<b>app swisstopo</b> (feuille de partage › swisstopo). Évitez SchweizMobil : il refuse souvent les tracés tout-terrain.</p>
+   <div class="it-btns"><input type="text" id="it-sname" class="coin-sel" maxlength="40" placeholder="Nom du parcours" aria-label="Nom du parcours" value="${xe(svName(S))}"><button type="button" class="btn" id="it-save">💾 Enregistrer</button></div>
    <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux. <a href="#" id="it-decl">Déclaration de responsabilité</a></p></div>`;
   $("it-decl").onclick=e=>{e.preventDefault();declare(false)};
-  $("it-gpx").onclick=gpx;$("it-kml").onclick=kml;$("it-geo").href=geoLink(S)}
+  $("it-gpx").onclick=gpx;$("it-save").onclick=()=>{const r=svSave($("it-sname").value);$("it-msg").textContent=r.msg};$("it-geo").href=geoLink(S)}
 const isLoop=()=>$("it-mode").value==="loop";
 const openReg=()=>{const d=$("it-reg");if(d)d.open=true};
 function showVars(V,k){
@@ -890,6 +892,78 @@ function edInit(){
   c.addEventListener("touchend",e=>{if(ED.on)edEnd(e)},true);c.addEventListener("touchcancel",()=>edCancel(),true);
   c.addEventListener("click",e=>{if(ED.swallow&&Date.now()-ED.swallow<400){e.stopPropagation();e.preventDefault()}ED.swallow=0},true)}
 
+/* ---------- parcours enregistrés (localStorage, inclus dans la sauvegarde manuelle des coins) ---------- */
+const SV_KEY="itin-saved-v1",SV_MAX=30,r5=n=>Math.round(n*1e5)/1e5;
+function svRead(){try{const a=JSON.parse(localStorage.getItem(SV_KEY)||"[]");return Array.isArray(a)?a.filter(x=>x&&x.id&&Array.isArray(x.pl)):[]}catch(e){return[]}}
+function svWrite(a){try{localStorage.setItem(SV_KEY,JSON.stringify(a));try{localStorage.setItem("champi-coins-mod",String(Date.now()))}catch(e){}try{if(typeof bkInfo==="function")bkInfo()}catch(e){}return true}catch(e){return false}}
+const svName=S=>"Parcours du "+new Date().toLocaleDateString("fr-CH")+" · "+km(S.len);
+const svSig=x=>{const p=x.pl[0]&&x.pl[0].ll[0]||[0,0];return [x.sum&&Math.round(x.sum.len),p[0],p[1],x.pl.length].join("|")};
+function svSave(name){
+  if(!last||!last.ll||!last.ll.length||!RPL.length)return{ok:false,msg:"Aucun parcours à enregistrer."};
+  const pl=RPL.map(p=>({k:p.k===undefined?0:p.k,ll:p.ll.map(l=>l&&l.lat!==undefined?[r5(l.lat),r5(l.lng)]:[r5(l[0]),r5(l[1])])}));
+  const S=last,sum={len:S.len,up:S.up,dn:S.dn,sec:S.sec,c2:S.c2||0,cross:S.cross||0,lvl:S.lvl,reason:S.reason||"",off:S.off||0,met:S.met||null};
+  const ll=(a)=>a?[r5(a.lat),r5(a.lng)]:null;
+  const e={id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:String(name||svName(S)).trim().slice(0,40)||svName(S),t:Date.now(),loop:isLoop(),A:ll(pts.A),B:isLoop()?null:ll(pts.B),wps:(S.wps||[]).map(p=>[r5(p[0]),r5(p[1])]),pl,sum};
+  const a=svRead();a.unshift(e);a.length=Math.min(a.length,SV_MAX);
+  if(!svWrite(a))return{ok:false,msg:"Enregistrement impossible (stockage du navigateur plein ou bloqué) : exportez en GPX."};
+  svRender();return{ok:true,msg:"Parcours « "+e.name+" » enregistré dans ce navigateur (liste « Parcours enregistrés »)."}}
+function svLoad(id){
+  const e=svRead().find(x=>x.id===id);if(!e)return false;
+  cancelRun();clearRoute(true);$("it-mode").value=e.loop?"loop":"ab";$("it-mode").onchange();
+  if(e.A)setPt("A",L.latLng(e.A[0],e.A[1]));if(!e.loop&&e.B)setPt("B",L.latLng(e.B[0],e.B[1]));
+  (e.wps||[]).forEach(p=>wpAdd(L.latLng(p[0],p[1])));
+  const S=Object.assign({lines:[],wps:e.wps||[]},e.sum),R={pl:e.pl.map(p=>({k:p.k,ll:p.ll}))};
+  draw(S,R);last=S;show(S);$("it-msg").textContent="Parcours « "+e.name+" » rechargé tel qu'enregistré (non recalculé : touchez Calculer pour le recalculer avec les réglages actuels).";
+  const d=$("sec-itin");if(d)d.open=true;return true}
+function svDel(id){const a=svRead().filter(x=>x.id!==id);svWrite(a);svRender()}
+function svShare(id){const e=svRead().find(x=>x.id===id);if(!e)return;gpxOut(gpxFile(e.pl.flatMap(p=>p.ll),e.wps,e.name),true)}
+function svMerge(arr){   // fusion depuis une sauvegarde : sans doublon (même id ou même signature), anciens fichiers sans parcours acceptés
+  let add=0,dup=0;if(!Array.isArray(arr))return{add,dup};
+  const a=svRead(),sigs=new Set(a.map(svSig));
+  for(const x of arr){
+    if(!x||!Array.isArray(x.pl)||!x.pl.length||!x.pl.every(p=>p&&Array.isArray(p.ll)&&p.ll.every(q=>Array.isArray(q)&&isFinite(q[0])&&isFinite(q[1]))))continue;
+    const sig=svSig(x);
+    if((x.id&&a.some(y=>y.id===x.id))||sigs.has(sig)){dup++;continue}
+    const e={id:String(x.id||"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5)),name:String(x.name||"Parcours").slice(0,40),t:+x.t||Date.now(),loop:!!x.loop,A:x.A||null,B:x.B||null,wps:Array.isArray(x.wps)?x.wps:[],pl:x.pl.map(p=>({k:p.k||0,ll:p.ll.map(q=>[+q[0],+q[1]])})),sum:x.sum||{len:0,up:0,dn:0,sec:0,lvl:0,reason:""}};
+    a.push(e);sigs.add(sig);add++}
+  a.sort((p,q)=>q.t-p.t);a.length=Math.min(a.length,SV_MAX);
+  if(add)svWrite(a);svRender();return{add,dup}}
+function svRender(){
+  const box=$("it-slist");if(!box)return;const a=svRead();
+  box.innerHTML=a.length?a.map(e=>`<div class="it-wp" data-id="${xe(e.id)}"><span><b style="all:unset">${xe(e.name)}</b><br>${new Date(e.t).toLocaleDateString("fr-CH")} · ${km(e.sum.len)} · ${dur(e.sum.sec)}${e.loop?" · boucle":""}</span><button type="button" class="btn" data-a="load">Charger</button><button type="button" class="btn" data-a="gpx" title="Exporter en GPX / partager">GPX</button><button type="button" class="btn" data-a="del" aria-label="Supprimer">✕</button></div>`).join(""):'<p class="it-note">Aucun parcours enregistré.</p>';
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{const id=b.closest(".it-wp").dataset.id,k=b.dataset.a;
+    if(k==="load")svLoad(id);else if(k==="gpx")svShare(id);
+    else if(b.dataset.arm){svDel(id)}else{b.dataset.arm="1";b.textContent="Sûr ?";setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent="✕"}},3000)}})}
+
+/* ---------- mode dessin : un appui ajoute un point (ou appui long, toujours actif) ---------- */
+let DRAWM=false;
+const drawMode=()=>DRAWM;
+function drawBanner(){banner(DRAWM?"Mode dessin : touchez la carte pour "+(pts.A?"ajouter un point de passage (sur le tracé pour l'insérer)":"placer le départ (A)")+".":null);const b=$("it-bx");if(b&&DRAWM)b.textContent="Terminer"}
+function setDraw(on){
+  DRAWM=!!on;const c=$("it-draw");if(c)c.checked=DRAWM;
+  if(DRAWM){arm="W";if(typeof openMenu==="function")openMenu(false);drawBanner()}else{if(arm==="W")arm=null;banner(null)}}
+async function placeWp(ll){
+  const msg=$("it-msg");
+  try{if(navigator.vibrate)navigator.vibrate(25)}catch(e){}
+  if(!pts.A){setPt("A",ll);msg.textContent="Départ placé."+(isLoop()?" Ajoutez des points de passage ou touchez Calculer.":" Ajoutez des points de passage, puis placez l'arrivée (B).");if(DRAWM)drawBanner();return}
+  if(WP.length>=WP_MAX){msg.textContent="Maximum "+WP_MAX+" points de passage : retirez-en un avant d'en ajouter.";return}
+  const lg=edOk()?edHit(map.latLngToContainerPoint(ll),24):null;
+  if(lg!==null){await wpInsert(lg,ll);return}
+  wpAdd(ll);
+  if(wpReady()&&(isLoop()?last:pts.B))compute();else msg.textContent="Point de passage "+WP.length+" placé."+(wpReady()?" Touchez Calculer.":" Placez "+(pts.A?"l'arrivée (B)":"le départ (A)")+".")}
+function lpInit(){
+  const c=map.getContainer();let T=null,x0=0,y0=0,t0=0;
+  const stop=()=>{if(T){clearTimeout(T);T=null}};
+  c.addEventListener("touchstart",e=>{stop();t0=Date.now();
+    if(e.touches.length!==1||ED.on||arm||e.target.closest&&e.target.closest(".leaflet-marker-icon,.leaflet-control,.leaflet-popup,.menu-btn,button"))return;
+    const p=e.touches[0];x0=p.clientX;y0=p.clientY;
+    T=setTimeout(()=>{T=null;if(ED.on&&ED.moved)return;ED.swallow=Date.now();const r=c.getBoundingClientRect();placeWp(map.containerPointToLatLng(L.point(x0-r.left,y0-r.top)))},650)},{capture:true,passive:true});
+  c.addEventListener("touchmove",e=>{if(T){const p=e.touches[0];if(Math.hypot(p.clientX-x0,p.clientY-y0)>10)stop()}},{capture:true,passive:true});
+  c.addEventListener("touchend",stop,true);c.addEventListener("touchcancel",stop,true);
+  c.addEventListener("contextmenu",e=>{   // clic droit à la souris (sur téléphone, l'appui long est déjà traité ci-dessus)
+    if(e.target.closest&&e.target.closest(".leaflet-marker-icon,.leaflet-control,.leaflet-popup"))return;
+    e.preventDefault();if(Date.now()-t0<1500)return;placeWp(map.mouseEventToLatLng(e))})}
+
 /* ---------- déclaration de responsabilité (acceptation mémorisée en local) ---------- */
 const DECL_KEY="itin-decl-v1";
 function declOk(){try{return localStorage.getItem(DECL_KEY)==="1"}catch(e){return false}}
@@ -900,9 +974,9 @@ function declare(need){   // retourne une promesse : true si accepté
 
 /* ---------- interface ---------- */
 function banner(t){let b=$("it-banner");if(!t){if(b)b.hidden=true;return}
-  if(!b){b=document.createElement("div");b.id="it-banner";b.className="it-banner";b.innerHTML='<span id="it-bt"></span> <button type="button" class="btn" id="it-bx">Annuler</button>';document.body.appendChild(b);$("it-bx").onclick=()=>{arm=null;banner(null)}}
+  if(!b){b=document.createElement("div");b.id="it-banner";b.className="it-banner";b.innerHTML='<span id="it-bt"></span> <button type="button" class="btn" id="it-bx">Annuler</button>';document.body.appendChild(b);$("it-bx").onclick=()=>{arm=null;if(DRAWM)setDraw(false);banner(null)}}
   $("it-bt").textContent=t;b.hidden=false}
-function start(t){arm=t;if(typeof openMenu==="function")openMenu(false);banner("Touchez la carte pour placer "+(t==="A"?"le départ (A)":t==="W"?"le point de passage "+(WP.length+1):"l'arrivée (B)"))}
+function start(t){if(DRAWM){DRAWM=false;const c=$("it-draw");if(c)c.checked=false}arm=t;if(typeof openMenu==="function")openMenu(false);banner("Touchez la carte pour placer "+(t==="A"?"le départ (A)":t==="W"?"le point de passage "+(WP.length+1):"l'arrivée (B)"))}
 // préréglages et résumé des réglages (le panneau ne montre que le type, les points, le plafond et Calculer ; le reste est dans « Réglages »)
 const PRE={balade:{env:1,dur:2,max:1,dv:"up",dvm:200},cueillette:{env:2,dur:3,max:2,dv:"0",dvm:300},sportif:{env:1,dur:1,max:4,dv:"0",dvm:300}};
 const ENV_L=["plus court","léger détour","détour","grand détour"],DUR_S=["×½","×¾","×1","×1,5","×2","×3"];let DVUP=null;
@@ -922,11 +996,11 @@ function init(){
   map.getContainer().addEventListener("click",e=>{
     if(!arm)return;e.stopPropagation();e.preventDefault();
     const dg=map.dragging&&map.dragging._draggable&&map.dragging._draggable._moved;if(dg)return;
-    const ll=map.mouseEventToLatLng(e),t=arm;arm=null;banner(null);if(t==="W")wpAdd(ll);else setPt(t,ll);
+    const ll=map.mouseEventToLatLng(e),t=arm;if(DRAWM&&t==="W"){placeWp(ll);return}arm=null;banner(null);if(t==="W")wpAdd(ll);else setPt(t,ll);
     {const d=$("sec-itin");if(d){d.open=true;setTimeout(()=>d.scrollIntoView({behavior:"smooth",block:"nearest"}),50)}}
     if(t==="W"){if(pts.A&&(isLoop()?last:pts.B))compute();else $("it-msg").textContent="Point de passage "+WP.length+" placé."+(pts.A&&(isLoop()||pts.B)?" Touchez Calculer.":" Placez le départ"+(isLoop()?"":" et l'arrivée")+" si ce n'est pas fait.")}
     else if(pts.A&&pts.B)compute();else $("it-msg").textContent=t==="A"?"Départ placé. Choisissez maintenant l'arrivée.":"Arrivée placée. Choisissez maintenant le départ."},true);
-  edInit();
+  edInit();lpInit();$("it-draw").onchange=e=>setDraw(e.target.checked);svRender();
   $("it-a").onclick=()=>start("A");$("it-b").onclick=()=>start("B");
   $("it-w").onclick=()=>{if(WP.length>=WP_MAX){$("it-msg").textContent="Maximum "+WP_MAX+" points de passage.";return}start("W")};
   $("it-wopt").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};
@@ -958,7 +1032,8 @@ function init(){
   document.querySelectorAll("#sec-itin [data-pre]").forEach(b=>b.onclick=()=>applyPre(b.dataset.pre));
   {const rg=$("it-reg");if(rg){rg.addEventListener("input",regUpd);rg.addEventListener("change",regUpd)}}
   $("it-cancel").onclick=()=>{cancelRun();$("it-msg").textContent="Calcul annulé."};regUpd();
-  window.ITIN={get last(){return last},routeCap,setDetCap:v=>{DETCAP=!!v},capOf,capOver,prepVar,varList,varReport,get VAR(){return VAR},kml,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,netDist,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v},setCorridor:(p,sq)=>{PCOR=p;SQ=sq},setOffP:v=>{OFFP=v},setLFW:v=>{LFW=v},setBudget:v=>{BUDGET=v},get runs(){return RUNS},cancelRun};   // pour les tests
+  window.ITIN_SAVED={list:()=>svRead(),merge:svMerge};
+  window.ITIN={get last(){return last},routeCap,setDetCap:v=>{DETCAP=!!v},capOf,capOver,prepVar,varList,varReport,get VAR(){return VAR},gpx,gpxText,savedList:()=>svRead(),svSave,svLoad,svDel,placeWp,drawMode,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,netDist,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v},setCorridor:(p,sq)=>{PCOR=p;SQ=sq},setOffP:v=>{OFFP=v},setLFW:v=>{LFW=v},setBudget:v=>{BUDGET=v},get runs(){return RUNS},cancelRun};   // pour les tests
 }
 init();
 })();
