@@ -25,6 +25,12 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   out.bestAllHunt=findBest();
   // 4. niveau minimal : concentration hors période de conditions du moment = classe 2
   state.sp="multi";state.mode="site";out.minMulti=bestFilters().minK;state.mode="now";out.minNow=bestFilters().minK;
+  // 5. cellules sans forêt (255) et zones interdites (fx=4) : jamais élues
+  huntArr=new Uint8Array(n);state.best=true;state.resp=true;state.sp="multi";state.mode="site";
+  const cc=currentClass.slice(),fx0=G.fx.slice();let t=-1;const R=viewRect();for(let r=R.r0;r<R.r1&&t<0;r++)for(let c=R.c0;c<R.c1;c++){const i=r*meta.cols+c;if(cc[i]!==255&&cc[i]>=2){t=i;break}}
+  const all=new Uint8Array(n).fill(255);all[t]=3;currentClass=all;G.fx[t]=4;out.t=t;out.forb=findBest();
+  G.fx[t]=1;const w=findBest();out.free2=w&&w.i===t;
+  currentClass=cc;G.fx=fx0;
   return out});
  ok(r.skipOff===false,'cases décochées : aucune cellule ignorée');
  ok(r.hunt===true,'chasse cochée : cellule hachurée rouge ignorée');
@@ -32,5 +38,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  ok(r.free===false,'cellule libre conservée');
  ok(r.bestAllHunt===null,'toute la vue en chasse : pas d\'étoile');
  ok(r.minMulti===2&&r.minNow===1,'niveau minimal : concentration = moyen (2), conditions du moment = 1');
+ ok(r.forb===null,'zone interdite (fx=4) ou sans forêt (255) : pas d\'étoile');
+ ok(r.free2===true,'même cellule hors zone interdite : élue');
  ok(!errs.length,'aucune erreur JS'+(errs.length?' : '+errs[0].slice(0,200):''));
  await b.close();process.exit(fail?1:0)})();

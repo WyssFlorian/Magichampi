@@ -2486,7 +2486,7 @@ function bestFilters(){
 function findBest(){
   if(!currentClass)return null;const R=viewRect();if(!R)return null;
   const {minK,skip}=bestFilters();
-  const cols=meta.cols,C=currentClass,multi=state.sp==="multi",ok=i=>C[i]>=minK&&!(state.resp&&G.rg&&G.rg[i])&&!skip(i);
+  const cols=meta.cols,C=currentClass,multi=state.sp==="multi",ok=i=>C[i]!==255&&C[i]>=minK&&!(state.resp&&G.rg&&G.rg[i])&&!(state.resp&&G.fx[i]===4)&&!skip(i);
   const PA=patchArea(),now=state.mode==="now";
   let sp=null,st=null,sts=null;
   if(!multi){sp=SPECIES.find(s=>s.id===state.sp);st=staticFor(sp)}
