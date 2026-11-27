@@ -184,3 +184,9 @@ Total des vagues A à C ≈ **16,4 %** du quota hebdomadaire ; A à D ≈ 23 %. 
 
   Le cas « facile + D± ≤ 200 » de la Riviera (aucune boucle conforme n'existe) passe de **17 s à 5 s** sur téléphone simulé (≈ 1 s sur ordinateur) ; sous contrainte de dénivelé serrée, les boucles trouvées sont plus longues (jusqu'à 7,4 km au lieu de 4,0 km pour la même limite).
 - Limites : la matrice ne voit pas le repassage entre tronçons (d'où le raffinement sur le tracé réel) ; les points de passage obligatoires gardent l'échelle λ ; la boucle tout-terrain reste lente (vague D).
+
+## 9. Vague D réalisée en partie (27 nov. 2026)
+- **D1 (effort et repli tout-terrain)** : en A→B tout-terrain, si le tracé hors chemin dépasse la difficulté, le dénivelé ou le plafond choisis, on essaie d'abord un envoi à effort réduit puis un tracé à durée minimale (sans préférence pour la forêt), et en dernier recours le tracé sur chemins qui respecte les limites ; un message l'annonce (« Tout-terrain retiré… »).
+- **Mesuré** (`tools/profil/tt-facile.js ple gdv 8`, « facile », A→B tout-terrain) : trajets au-dessus de la difficulté demandée **7/24 → 4/24**. Les cas restants sont infaisables : même sur chemins, aucun tracé de ces départs ne tient dans « facile ».
+- Tests : tous les `itineraires*.test.js`, `boucle-champs`, `itineraire-variete` passent ; monotonie 0 violation (ple, gdv).
+- **Non fait** : allègement des préparations de `routeOff` par caches globaux (arcs, masque d'interdiction, dilatations, bruit) et Web Worker (D2). Le profil montre que la préparation domine le temps du tout-terrain (≈ 4–8 s pour une boucle de 6 km sur téléphone simulé) ; ces deux chantiers restent à faire, ils sont plus gros que prévu et demandent un fil dédié.
