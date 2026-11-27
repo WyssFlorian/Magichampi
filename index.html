@@ -1901,7 +1901,7 @@ const SEASON_MIN=.35;
 const ALPHA_BOOST=1.3; // couleurs rendues 30 % plus opaques ; le curseur (20-130) divise par 1,3 pour retrouver l'ancien rendu à 100
 function seasonDate(){return state.mode==="now"?meteo.dates[state.d]:localToday()}
 // altitude de référence pour le filtre de saison : médiane des forêts de la région chargée
-let REG_ALT=800;
+let REG_ALT=800;let KEEP_SP=false;
 // période visée (mode « Aptitude du lieu ») : trimestre météorologique ou mois ; state.q = "q0".."q3" ou "m0".."m11" (janvier = m0), null = pas de filtre
 const QTR=[{n:"Printemps",m:"mars à mai",mo:[2,3,4]},{n:"Été",m:"juin à août",mo:[5,6,7]},{n:"Automne",m:"septembre à novembre",mo:[8,9,10]},{n:"Hiver",m:"décembre à février",mo:[11,0,1]}];
 const MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
@@ -1918,7 +1918,9 @@ function activeSpecies(){return SPECIES.filter(sp=>inTier(sp)&&(!state.seasonOnl
 function render(){try{renderInner()}catch(e){console.error(e)}}
 function renderInner(){
   try{nightBanner()}catch(e){console.warn(e)}
-  if(state.seasonOnly&&state.sp!=="multi"){const sp=SPECIES.find(s=>s.id===state.sp);
+  // changement de région (déplacement de la carte) : l'altitude médiane change donc la saison ; on garde l'espèce choisie (sinon la carte change de couleur sans que l'on ait rien fait)
+  const keepSp=KEEP_SP;KEEP_SP=false;
+  if(state.seasonOnly&&state.sp!=="multi"&&!keepSp){const sp=SPECIES.find(s=>s.id===state.sp);
     if(!inSeason(sp)&&SPECIES.some(x=>inTier(x)&&inSeason(x))){const best=SPECIES.filter(inTier).sort((a,b)=>seasonVal(b)-seasonVal(a))[0];state.sp=state.lastSp=best.id}}
   const multi=state.sp==="multi";
   const img=imgData,px=img.data,n=meta.rows*meta.cols;px.fill(0);
@@ -2288,7 +2290,7 @@ function renderSpeciesList(){
   $("season-help").textContent=`${nIn} espèce${nIn>1?"s":""} sur ${TL.length} (${TN}) ${quarterOn()?`dont le pic tombe en ${perLabel()}`:`au ${fmtDate(date)}`} vers ${Math.round(REG_ALT/50)*50} m (altitude médiane des forêts affichées)${state.mode==="now"&&fcKind(state.d)?` (${fcKind(state.d)})`:""}.`.replace("..",".");
   [...el.children].forEach(b=>{
     const sp=SPECIES.find(s=>s.id===b.dataset.id);b.setAttribute("aria-pressed",sp.id===state.sp);
-    b.hidden=protHidden(sp)||!inTier(sp)||(state.seasonOnly&&nIn>0&&!inSeason(sp));
+    b.hidden=protHidden(sp)||!inTier(sp)||(state.seasonOnly&&nIn>0&&!inSeason(sp)&&sp.id!==state.sp);
     const s=seasonVal(sp),fs=fungi[sp.key],n=fsCount(fs);
     b.querySelector(".now").innerHTML=`saison ${Math.round(s*100)} %<br><span class="rel">pic vers le ${peakTxt(sp,REG_ALT)}</span>`+(LITE?"":`<br><span class="rel">${n} relevés région</span>`)});
   if(NARROW.matches){const sel=el.querySelector("[aria-pressed=\"true\"]");if(sel){const t=sel.offsetLeft-(el.clientWidth-sel.offsetWidth)/2;el.scrollLeft=Math.max(0,t)}}
@@ -3705,7 +3707,7 @@ async function reloadRegion(only,auto){
   if(!R)return;
   if(REG&&R.c0===REG.c0&&R.r0===REG.r0&&R.cols===REG.cols&&R.rows===REG.rows)return;
   regionBusy=true;const bt=$("load-region");bt.disabled=true;bt.textContent="Chargement…";
-  try{await loadRegion(R);closeAll();overlay.setBounds(regionLL());regionLayer.setBounds(regionLL());render();if(POPQ&&Date.now()-POPQ.t<15000){const k=state.coins.findIndex(x=>x.id===POPQ.id);POPQ=null;if(k>=0)openCoinInfo(k)}}
+  try{await loadRegion(R);closeAll();overlay.setBounds(regionLL());regionLayer.setBounds(regionLL());KEEP_SP=true;render();if(POPQ&&Date.now()-POPQ.t<15000){const k=state.coins.findIndex(x=>x.id===POPQ.id);POPQ=null;if(k>=0)openCoinInfo(k)}}
   catch(e){console.error(e)}
   finally{regionBusy=false;bt.disabled=false;bt.textContent="Charger les données de cette région";updateRegionHint()}
 }
