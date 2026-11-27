@@ -1141,25 +1141,30 @@ async function computeAny(){
   {const ve=prepVar();if(ve){msg.textContent=ve;return}}
   const A=snap(pts.A),B=snap(pts.B);
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
-  let R,S0=null;const M=+$("it-max").value,tt=ttOn(pts.A);
+  let R,S0=null;const M=+$("it-max").value,ttReq=ttOn(pts.A);let tt=ttReq;
   if(!offGate(M,pts.A,tt,msg,clearRoute))return;
-  const CAP=capOf(),env0=+$("it-env").value;let evUsed=env0,nTop=0,topTot=0,kU=0,lU=0,mU=M,nFill=0,detWhy="";
+  const CAP=capOf(),env0=+$("it-env").value;let evUsed=env0,nTop=0,topTot=0,kU=0,lU=0,mU=M,nFill=0,detWhy="",ttFB=null;
   NZ=ALEA?mkNoise(NZAMP[env0]||.12,SEEDV):null;NZA=NZAMP[env0]||.12;
+  for(const ttm of ttReq?[true,false]:[false]){tt=ttm;   // tout-terrain d'abord ; si le tracé ne respecte pas les réglages (durée, dénivelé, difficulté) mais qu'un tracé sur chemins seuls les respecte, c'est lui qu'on affiche
   for(const nzOn of NZ?[NZ,null]:[null]){   // parcours aléatoire d'abord ; s'il ne respecte pas tous les réglages, le calcul sans aléa
   NZ=nzOn;evUsed=env0;R=null;S0=null;
-  for(const ev of (CAP||M<4)&&env0>0?[env0,0]:[env0]){   // plafond ou difficulté stricts : si le détour les dépasse, on réessaie sans détour (trajet le plus court)
-    evUsed=ev;if(ev!==env0)detWhy=CAP&&capOver(S0,CAP)?"plafond":"difficulté";
+  const evList=[...((CAP||M<4)&&env0>0?[env0,0]:[env0]),...(tt&&M<4?[-1]:[])];   // plafond ou difficulté stricts : si le détour les dépasse, on réessaie sans détour (trajet le plus court) ; en tout-terrain, dernier essai : le trajet le plus RAPIDE (sans préférence pour la forêt, -1)
+  for(const ev of evList){const more=ev!==evList[evList.length-1],OFFP0=OFFP;if(ev<0)OFFP=0;
+    evUsed=Math.max(ev,0);if(evUsed!==env0)detWhy=CAP&&capOver(S0,CAP)?"plafond":"difficulté";
     const rcT=new Set();   // (niveau, force) déjà essayés par la méthode exacte
     try{outer:for(const mx of lvlLadder(M,dvLim()))for(const k of mx<4?TECH_K:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=techBP(mx,k);setDV(lam);kU=k;lU=lam;mU=mx;
-      if(tt){R=await AW(routeOff(pts.A,pts.B,ev),run);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}
+      if(tt){R=await AW(routeOff(pts.A,pts.B,evUsed),run);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}
       else{let X=null;const DLn=dvLim();if(DLn&&lam>0&&RCON&&!rcT.has(mx+"|"+k)){rcT.add(mx+"|"+k);X=routeRCap(A,B,ev,DLn,CAP)}   // limite de dénivelé : tracé exact par étiquettes ; sinon (aucun tracé conforme) échelle λ
         R=X||routeCap(A,B,ev)}
-      if(!R)break outer;S0=summarize(R);if(tenu(S0,M))break outer}}finally{if(RUN===run){BP=null;DV=null}}
+      if(!R)break outer;S0=summarize(R);if(tenu(S0,M))break outer}}finally{OFFP=OFFP0;if(RUN===run){BP=null;DV=null}}
     if(!tt&&RCON&&R&&capOver(S0,CAP)&&tenu(S0,M)){   // plafond dépassé : tracé exact sous le plafond (en gardant le plus de détour permis) avant de renoncer au détour
       let X=null;try{BP=techBP(mU,kU);X=routeRCap(A,B,ev,dvLim(),CAP)}finally{if(RUN===run){BP=null;DV=null}}
       if(X){const S2=summarize(X);if(tenu(S2,M,CAP)){R=X;S0=S2}}}
-    if(!R||tenu(S0,M,CAP)||(!capOver(S0,CAP)&&!(M<4&&S0.lvl>M&&env0>0&&ev>0)))break}
+    OFFP=OFFP0;
+    if(!R||tenu(S0,M,CAP)||!more||(!capOver(S0,CAP)&&!(M<4&&S0.lvl>M)))break}
   if(R&&tenu(S0,M,CAP))break}
+  if(R&&tenu(S0,M,CAP))break;if(tt&&R)ttFB={R,S0,evUsed,kU,lU,mU,detWhy}}
+  if(ttFB&&!(R&&tenu(S0,M,CAP))&&(!R||ttFB.S0.lvl<=S0.lvl)){({R,S0,evUsed,kU,lU,mU,detWhy}=ttFB);tt=true}   // aucun des deux ne convient : on garde le tout-terrain demandé (sauf si les chemins seuls sont plus faciles)
   if(ALEA&&!tt&&R&&!capOver(S0,CAP)&&dvOk(S0)){   // les 5 des 10 meilleurs points accessibles : insérés tant que plafond, difficulté et dénivelé restent respectés
     try{BP=techBP(mU,kU);setDV(lU);const X=await AW(enrich(R,A,B,evUsed,M,CAP),run);if(X){if(X.R!==R){R=X.R;S0=summarize(R)}nTop=X.n;topTot=X.tot}}finally{if(RUN===run){BP=null;DV=null}}}
   if(CAP&&!tt&&R&&tenu(S0,M,CAP)){   // approcher le plafond choisi (à 1 km / 30 min près) : détours supplémentaires, le plafond strict, la difficulté et le dénivelé restent respectés
@@ -1168,7 +1173,7 @@ async function computeAny(){
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=S0||summarize(R);draw(S,R);show(S);last=S;
-  setMsg("",(evUsed!==env0?(detWhy==="plafond"?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"Détour retiré pour respecter la difficulté maximale (« "+DIFF[M]+" »). "):"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.capped?"Détour limité à +"+Math.round((DET_CAP[Math.min(3,evUsed)]-1)*100)+" % du plus court chemin (le tracé idéal faisait +"+R.capped+" %). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+(nFill?"Détour(s) ajouté(s) pour s'approcher de "+capTxt(CAP)+". ":"")+(topTot?"Passe par "+nTop+" des "+topTot+" meilleurs points accessibles (objectif : "+TOP_WANT+"). ":"")+(tt&&R.cand?(R.stops?R.stops+" aller-retour(s) / détour(s) vers les meilleures zones accessibles ("+R.cand+" candidates, objectif : "+TOP_WANT+"). ":"Aucune des "+R.cand+" meilleures zones n'est accessible sans dépasser le plafond de détour. "):"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":""));
+  setMsg("",(ttReq&&!tt?"Tout-terrain retiré : le tracé hors chemin dépassait la difficulté, le dénivelé ou le plafond choisis ; voici un tracé sur chemins qui les respecte. ":"")+(evUsed!==env0?(detWhy==="plafond"?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"Détour retiré pour respecter la difficulté maximale (« "+DIFF[M]+" »). "):"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.capped?"Détour limité à +"+Math.round((DET_CAP[Math.min(3,evUsed)]-1)*100)+" % du plus court chemin (le tracé idéal faisait +"+R.capped+" %). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+(nFill?"Détour(s) ajouté(s) pour s'approcher de "+capTxt(CAP)+". ":"")+(topTot?"Passe par "+nTop+" des "+topTot+" meilleurs points accessibles (objectif : "+TOP_WANT+"). ":"")+(tt&&R.cand?(R.stops?R.stops+" aller-retour(s) / détour(s) vers les meilleures zones accessibles ("+R.cand+" candidates, objectif : "+TOP_WANT+"). ":"Aucune des "+R.cand+" meilleures zones n'est accessible sans dépasser le plafond de détour. "):"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":""));
 }
 
 
