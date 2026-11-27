@@ -775,8 +775,37 @@ function dilate(m,W,H,r){   // dilatation carrée de rayon r (cellules), sépara
   for(let y=0;y<H;y++){let last=-1e9;for(let x=0;x<W;x++){if(m[y*W+x])last=x;if(x-last<=r)t[y*W+x]=1}last=1e9;for(let x=W-1;x>=0;x--){if(m[y*W+x])last=x;if(last-x<=r)t[y*W+x]=1}}
   for(let x=0;x<W;x++){let last=-1e9;for(let y=0;y<H;y++){if(t[y*W+x])last=y;if(y-last<=r)o[y*W+x]=1}last=1e9;for(let y=H-1;y>=0;y--){if(t[y*W+x])last=y;if(last-y<=r)o[y*W+x]=1}}
   return o}
+// Cache du tout-terrain pour toute la grille (une fois par graphe et par grille) : arcs de chemin en CSR par cellule (voisin en décalage dx,dy) et bande des routes de classe 2
+let TTG=null,TTGkey=null,TTGg=null;
+function ttGlob(){
+  const g=GR,W=meta.cols,H=meta.rows,res=meta.res,key=meta.x0+"|"+meta.y1+"|"+W+"|"+H;
+  if(TTG&&TTGg===g&&TTGkey===key)return TTG;
+  const gs=res*Math.cos(g.lat0*Math.PI/180),n=W*H,cnt=new Int32Array(n+1),us=[],vs=[],ks=[];
+  const lc=k=>{const X=g.SM[2*k],Y=g.SM[2*k+1],c=Math.floor((X-meta.x0)/res),r=Math.floor((meta.y1-Y)/res);return c>=0&&r>=0&&c<W&&r<H?r*W+c:-1};
+  for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1])continue;const u=lc(k),v=lc(k+1);if(u<0||v<0||u===v)continue;us.push(u);vs.push(v);ks.push(k);cnt[u+1]++;cnt[v+1]++}
+  for(let i=0;i<n;i++)cnt[i+1]+=cnt[i];
+  const m=cnt[n],fill=cnt.slice(0,n),dx=new Int16Array(m),dy=new Int16Array(m),e_=new Int32Array(m),f=new Float32Array(m),d=new Uint8Array(m),id=new Int32Array(m);
+  for(let j=0;j<ks.length;j++){const u=us[j],v=vs[j],k=ks[j],e=g.SE[k],fr=(g.SS[k+1]-g.SS[k])/Math.max(g.len[e],1),ux=u%W,uy=(u/W)|0,vx=v%W,vy=(v/W)|0;
+    let q=fill[u]++;dx[q]=vx-ux;dy[q]=vy-uy;e_[q]=e;f[q]=fr;d[q]=0;id[q]=k*2;
+    q=fill[v]++;dx[q]=ux-vx;dy[q]=uy-vy;e_[q]=e;f[q]=fr;d[q]=1;id[q]=k*2+1}
+  const ban=new Uint8Array(n),R_=Math.ceil(OFF_ROAD/gs);
+  for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1]||g.cls[g.SE[k]]!==2)continue;
+    const x0=(g.SM[2*k]-meta.x0)/res,y0=(meta.y1-g.SM[2*k+1])/res,x1=(g.SM[2*k+2]-meta.x0)/res,y1=(meta.y1-g.SM[2*k+3])/res;
+    if(Math.max(x0,x1)<-3||Math.min(x0,x1)>W+3||Math.max(y0,y1)<-3||Math.min(y0,y1)>H+3)continue;
+    const nn=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)*gs/5));
+    for(let j=0;j<=nn;j++){const x=x0+(x1-x0)*j/nn,y=y0+(y1-y0)*j/nn;
+      for(let b=-R_;b<=R_;b++)for(let a=-R_;a<=R_;a++){const c=Math.floor(x)+a,r=Math.floor(y)+b;if(c<0||r<0||c>=W||r>=H)continue;
+        if(Math.hypot((c+.5-x)*gs,(r+.5-y)*gs)<=OFF_ROAD)ban[r*W+c]=1}}}
+  TTGg=g;TTGkey=key;return TTG={cnt,dx,dy,e:e_,f,d,id,ban,gs,pmG:null,dpm:new Map(),dlG:null,nr:null,wt:null,nz:null,nzS:null}}
+// dilatations de toute la grille, faites une fois (rayons en cellules) et relues par fenêtre
+function ttPm(T,W,H,r){let a=T.dpm.get(r);if(!a){if(!T.pmG){const n=W*H;T.pmG=new Uint8Array(n);for(let i=0;i<n;i++)T.pmG[i]=T.cnt[i+1]>T.cnt[i]?1:0}a=dilate(T.pmG,W,H,r);T.dpm.set(r,a)}return a}
+function ttDl(T,W,H){if(!T.dlG){const n=W*H,dl=new Uint8Array(n).fill(4);for(let lv=3;lv>=0;lv--){const dd=ttPm(T,W,H,Math.max(1,Math.round(OFF_DIST[lv]/T.gs)));for(let i=0;i<n;i++)if(dd[i])dl[i]=lv}T.dlG=dl}return T.dlG}
+function ttNear(T,C,W,H,r){if(T.nr&&T.nr.C===C&&T.nr.r===r)return T.nr.a;const n=W*H,hi=new Uint8Array(n);for(let i=0;i<n;i++)if(C[i]!==255&&C[i]>=3)hi[i]=1;T.nr={C,r,a:dilate(hi,W,H,r)};return T.nr.a}
+function ttWater(hz,W,H){const T=TTG;if(T&&T.wt&&T.wt.hz===hz)return T.wt.a;const a=dilate(hz.water,W,H,1);if(T)T.wt={hz,a};return a}
+
+const YMS=16,yld=()=>new Promise(r=>{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0)});   // rend la main au navigateur (file de messages, sans le délai minimal de setTimeout)
 async function routeOff(pA,pB,envie,Mx,used,opts){
-  opts=opts||{};
+  opts=opts||{};const runTok=RUN;
   const MX=Mx!=null?Mx:+($("it-max")?$("it-max").value:4);
   const g=GR,W=meta.cols,H=meta.rows,res=meta.res,gs=res*Math.cos(pA.lat*Math.PI/180);
   if(!curC())return {error:"La carte n'affiche aucune zone : choisissez une espèce ou la forte concentration."};
@@ -786,37 +815,31 @@ async function routeOff(pA,pB,envie,Mx,used,opts){
   const mg=Math.round(1500/gs),c0=Math.max(0,Math.min(a[0],b[0])-mg),c1=Math.min(W,Math.max(a[0],b[0])+mg+1),r0=Math.max(0,Math.min(a[1],b[1])-mg),r1=Math.min(H,Math.max(a[1],b[1])+mg+1),ww=c1-c0,hh=r1-r0,N=ww*hh;
   if(N>450000)return {error:"Tout-terrain limité à environ 10 km entre le départ et l'arrivée."};
   const w0=wxOn()?wx(pA.lat,pA.lng):null,ref=wxRefuse(w0);if(ref)return {error:ref};
-  const wet=wxWet(w0)||wxCold(w0),slopeMax=wet?25:OFF_SLOPE,hz0=await hazards(),hz=wet?{water:dilate(hz0.water,W,H,1),marsh:hz0.marsh}:hz0,al=new Uint8Array(N),high=new Uint8Array(N);
+  const T=ttGlob();
+  const wet=wxWet(w0)||wxCold(w0),slopeMax=wet?25:OFF_SLOPE,hz0=await hazards(),hz=wet?{water:ttWater(hz0,W,H),marsh:hz0.marsh}:hz0,al=new Uint8Array(N),high=new Uint8Array(N);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(curC()[gi]!==255&&curC()[gi]>=3)high[li]=1}
-  const near=dilate(high,ww,hh,Math.ceil(OFF_NEAR/gs)*1);
+  const nearG=ttNear(T,curC(),W,H,Math.ceil(OFF_NEAR/gs));
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;
-    al[li]=near[li]&&usableTT(gi)&&G.fx[gi]>0&&G.slope[gi]<slopeMax&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
-  // arcs de chemin (échantillons consécutifs d'une même arête), dans la fenêtre
-  const qq=bonusQ(),cnt=new Int32Array(N+1),arcs=[];
+    al[li]=nearG[gi]&&usableTT(gi)&&G.fx[gi]>0&&G.slope[gi]<slopeMax&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
+  // arcs de chemin et bande des routes de classe 2 : préparés une fois pour toute la grille (cache TT), puis lus par fenêtre
+  const cntG=T.cnt,aToDx=T.dx,aToDy=T.dy,aE=T.e,aF=T.f,aD=T.d,aId=T.id,qq=bonusQ();
   const lc=k=>{const X=g.SM[2*k],Y=g.SM[2*k+1],c=Math.floor((X-meta.x0)/res)-c0,r=Math.floor((meta.y1-Y)/res)-r0;return c>=0&&r>=0&&c<ww&&r<hh?r*ww+c:-1};
-  for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1])continue;const u=lc(k),v=lc(k+1);if(u<0||v<0||u===v)continue;const e=g.SE[k],f=(g.SS[k+1]-g.SS[k])/Math.max(g.len[e],1);
-    arcs.push([u,v,e,f,0,k*2],[v,u,e,f,1,k*2+1]);cnt[u+1]++;cnt[v+1]++}
-  for(let i=0;i<N;i++)cnt[i+1]+=cnt[i];const fill=cnt.slice(),aTo=new Int32Array(arcs.length),aE=new Int32Array(arcs.length),aF=new Float32Array(arcs.length),aD=new Uint8Array(arcs.length),aId=new Int32Array(arcs.length);
-  for(const [u,v,e,f,d,id] of arcs){const q=fill[u]++;aTo[q]=v;aE[q]=e;aF[q]=f;aD[q]=d;aId[q]=id}
-  const onPath=i=>cnt[i+1]>cnt[i];
+  // opw : cellule de chemin DE LA FENÊTRE (au moins un arc dont les deux bouts sont dans la fenêtre)
+  const opw=new Uint8Array(N);
+  for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x;
+    for(let k=cntG[gi];k<cntG[gi+1];k++){const tx=x+aToDx[k],ty=y+aToDy[k];if(tx>=0&&ty>=0&&tx<ww&&ty<hh){opw[y*ww+x]=1;break}}}
+  const onPath=i=>opw[i]===1;
   // difficulté maximale : hors chemin seulement à ≤ OFF_DIST[M] m d'un chemin du réseau et sous la pente OFF_SLP[M] ; dl = niveau de distance de chaque cellule (0-3, 4 au-delà de 200 m)
-  const pm=new Uint8Array(N),dl=new Uint8Array(N).fill(4);for(let i=0;i<N;i++)pm[i]=onPath(i)?1:0;
-  for(let lv=3;lv>=0;lv--){const dd=dilate(pm,ww,hh,Math.max(1,Math.round(OFF_DIST[lv]/gs)));for(let i=0;i<N;i++)if(dd[i])dl[i]=lv}
+  const dl=new Uint8Array(N),dlG=ttDl(T,W,H);for(let y=0;y<hh;y++){const gb=(r0+y)*W+c0;for(let x=0;x<ww;x++)dl[y*ww+x]=dlG[gb+x]}
   if(MX<4)for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const li=y*ww+x;if(al[li]&&(dl[li]>MX||slvOf(G.slope[(r0+y)*W+c0+x])>MX))al[li]=0}
   const PR=offProg(MX,envie),prog=PR.s<6;   // bande et pente progressives selon difficulté + détour
   const fz=new Uint8Array(N);   // fz : cellule praticable mais hors de la bande progressive (liaison seulement : coût × FARK, jamais une zone visitée)
-  if(prog){const dd=dilate(pm,ww,hh,Math.max(1,Math.round(PR.dist/gs)));for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const li=y*ww+x;if(al[li]&&(!dd[li]||G.slope[(r0+y)*W+c0+x]>=PR.slope))fz[li]=1}}
+  if(prog){const dd=ttPm(T,W,H,Math.max(1,Math.round(PR.dist/T.gs)));for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const li=y*ww+x;if(al[li]&&(!dd[(r0+y)*W+c0+x]||G.slope[(r0+y)*W+c0+x]>=PR.slope))fz[li]=1}}
   const hardP=!prog&&envie>=3;   // difficulté et détour au maximum : suivre un chemin DANS une zone colorée coûte ×PATHK (chemin = accès seulement), on traverse la zone hors chemin
   const eff=envie>0?envie:OFF_LIGHT,capF=envie>0?DETOUR_CAP[envie]:OFF_LCAP;
   // bande de OFF_ROAD m le long des routes de classe 2 : pas de hors-chemin en forêt (on suit la route) ; les cellules de chemin restent praticables
   const ban=new Uint8Array(N);
-  for(let k=0;k+1<g.SE.length;k++){if(g.SE[k]!==g.SE[k+1]||g.cls[g.SE[k]]!==2)continue;
-    const x0=(g.SM[2*k]-meta.x0)/res-c0,y0=(meta.y1-g.SM[2*k+1])/res-r0,x1=(g.SM[2*k+2]-meta.x0)/res-c0,y1=(meta.y1-g.SM[2*k+3])/res-r0;
-    if(Math.max(x0,x1)<-3||Math.min(x0,x1)>ww+3||Math.max(y0,y1)<-3||Math.min(y0,y1)>hh+3)continue;
-    const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)*gs/5)),R_=Math.ceil(OFF_ROAD/gs);
-    for(let j=0;j<=n;j++){const x=x0+(x1-x0)*j/n,y=y0+(y1-y0)*j/n;
-      for(let dy=-R_;dy<=R_;dy++)for(let dx=-R_;dx<=R_;dx++){const c=Math.floor(x)+dx,r=Math.floor(y)+dy;if(c<0||r<0||c>=ww||r>=hh)continue;
-        if(Math.hypot((c+.5-x)*gs,(r+.5-y)*gs)<=OFF_ROAD){al[r*ww+c]=0;ban[r*ww+c]=1}}}}
+  for(let y=0;y<hh;y++){const gb=(r0+y)*W+c0;for(let x=0;x<ww;x++)if(T.ban[gb+x]){ban[y*ww+x]=1;al[y*ww+x]=0}}
   // départ / arrivée : la cellule touchée si elle est utilisable, sinon le point de chemin le plus proche
   const pick=(p,c)=>{const li=(c[1]-r0)*ww+(c[0]-c0);if(al[li]||onPath(li))return li;const s=snap(L.latLng(p.lat,p.lng));if(!s)return -1;return lc(s.k)};
   const S0=pick(pA,a),T0=pick(pB,b);if(S0<0||T0<0)return {error:"Le départ ou l'arrivée est à plus de 300 m d'un chemin et hors zone utilisable."};
@@ -827,34 +850,35 @@ async function routeOff(pA,pB,envie,Mx,used,opts){
   const dm=G.dem,sl=G.slope,tob=(L_,g_)=>L_/(6000/3600*Math.exp(-3.5*Math.abs(g_+.05)));
   // Dijkstra à force de récompense str (0 = plus rapide ; 1 = envie choisie) ; rt = durée réelle (s) sans récompense.
   const usd=used&&used.size?used:null,giOf=li=>(r0+((li/ww)|0))*W+c0+(li%ww);   // cellules déjà empruntées (boucle) : coût ×USED_K, pour ne pas repasser au même endroit
-  const nzc=NZ?new Float32Array(N):null;if(nzc)for(let i=0;i<N;i++){nzc[i]=1+NZA*nzField(meta.x0+(c0+(i%ww)+.5)*res,meta.y1-(r0+((i/ww)|0)+.5)*res,SEEDV)}   // aléa : surcoût spatial lisse des pas hors chemin
+  const nzc=NZ?new Float32Array(N):null;if(nzc){if(T.nzS!==SEEDV||!T.nz){T.nz=new Float32Array(W*H).fill(NaN);T.nzS=SEEDV}const nzg=T.nz;for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x;let v=nzg[gi];if(v!==v){v=nzField(meta.x0+(c0+x+.5)*res,meta.y1-(r0+y+.5)*res,SEEDV);nzg[gi]=v}nzc[y*ww+x]=1+NZA*v}}   // aléa : surcoût spatial lisse des pas hors chemin
   let offK=1;   // surcoût des pas hors chemin (relevé par paliers quand la part hors chemin dépasse OFF_SHARE)
-  const cc=new Map(),solve=(str,S0,T0)=>{
+  const cc=new Map(),solve=async(str,S0,T0)=>{
     const pkS=1+(PATHK-1)*str,e1=eff*str,{cf,cb}=cc.get(str)||(cc.set(str,costs(e1,null,e1>0?qq:null)),cc.get(str)),R0=cc.get("rt")||(cc.set("rt",(()=>{const bp=BP;BP=null;try{return costs(0,null,null,true)}finally{BP=bp}})()),cc.get("rt")),   // R0 : durée réelle, sans la pénalité de difficulté (sinon le plafond de détour devient démesuré)
       dist=new Float64Array(N).fill(Infinity),rt=new Float64Array(N),prev=new Int32Array(N).fill(-1),via=new Int32Array(N).fill(-1);
-    hn=0;dist[S0]=0;hpush(0,S0);
+    hn=0;dist[S0]=0;hpush(0,S0);let tY=performance.now(),it=0;
     // récompense hors chemin : bien plus forte que sur chemin (jusqu'à ×0,1 dans une cellule très élevée avec « grand détour »)
-    const rew=cw=>cw!==255&&cw<5&&e1>0?1-Math.min(.97,REWK*e1*WGW[cw]):1;
-    while(hn){const u=hpop(),d=popK;if(d>dist[u])continue;if(u===T0)break;
-      for(let k=cnt[u];k<cnt[u+1];k++){const v=aTo[k],e=aE[k],w=d+(aD[k]?cb[e]:cf[e])*aF[k]*(NZ?NZ[e]:1)*(usd&&usd.has(giOf(v))?USED_K:1)*(hardP&&high[v]?pkS:1);if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+(aD[k]?R0.cb[e]:R0.cf[e])*aF[k];prev[v]=u;via[v]=aId[k];hpush(w,v)}}
+    const CC=curC(),NZl=NZ,rw=new Float64Array(256).fill(1);if(e1>0)for(let c=0;c<5;c++)rw[c]=1-Math.min(.97,REWK*e1*WGW[c]);
+    while(hn){if((++it&2047)===0&&performance.now()-tY>YMS){await yld();if(runTok.c)throw CANCEL;tY=performance.now()}   // la page reste réactive : on rend la main toutes les ~YMS ms
+      const u=hpop(),d=popK;if(d>dist[u])continue;if(u===T0)break;
       const ux=u%ww,uy=(u/ww)|0,ug=(r0+uy)*W+c0+ux;
+      for(let k=cntG[ug];k<cntG[ug+1];k++){const tx=ux+aToDx[k],ty=uy+aToDy[k];if(tx<0||ty<0||tx>=ww||ty>=hh)continue;const v=ty*ww+tx,e=aE[k],w=d+(aD[k]?cb[e]:cf[e])*aF[k]*(NZl?NZl[e]:1)*(usd&&usd.has(giOf(v))?USED_K:1)*(hardP&&high[v]?pkS:1);if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+(aD[k]?R0.cb[e]:R0.cf[e])*aF[k];prev[v]=u;via[v]=aId[k];hpush(w,v)}}
       for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const x=ux+dx,y=uy+dy;if(x<0||y<0||x>=ww||y>=hh)continue;const v=y*ww+x;
         if(ban[v]||ban[u])continue;   // dans la bande de 20 m le long d'une route de classe 2 : seulement par les arcs de la route (pas de pas hors chemin)
         if(!al[v]&&!(onPath(v)&&(al[u]||onPath(u))))continue;
         if(!al[v]&&onPath(v)&&!onPath(u)&&!al[u])continue;
-        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rew(curC()[vg])*(nzc?nzc[v]:1)*(fz[v]?FARK:1)*(usd&&usd.has(vg)?USED_K:1)*offK+(DV?DV.lam*(DV.both?Math.abs(dm[vg]-dm[ug]):Math.max(0,dm[vg]-dm[ug])):0);
+        const vg=(r0+y)*W+c0+x,L_=gs*(dx&&dy?1.4142:1),slp=(dm[vg]-dm[ug])/L_,t0=tob(L_,slp)*OFFX*(sl[vg]>=25?3:1),t=t0*rw[CC[vg]]*(nzc?nzc[v]:1)*(fz[v]?FARK:1)*(usd&&usd.has(vg)?USED_K:1)*offK+(DV?DV.lam*(DV.both?Math.abs(dm[vg]-dm[ug]):Math.max(0,dm[vg]-dm[ug])):0);
         const w=d+t;if(w<dist[v]){dist[v]=w;rt[v]=rt[u]+t0;prev[v]=u;via[v]=-1;hpush(w,v)}}}
     return {dist,rt,prev,via}};
   // plafond de durée : la durée réelle ne dépasse pas CAP[envie] × celle du trajet le plus rapide ; sinon la récompense est réduite par paliers
-  let sol=solve(1,S0,T0),detour=1,strF=1,bt=0,base=null,noGain=false;
-  if(isFinite(sol.dist[T0])){base=solve(0,S0,T0);if(isFinite(base.dist[T0])){bt=base.rt[T0];const cap=bt*capF;
-    for(const str of [1,.7,.45,.25,.1]){strF=str;if(str<1)sol=solve(str,S0,T0);if(sol.rt[T0]<=cap){break}}
+  let sol=await solve(1,S0,T0),detour=1,strF=1,bt=0,base=null,noGain=false;
+  if(isFinite(sol.dist[T0])){base=await solve(0,S0,T0);if(isFinite(base.dist[T0])){bt=base.rt[T0];const cap=bt*capF;
+    for(const str of [1,.7,.45,.25,.1]){strF=str;if(str<1)sol=await solve(str,S0,T0);if(sol.rt[T0]<=cap){break}}
     detour=bt>0?sol.rt[T0]/bt:1}}
   // part hors chemin plafonnée selon le détour choisi : sinon on renchérit les pas hors chemin par paliers (sans dépasser 1,3 × le plus rapide, ou le plafond de durée si plus large)
   if(isFinite(sol.dist[T0])){
     const share=sl=>{let o=0,t=0;for(let v=T0;v!==S0;v=sl.prev[v]){const u=sl.prev[v],id=sl.via[v];if(id>=0){const k=id>>1;t+=Math.abs(g.SS[k+1]-g.SS[k])}else{const dx=(v%ww)-(u%ww),dy=((v/ww)|0)-((u/ww)|0),l=gs*(dx&&dy?1.4142:1);o+=l;t+=l}}return t?o/t:0},lim=hardP?.97:(OFF_SHARE[envie]||OFF_SHARE[0]);
     if(share(sol)>lim){const bt1=bt>0?bt:sol.rt[T0],dcap=bt1*Math.max(capF,1.3);
-      for(const K of OFFK){offK=K;const s2=solve(strF,S0,T0);if(!isFinite(s2.dist[T0]))break;if(s2.rt[T0]>dcap&&share(sol)>lim)break;sol=s2;if(share(sol)<=lim)break}
+      for(const K of OFFK){offK=K;const s2=await solve(strF,S0,T0);if(!isFinite(s2.dist[T0]))break;if(s2.rt[T0]>dcap&&share(sol)>lim)break;sol=s2;if(share(sol)<=lim)break}
       if(bt>0)detour=sol.rt[T0]/bt}}
   const {dist}=sol;
   if(!isFinite(dist[T0]))return {error:"Aucun passage trouvé en tout-terrain : essayez sans cette option ou changez de point."};
@@ -876,11 +900,11 @@ async function routeOff(pA,pB,envie,Mx,used,opts){
     const smp=[];for(let i=0;i<route0.length;i+=4)smp.push(i);
     for(const bl of blobs){let bd=1e18,bi=0;for(const i of smp){const u=route0[i],d=(u%ww-bl.x)**2+(((u/ww)|0)-bl.y)**2;if(d<bd){bd=d;bi=i}}bl.d=Math.sqrt(bd)*gs;bl.pos=bi;bl.gain=bl.n-(cross.get(bl.id)||0)*3;bl.sc=bl.gain/(300+2*bl.d)}
     const cand=shuffle(blobs.filter(b=>b.gain>=(prog?6:20)).sort((a,b)=>b.q-a.q).slice(0,TOP_N),RND);
-    const key=(a,b)=>a*(N+1)+b,lc_=new Map(),getLeg=(a,b)=>{const k=key(a,b);let l=lc_.get(k);if(!l){const sl=solve(strF,a,b);l=isFinite(sl.dist[b])?recon(sl,a,b):null;lc_.set(k,l||0)}return lc_.get(k)};
+    const key=(a,b)=>a*(N+1)+b,lc_=new Map(),getLeg=async(a,b)=>{const k=key(a,b);let l=lc_.get(k);if(!l){const sl=await solve(strF,a,b);l=isFinite(sl.dist[b])?recon(sl,a,b):null;lc_.set(k,l||0)}return lc_.get(k)};
     let chosen=[],curLegs=legs;
     for(const bl of cand){if(chosen.length>=maxWP||performance.now()>dlOff)break;
       const tryW=[...chosen,bl].sort((a,b)=>a.pos-b.pos),pts_=[S0,...tryW.map(w=>w.rep),T0],L2=[];let ok=true,tot=0;
-      for(let i=0;i+1<pts_.length;i++){const l=getLeg(pts_[i],pts_[i+1]);if(!l){ok=false;break}L2.push(l);tot+=l.rt}
+      for(let i=0;i+1<pts_.length;i++){const l=await getLeg(pts_[i],pts_[i+1]);if(!l){ok=false;break}L2.push(l);tot+=l.rt}
       if(ok&&tot<=cap){chosen=tryW;curLegs=L2}}
     legs=curLegs;nStops=chosen.length;nCand=cand.length;
     let rtT=0;for(const l of legs)rtT+=l.rt;detour=rtT/bt}
