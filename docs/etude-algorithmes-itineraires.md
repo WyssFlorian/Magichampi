@@ -177,8 +177,8 @@ Total des vagues A à C ≈ **16,4 %** du quota hebdomadaire ; A à D ≈ 23 %. 
 
 | | boucles trouvées | forêt | repassage | impasses | durée moyenne |
 |---|---|---|---|---|---|
-| Riviera, orienteering | 24/24 | 0,63 | 0,15 | 0,01 | **1,6 s** |
-| Riviera, ancien | 24/24 | 0,59 | 0,21 | 0,01 | 2,1 s |
+| Riviera, orienteering | 24/24 | 0,63 | 0,15 | 0,01 | **1,5 s** |
+| Riviera, ancien | 24/24 | 0,59 | 0,21 | 0,01 | 2,0 s |
 | Gros-de-Vaud, orienteering | 24/24 | 0,26 | 0,04 | 0,02 | **2,2 s** |
 | Gros-de-Vaud, ancien | 24/24 | 0,25 | 0,04 | 0,02 | 2,7 s |
 
