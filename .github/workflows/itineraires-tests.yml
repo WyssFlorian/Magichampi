@@ -34,3 +34,7 @@ jobs:
             echo "::endgroup::"
           done
           exit $fail
+      - name: Monotonie des réglages (un réglage plus permissif ne doit jamais échouer)
+        run: |
+          node tools/profil/itineraires-monotonie.js ple gdv | tee /tmp/mono.txt
+          ! grep -E "violations de monotonie.*: [1-9]" /tmp/mono.txt

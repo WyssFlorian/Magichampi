@@ -39,6 +39,16 @@ function edgeTech(e){const g=GR,L_=g.len[e];let t=0;
   if(g.hard[e]>=50&&L_>=100)t=Math.max(t,3);
   if(g.cls[e]===5&&!g.typ[e]&&L_>=150)t=Math.max(t,2);
   return t}
+/* ---------- contrat de contraintes : règles dures = filtre du réseau, ressources = vérifiées par UN validateur ---------- */
+// Difficulté maximale : les tronçons au-dessus du maximum sont retirés (pénalité 10^6 = filtre : utilisés seulement s'il n'existe aucun autre chemin), puis ×40 en dernier recours.
+const TECH_K=[1e6,40];
+// pénalité de difficulté du niveau mx pour la force k (null : aucune limite)
+const techBP=(mx,k)=>mx<4?techPen(mx,k):null;
+// niveaux de repli (monotonie) : un tracé valide pour un niveau plus strict l'est aussi pour M ; si M n'aboutit pas, on essaie M-1, … 0 (sans limite : 4, 2, 0, seulement avec une limite de dénivelé) avant de renoncer
+const lvlLadder=(M,dv)=>M<4?Array.from({length:M+1},(_,i)=>M-i):dv?[4,2,0]:[M];
+// Validateur unique : liste des contraintes non tenues par S (vide = tracé valide). ref : tracé de référence déjà hors limite, qu'on a le droit de ne pas aggraver.
+function valide(S,M,CAP,ref){const v=[];if(CAP&&capOver(S,CAP))v.push("plafond");if(M<4&&S.lvl>Math.max(M,ref?ref.lvl:0))v.push("difficulté");if(!dvOk(S)&&!(ref&&!dvOk(ref)))v.push("dénivelé");return v}
+const tenu=(S,M,CAP,ref)=>!valide(S,M,CAP,ref).length;
 let TPG=null;const TPM=new Map();   // pénalités techniques gardées par (réseau, niveau, force) : même tableau = même jeu de coûts en cache
 function techPen(M,k){const g=GR;if(TPG!==g){TPM.clear();TPG=g}const key=M+"|"+k;let p=TPM.get(key);if(p)return p;p=new Float32Array(g.nE).fill(1);for(let e=0;e<g.nE;e++){const x=edgeTech(e)-M;if(x>0)p[e]=Math.pow(k,Math.min(x,2))}TPM.set(key,p);return p}
 
@@ -287,7 +297,7 @@ async function enrich(R,A,B,envie,M,CAP,o){
   const top=topReach(A,B,M,Lmax,loop);if(!top.length)return LASTTOP={R,n:0,tot:0};
   const on=[],off=[];for(const p of top)(covers(R,p)?on:off).push(p);
   let cur=R,S=summarize(R),n=on.length,tries=0;
-  const q=envie>0?bonusQ():undefined,okS=(S2,len)=>(!CAP||!capOver(S2,CAP))&&(M>=4||S2.lvl<=Math.max(M,S.lvl))&&(dvOk(S2)||!dvOk(S))&&(loop||len<=Lmax+1e-6);
+  const q=envie>0?bonusQ():undefined,okS=(S2,len)=>tenu(S2,M,CAP,S)&&(loop||len<=Lmax+1e-6);
   const jx=junctions;
   for(const p of shuffle(off,rnd)){
     if(n>=TOP_WANT||tries>=TOP_N||performance.now()>dl)break;tries++;stop(RUN);
@@ -310,7 +320,7 @@ const FILL_WANT={len:500,dur:900};   // écart visé (m, s) : sous la tolérance
 async function fill(R,A,B,envie,M,CAP,o){
   o=o||{};const g=GR,t0=performance.now(),dl=t0+(o.ms||2500),rnd=RND,gap=S=>CAP.lim-capVal(S,CAP),want=FILL_WANT[CAP.m];
   let cur=R,S=summarize(R),n=0;if(gap(S)<=want)return {R,n:0,S};
-  const S0=S,okS=S2=>!capOver(S2,CAP)&&(M>=4||S2.lvl<=Math.max(M,S0.lvl))&&(dvOk(S2)||!dvOk(S0)),q=envie>0?bonusQ():undefined;
+  const S0=S,okS=S2=>tenu(S2,M,CAP,S0),q=envie>0?bonusQ():undefined;
   let mxf=1;if(!g.FX){for(let e=0;e<g.nE;e++)if(g.fo[e]>mxf)mxf=g.fo[e];g.FX=mxf}mxf=g.FX;
   for(let round=0;round<10&&gap(S)>want&&performance.now()<dl;round++){
     const room=CAP.m==="len"?gap(S):gap(S)/3600*4000/durF(),dT=room/2.6,J=junctions(cur),nJ=J.length-1;if(nJ<1)break;
@@ -536,6 +546,8 @@ async function hazards(){
     rs.features.forEach(f=>{if(!/marais/i.test(f.properties.src||""))return;const gm=f.geometry,P=gm.type==="Polygon"?[gm.coordinates]:gm.coordinates;P.forEach(poly=>{x.beginPath();poly.forEach(ring);x.fill("evenodd")})});
     const d=x.getImageData(0,0,W,H).data;for(let i=0;i<W*H;i++)marsh[i]=d[i*4+3]>127?1:0}
   HZ={water,marsh};HZkey=key;return HZ}
+// Zones fixes : le hors-chemin n'entre JAMAIS dans une réserve ni une zone de tir, quelles que soient les cases « cueillette responsable » et « accès » de la carte (les chemins restent autorisés)
+const usableTT=i=>{if(SHOOT_G!==G)buildShoot();if(SHOOT[i])return false;const f=G.fx[i];return f===1||(f>1&&!state.excl&&f!==4)};
 function dilate(m,W,H,r){   // dilatation carrée de rayon r (cellules), séparable
   const t=new Uint8Array(W*H),o=new Uint8Array(W*H);
   for(let y=0;y<H;y++){let last=-1e9;for(let x=0;x<W;x++){if(m[y*W+x])last=x;if(x-last<=r)t[y*W+x]=1}last=1e9;for(let x=W-1;x>=0;x--){if(m[y*W+x])last=x;if(last-x<=r)t[y*W+x]=1}}
@@ -556,7 +568,7 @@ async function routeOff(pA,pB,envie,Mx,used,opts){
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;if(curC()[gi]!==255&&curC()[gi]>=3)high[li]=1}
   const near=dilate(high,ww,hh,Math.ceil(OFF_NEAR/gs)*1);
   for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const gi=(r0+y)*W+c0+x,li=y*ww+x;
-    al[li]=near[li]&&usable(gi)&&G.fx[gi]>0&&G.slope[gi]<slopeMax&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
+    al[li]=near[li]&&usableTT(gi)&&G.fx[gi]>0&&G.slope[gi]<slopeMax&&!hz.water[gi]&&!hz.marsh[gi]?1:0}
   // arcs de chemin (échantillons consécutifs d'une même arête), dans la fenêtre
   const qq=bonusQ(),cnt=new Int32Array(N+1),arcs=[];
   const lc=k=>{const X=g.SM[2*k],Y=g.SM[2*k+1],c=Math.floor((X-meta.x0)/res)-c0,r=Math.floor((meta.y1-Y)/res)-r0;return c>=0&&r>=0&&c<ww&&r<hh?r*ww+c:-1};
@@ -836,16 +848,17 @@ async function computeLoop(){
   const DL=dvLim();
   // échelle de contraintes de plus en plus fortes (cible réduite × pénalité technique × pénalité de dénivelé) ; on cherche par dichotomie le premier cran qui respecte les réglages
   // (≤ 6 recherches au lieu de 30), avec un budget total de 3 × BUDGET : ensuite on garde la meilleure boucle trouvée
-  const ladder=[];for(const s of M<4||DL?[1,.75,.55]:[1])for(const k of M<4?[6,40]:[0])for(const lam of DL?DV_LAM:[0])ladder.push([s,k,lam]);
+  const ladder=[];for(const s of M<4||DL?[1,.75,.55]:[1])for(const k of M<4?TECH_K:[0])for(const lam of DL?DV_LAM:[0])ladder.push([s,k,lam,M]);
+  if(M<4||DL)for(const mx of lvlLadder(M,DL).slice(1))ladder.push([.55,TECH_K[0],DL?DV_LAM[DV_LAM.length-1]:0,mx]);   // repli monotone : niveaux plus stricts en dernier
   NZA=(NZAMP[+$("it-env").value]||.12)*.8;NZ=LRETRY||!ALEA?null:mkNoise(NZA,SEEDV);
   const ENR=ALEA&&LOOPENR&&!LRETRY&&!tt&&!!curC(),SH=ENR?ENRSH*SHX:1;   // avec insertion des meilleurs points : on génère la boucle plus courte, la place libre sert aux points
   let best=null,lastV=[],lastS=1,lo=0,hi=ladder.length-1,j=0,tries=0;const T0=performance.now();
   try{while(lo<=hi){
-    j=tries===0?0:(lo+hi)>>1;tries++;PGT=ladder.length>1?tries:0;const [s,k,lam]=ladder[j];
-    BP=M<4?techPen(M,k):null;setDV(lam);
-    const v=await AW(loopRoutes(A,pts.A,dm?"len":"sec",target0*s*SH,+$("it-env").value,tt,target0*s),run),okV=v.filter(x=>!x.over&&x.S.lvl<=M&&dvOk(x.S));
+    j=tries===0?0:(lo+hi)>>1;tries++;PGT=ladder.length>1?tries:0;const [s,k,lam,mx]=ladder[j];
+    BP=techBP(mx,k);setDV(lam);
+    const v=await AW(loopRoutes(A,pts.A,dm?"len":"sec",target0*s*SH,+$("it-env").value,tt,target0*s),run),okV=v.filter(x=>!x.over&&tenu(x.S,M));
     if(v.length){lastV=v;lastS=s}
-    if(okV.length){best={V:okV,s,k,lam};hi=j-1}else lo=j+1;
+    if(okV.length){best={V:okV,s,k,lam,mx};hi=j-1}else lo=j+1;
     if(best&&lo>hi)break;
     if(performance.now()-T0>3*BUDGET&&(best||lastV.length))break}
   }finally{if(RUN===run){BP=null;DV=null;PGT=0}}
@@ -861,16 +874,16 @@ async function computeLoop(){
   let topN=null;
   if(ENR&&best){   // 5 des 10 meilleurs points accessibles : insérés dans les 3 meilleures boucles, sous le plafond (réduit si besoin), la difficulté et le dénivelé
     const tg=target0*shr,cp={m:dm?"len":"dur",lim:tg},Lm=dm?tg*.93:tg*.93/3600*4000/durF(),env=+$("it-env").value;
-    try{BP=M<4?techPen(M,best.k):null;setDV(best.lam);prog("Meilleurs points…");
+    try{BP=techBP(best.mx,best.k);setDV(best.lam);prog("Meilleurs points…");
       for(let i=0;i<Math.min(3,V.length);i++){const x=V[i],X=await AW(enrich(x.R,A,A,env,M,cp,{loop:true,reach:Lm*.45,ms:1300}),run);if(!X)continue;
-        const c=X.R!==x.R?mkLoopC(X.R,dm?"len":"sec",tg,M):x;if(X.R!==x.R&&!c.over&&c.S.lvl<=Math.max(M,x.S.lvl)&&(dvOk(c.S)||!dvOk(x.S)))V[i]=c;V[i].top=X.n;V[i].topTot=X.tot}
+        const c=X.R!==x.R?mkLoopC(X.R,dm?"len":"sec",tg,M):x;if(X.R!==x.R&&!c.over&&tenu(c.S,M,null,x.S))V[i]=c;V[i].top=X.n;V[i].topTot=X.tot}
     }finally{if(RUN===run){BP=null;DV=null}}
     for(const x of V)if(x.top==null)x.top=0;}
   if(best&&!tt){   // approcher la distance / durée choisie (à 1 km / 30 min près) : détours supplémentaires tant que le plafond, la difficulté et le dénivelé le permettent
     const tg=target0*shr,cp={m:dm?"len":"dur",lim:target0},env=+$("it-env").value;   // plafond réel (et non la cible réduite par la difficulté) : les détours restent soumis à la difficulté et au dénivelé
-    try{BP=M<4?techPen(M,best.k):null;setDV(best.lam);prog("Ajustement à la cible…");
+    try{BP=techBP(best.mx,best.k);setDV(best.lam);prog("Ajustement à la cible…");
       for(let i=0;i<Math.min(3,V.length);i++){const x=V[i],F=await AW(fill(x.R,A,A,env,M,cp,{ms:1500,loop:true}),run);if(!F||!F.n)continue;
-        const c=mkLoopC(F.R,dm?"len":"sec",tg,M);if(!c.over&&c.S.lvl<=Math.max(M,x.S.lvl)&&(dvOk(c.S)||!dvOk(x.S))&&(!c.M||!x.M||c.M.dead-x.M.dead<=.04&&c.M.rep-x.M.rep<=.12)){c.top=x.top;c.topTot=x.topTot;V[i]=c}}
+        const c=mkLoopC(F.R,dm?"len":"sec",tg,M);if(!c.over&&tenu(c.S,M,null,x.S)&&(!c.M||!x.M||c.M.dead-x.M.dead<=.04&&c.M.rep-x.M.rep<=.12)){c.top=x.top;c.topTot=x.topTot;V[i]=c}}
     }finally{if(RUN===run){BP=null;DV=null}}}
   if(ENR&&best){
     V.sort((a,b)=>(b.top||0)-(a.top||0)||a.cost-b.cost);topN=V[0].topTot?V[0]:null}
@@ -907,26 +920,26 @@ async function computeAny(){
   if(!A||!B){msg.textContent=(!A?"Le départ":"L'arrivée")+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";clearRoute();return}
   let R,S0=null;const M=+$("it-max").value,tt=ttOn(pts.A);
   if(!offGate(M,pts.A,tt,msg,clearRoute))return;
-  const CAP=capOf(),env0=+$("it-env").value;let evUsed=env0,nTop=0,topTot=0,kU=0,lU=0,nFill=0;
+  const CAP=capOf(),env0=+$("it-env").value;let evUsed=env0,nTop=0,topTot=0,kU=0,lU=0,mU=M,nFill=0,detWhy="";
   NZ=ALEA?mkNoise(NZAMP[env0]||.12,SEEDV):null;NZA=NZAMP[env0]||.12;
   for(const nzOn of NZ?[NZ,null]:[null]){   // parcours aléatoire d'abord ; s'il ne respecte pas tous les réglages, le calcul sans aléa
   NZ=nzOn;evUsed=env0;R=null;S0=null;
-  for(const ev of CAP&&env0>0?[env0,0]:[env0]){   // plafond strict : si le détour dépasse le plafond, on réessaie sans détour (trajet le plus court)
-    evUsed=ev;
-    try{outer:for(const k of M<4?[6,40]:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=M<4?techPen(M,k):null;setDV(lam);kU=k;lU=lam;
+  for(const ev of (CAP||M<4)&&env0>0?[env0,0]:[env0]){   // plafond ou difficulté stricts : si le détour les dépasse, on réessaie sans détour (trajet le plus court)
+    evUsed=ev;if(ev!==env0)detWhy=CAP&&capOver(S0,CAP)?"plafond":"difficulté";
+    try{outer:for(const mx of lvlLadder(M,dvLim()))for(const k of mx<4?TECH_K:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=techBP(mx,k);setDV(lam);kU=k;lU=lam;mU=mx;
       if(tt){R=await AW(routeOff(pts.A,pts.B,ev),run);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}else R=routeCap(A,B,ev);
-      if(!R)break outer;S0=summarize(R);if(S0.lvl<=M&&dvOk(S0))break outer}}finally{if(RUN===run){BP=null;DV=null}}
-    if(!R||!capOver(S0,CAP))break}
-  if(R&&!capOver(S0,CAP)&&S0.lvl<=M&&dvOk(S0))break}
+      if(!R)break outer;S0=summarize(R);if(tenu(S0,M))break outer}}finally{if(RUN===run){BP=null;DV=null}}
+    if(!R||tenu(S0,M,CAP)||(!capOver(S0,CAP)&&!(M<4&&S0.lvl>M&&env0>0&&ev>0)))break}
+  if(R&&tenu(S0,M,CAP))break}
   if(ALEA&&!tt&&R&&!capOver(S0,CAP)&&dvOk(S0)){   // les 5 des 10 meilleurs points accessibles : insérés tant que plafond, difficulté et dénivelé restent respectés
-    try{BP=M<4?techPen(M,kU):null;setDV(lU);const X=await AW(enrich(R,A,B,evUsed,M,CAP),run);if(X){if(X.R!==R){R=X.R;S0=summarize(R)}nTop=X.n;topTot=X.tot}}finally{if(RUN===run){BP=null;DV=null}}}
-  if(CAP&&!tt&&R&&!capOver(S0,CAP)&&S0.lvl<=M&&dvOk(S0)){   // approcher le plafond choisi (à 1 km / 30 min près) : détours supplémentaires, le plafond strict, la difficulté et le dénivelé restent respectés
-    try{BP=M<4?techPen(M,kU):null;setDV(lU);prog("Ajustement à la cible…");const F=await AW(fill(R,A,B,evUsed,M,CAP),run);if(F&&F.n){R=F.R;S0=F.S;nFill=F.n}}finally{if(RUN===run){BP=null;DV=null}}}
+    try{BP=techBP(mU,kU);setDV(lU);const X=await AW(enrich(R,A,B,evUsed,M,CAP),run);if(X){if(X.R!==R){R=X.R;S0=summarize(R)}nTop=X.n;topTot=X.tot}}finally{if(RUN===run){BP=null;DV=null}}}
+  if(CAP&&!tt&&R&&tenu(S0,M,CAP)){   // approcher le plafond choisi (à 1 km / 30 min près) : détours supplémentaires, le plafond strict, la difficulté et le dénivelé restent respectés
+    try{BP=techBP(mU,kU);setDV(lU);prog("Ajustement à la cible…");const F=await AW(fill(R,A,B,evUsed,M,CAP),run);if(F&&F.n){R=F.R;S0=F.S;nFill=F.n}}finally{if(RUN===run){BP=null;DV=null}}}
   if(R&&capOver(S0,CAP)){clearRoute();msg.textContent=capMsg(S0,CAP);return}
   if(!R){clearRoute();msg.textContent="Aucun chemin trouvé entre ces deux points sur le réseau (sans route de classe 1 ni autoroute) : ils sont dans deux parties non reliées. Essayez un point voisin.";return}
   if(layer){map.removeLayer(layer);layer=null}
   const S=S0||summarize(R);draw(S,R);show(S);last=S;
-  setMsg("",(CAP&&evUsed!==env0?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.capped?"Détour limité à +"+Math.round((DET_CAP[Math.min(3,evUsed)]-1)*100)+" % du plus court chemin (le tracé idéal faisait +"+R.capped+" %). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+(nFill?"Détour(s) ajouté(s) pour s'approcher de "+capTxt(CAP)+". ":"")+(topTot?"Passe par "+nTop+" des "+topTot+" meilleurs points accessibles (objectif : "+TOP_WANT+"). ":"")+(tt&&R.cand?(R.stops?R.stops+" aller-retour(s) / détour(s) vers les meilleures zones accessibles ("+R.cand+" candidates, objectif : "+TOP_WANT+"). ":"Aucune des "+R.cand+" meilleures zones n'est accessible sans dépasser le plafond de détour. "):"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":""));
+  setMsg("",(evUsed!==env0?(detWhy==="plafond"?"Détour retiré pour rester sous le plafond de "+capTxt(CAP)+". ":"Détour retiré pour respecter la difficulté maximale (« "+DIFF[M]+" »). "):"")+(VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S)+" ":"")+(S.lvl>M?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S.lvl]+", "+S.reason+"). ":"")+dvMsg(S)+(R.capped?"Détour limité à +"+Math.round((DET_CAP[Math.min(3,evUsed)]-1)*100)+" % du plus court chemin (le tracé idéal faisait +"+R.capped+" %). ":"")+(R.noGain?"Pas de détour : aucune zone « moyen » ou mieux à atteindre en plus, trajet le plus court gardé. ":"")+(nFill?"Détour(s) ajouté(s) pour s'approcher de "+capTxt(CAP)+". ":"")+(topTot?"Passe par "+nTop+" des "+topTot+" meilleurs points accessibles (objectif : "+TOP_WANT+"). ":"")+(tt&&R.cand?(R.stops?R.stops+" aller-retour(s) / détour(s) vers les meilleures zones accessibles ("+R.cand+" candidates, objectif : "+TOP_WANT+"). ":"Aucune des "+R.cand+" meilleures zones n'est accessible sans dépasser le plafond de détour. "):"")+((A.d>30||B.d>30)?"Les marqueurs sont à "+Math.round(Math.max(A.d,B.d))+" m du chemin le plus proche : l'itinéraire part du chemin.":""));
 }
 
 
@@ -976,13 +989,13 @@ async function computeWp(){
   let legs=[],S0=null,R=null,bad=null;
   for(const ev of CAP&&env0>0?[env0,0]:[env0]){   // plafond strict : si le détour dépasse le plafond, on réessaie sans détour
   envie=ev;
-  try{outer:for(const k of M<4?[6,40]:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=M<4?techPen(M,k):null;setDV(lam);legs=[];bad=null;
+  try{outer:for(const mx of lvlLadder(M,dvLim()))for(const k of mx<4?TECH_K:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=techBP(mx,k);setDV(lam);legs=[];bad=null;
     for(let i=0;i<P.length-1;i++){
       const l=tt?await AW(routeOff(P[i],P[i+1],envie),run):routeCap(sn[i],sn[i+1],envie);
       if(!l||l.error){bad=i;msg.textContent="Étape "+nm[i]+" → "+nm[i+1]+" : "+(l&&l.error?l.error:"aucun chemin trouvé entre ces deux points sur le réseau (parties non reliées). Déplacez "+(nm[i+1]==="B"||nm[i+1]==="A"?"le marqueur "+nm[i+1]:"le point de passage "+nm[i+1])+".");break}
       legs.push(l)}
     if(bad!==null)break outer;
-    R=wpCat(legs);S0=summarize(R);if(S0.lvl<=M&&dvOk(S0))break outer}}finally{if(RUN===run){BP=null;DV=null}}
+    R=wpCat(legs);S0=summarize(R);if(tenu(S0,M))break outer}}finally{if(RUN===run){BP=null;DV=null}}
   if(bad!==null||!capOver(S0,CAP))break}
   if(bad!==null){clearRoute();return}
   if(capOver(S0,CAP)){clearRoute();msg.textContent=capMsg(S0,CAP)+"(Avec "+WP.length+" point"+(WP.length>1?"s":"")+" de passage.)";return}
