@@ -213,9 +213,38 @@ function costs(envie,pen,qq,noDV){
 let HK=new Float64Array(1<<16),HV=new Int32Array(1<<16),HN=0,HPK=0;
 function hpush(k,v){if(HN===HK.length){const a=new Float64Array(HN*2),b=new Int32Array(HN*2);a.set(HK);b.set(HV);HK=a;HV=b}let i=HN++;while(i>0){const p=(i-1)>>1;if(HK[p]<=k)break;HK[i]=HK[p];HV[i]=HV[p];i=p}HK[i]=k;HV[i]=v}
 function hpop(){const v=HV[0];HPK=HK[0];const k=HK[--HN],w=HV[HN];let i=0;for(;;){let c=2*i+1;if(c>=HN)break;if(c+1<HN&&HK[c+1]<HK[c])c++;if(HK[c]>=k)break;HK[i]=HK[c];HV[i]=HV[c];i=c}HK[i]=k;HV[i]=w;return v}
+/* ---------- repères ALT (A* + inégalité triangulaire) ---------- */
+// 8 repères (les plus éloignés les uns des autres), distances aller et retour calculées sur une BORNE INFÉRIEURE du coût réel : « serré » quand le calcul n'a ni bonus de zone ni aléa (envie 0), « large » sinon
+// (bonus jusqu'à −60 %, aléa jusqu'à ×0,5). Pénalités de difficulté, de repassage, hors forêt et de dénivelé ne font qu'augmenter le coût : la borne reste valide, donc le tracé reste optimal, avec bien moins de noeuds visités.
+// Calcul paresseux au premier plus court chemin de chaque sorte (≈ 0,1 s sur ordinateur) ; 1,7 à 3 Mo par jeu. setAlt(false) : Dijkstra pur (comparaisons de test).
+let ALTON=true,ALTG=null;const ALTM={},ALT_K=8;
+function altCosts(bf,zf,op){const g=GR,lf=new Float32Array(g.nE),lb=new Float32Array(g.nE);   // bf : plancher du bonus de zone (1 sans envie de détour) · zf : plancher de l'aléa (1 sans aléa) · op : pénalité hors forêt courante
+  for(let e=0;e<g.nE;e++){const k=g.cls[e],t=g.typ[e];let m=k===3?(t?TYPE_F[t]:FACT[3]):k===2?(t?2:FACT[2]):k===1?FACT[1]:TYPE_F[t];if(k!==1){m*=bf;if(op)m*=1+op*(1-g.fo[e]/100)}
+    const x=k===1?120:0;lf[e]=(g.tf[e]*m*zf)*.999+x*.999;lb[e]=(g.tb[e]*m*zf)*.999+x*.999}
+  return {lf,lb}}
+function altDij(g,wf,wb,s,rev){const d=new Float32Array(g.nN).fill(Infinity),D=new Float64Array(g.nN).fill(Infinity);HN=0;D[s]=0;d[s]=0;hpush(0,s);
+  while(HN){const u=hpop(),x=HPK;if(x>D[u])continue;
+    for(let k=g.deg[u];k<g.deg[u+1];k++){const c=g.adj[k],e=c>>1,v=(c&1)?g.a[e]:g.b[e],fw=!(c&1),w=x+(rev?(fw?wb[e]:wf[e]):(fw?wf[e]:wb[e]));if(w<D[v]){D[v]=w;d[v]=w;hpush(w,v)}}}
+  return d}
+function altSet(bf,zf){
+  const g=GR;if(ALTG!==g){for(const k in ALTM)delete ALTM[k];ALTG=g}
+  const op=OFFP,key=bf.toFixed(2)+"|"+zf.toFixed(2)+"|"+op;if(ALTM[key])return ALTM[key];const ks=Object.keys(ALTM);if(ks.length>=8)delete ALTM[ks[0]];
+  const {lf,lb}=altCosts(bf,zf,op),DF=[],DB=[],mind=new Float64Array(g.nN).fill(Infinity);
+  let s=0;for(let u=0;u<g.nN;u++)if(g.deg[u+1]>g.deg[u]){s=u;break}
+  for(let i=0;i<ALT_K;i++){const f=altDij(g,lf,lb,s,false),r=altDij(g,lf,lb,s,true);DF.push(f);DB.push(r);
+    let bv=-1,bi=s;for(let u=0;u<g.nN;u++){const m=Math.min(mind[u],f[u]);mind[u]=m;if(isFinite(m)&&m>bv){bv=m;bi=u}}s=bi}
+  return ALTM[key]={DF,DB}}
+// borne inférieure du coût de v à la cible : maximum des bornes des repères vers ta, diminué du coût maximal du tronçon d'arrivée (couvre aussi tb) ; mémorisée par noeud pendant une recherche
+let ALTS=0,ALTHV=null,ALTHS=null;
+function altH(LM,ta,C){const K=LM.DF.length,fa=new Float64Array(K),ba=new Float64Array(K);
+  for(let i=0;i<K;i++){fa[i]=LM.DF[i][ta];ba[i]=LM.DB[i][ta]}
+  if(!ALTHV||ALTHV.length!==GR.nN){ALTHV=new Float64Array(GR.nN);ALTHS=new Int32Array(GR.nN)}
+  const hv=ALTHV,hs=ALTHS,st=++ALTS;
+  return v=>{if(hs[v]===st)return hv[v];let h=0;for(let i=0;i<K;i++){let x=fa[i]-LM.DF[i][v];if(x>h)h=x;x=LM.DB[i][v]-ba[i];if(x>h)h=x}h-=C;if(!(h>0))h=0;hs[v]=st;hv[v]=h;return h}}
 let RT=null,ONES=null;const ones=()=>(ONES&&ONES.length===GR.nE&&ONES.g===GR)?ONES:(ONES=new Float32Array(GR.nE).fill(1),ONES.g=GR,ONES);
 function route(A,B,envie,pen,qq){
   const g=GR,Bs=costBase(envie,qq),cf0=Bs.cf,cb0=Bs.cb,af=Bs.af,ab=Bs.ab,P=pen||ones();
+  const LM=ALTON&&A.e!==B.e&&g.nN>2000?altSet((qq||envie>0)?1-Math.min(.6,.2*envie):1,NZ?Math.max(.5,1-(NZ.amp||1)):1):null;   // repères calculés avant de remplir le tas (ils l'utilisent)
   if(!RT||RT.n!==g.nN)RT={n:g.nN,d:new Float64Array(g.nN),p:new Int32Array(g.nN)};const dist=RT.d.fill(Infinity),prev=RT.p.fill(-1);HN=0;   // tableaux réutilisés d'un appel à l'autre
   const Z=NZ||ones(),cf=e=>cf0[e]*P[e]*Z[e]+af[e],cb=e=>cb0[e]*P[e]*Z[e]+ab[e];
   const fa=A.s/Math.max(g.len[A.e],1),fb=B.s/Math.max(g.len[B.e],1);
@@ -226,10 +255,11 @@ function route(A,B,envie,pen,qq){
   const ea=g.a[A.e],eb=g.b[A.e];
   dist[ea]=cb(A.e)*fa;dist[eb]=Math.min(dist[eb],cf(A.e)*(1-fa));hpush(dist[ea],ea);if(eb!==ea)hpush(dist[eb],eb);
   const ta=g.a[B.e],tb=g.b[B.e],costA=cf(B.e)*fb,costB=cb(B.e)*(1-fb);   // ta→point : sens a→b ; tb→point : sens b→a
-  while(HN){const u=hpop(),d=HPK;if(d>dist[u])continue;if(d>=best)break;
+  const H=LM?altH(LM,ta,Math.max(cf(B.e),cb(B.e))):null;   // A* avec repères ; sinon Dijkstra
+  while(HN){const u=hpop(),f=HPK,d=dist[u];if(H?f>d+H(u)+1e-6:f>d)continue;if(f>=best)break;
     if(u===ta&&d+costA<best){best=d+costA;bestEnd={node:ta,end:"a"}}
     if(u===tb&&d+costB<best){best=d+costB;bestEnd={node:tb,end:"b"}}
-    for(let k=g.deg[u];k<g.deg[u+1];k++){const c=g.adj[k],e=c>>1,fw=!(c&1),v=fw?g.b[e]:g.a[e],w=d+(fw?cf(e):cb(e));if(w<dist[v]){dist[v]=w;prev[v]=c;hpush(w,v)}}}
+    for(let k=g.deg[u];k<g.deg[u+1];k++){const c=g.adj[k],e=c>>1,fw=!(c&1),v=fw?g.b[e]:g.a[e],w=d+(fw?cf(e):cb(e));if(w<dist[v]){dist[v]=w;prev[v]=c;hpush(H?w+H(v):w,v)}}}
   if(!bestEnd)return null;
   const seq=[];   // tronçons : [arête, de s0 à s1 (abscisses m), sens]
   if(bestEnd.direct){seq.push([A.e,A.s,B.s])}
@@ -251,6 +281,79 @@ function netDist(A,maxD){
     for(let k=g.deg[u];k<g.deg[u+1];k++){const c=g.adj[k],e=c>>1,v=(c&1)?g.a[e]:g.b[e],w=d+g.len[e];if(w<dn[v]){dn[v]=w;hpush(w,v)}}}
   return dn}
 
+
+/* ---------- plus court chemin sous contraintes de ressources (étiquettes exactes) ---------- */
+// Dénivelé positif / négatif, plafond de distance ou de durée et plafond de détour sont des RESSOURCES cumulées le long du tracé : on cherche le tracé le moins coûteux dont chaque ressource reste sous sa limite
+// (« Resource Constrained Shortest Path »). Algorithme par étiquettes (coût, ressources) avec dominance, bornes inférieures par une recherche arrière par ressource et ordre A* : le premier tracé complet sorti est optimal.
+// Contrairement à l'échelle de pénalités λ, il trouve un tracé conforme chaque fois qu'il en existe un. Pas de budget en secondes : seul un plafond d'étiquettes (RC_MAX) protège la mémoire (alors : repli sur l'échelle λ).
+let RCON=true;const RC_MAX=150000;let RCI=null;   // RCI : dernier verdict {inf:true} (aucun tracé conforme) ou {max:true} (trop d'étiquettes)
+function rcDir(g,k,dir){return k==="up"?(dir?g.up:g.dn):k==="dn"?(dir?g.dn:g.up):k==="len"?g.len:(dir?g.tf:g.tb)}
+function bwdDij(g,wf,wb,init,n){   // plus courte distance de chaque noeud vers la cible (init : [[noeud, valeur]]), sens inverse du graphe
+  const d=new Float64Array(n).fill(Infinity);HN=0;for(const [v,x] of init)if(x<d[v]){d[v]=x;hpush(x,v)}
+  while(HN){const v=hpop(),x=HPK;if(x>d[v])continue;
+    for(let k=g.deg[v];k<g.deg[v+1];k++){const c=g.adj[k],e=c>>1,u=(c&1)?g.a[e]:g.b[e],w=x+((c&1)?wf[e]:wb[e]);if(w<d[u]){d[u]=w;hpush(w,u)}}}
+  return d}
+// lims : [{k:"up"|"dn"|"len"|"sec", lim}] ; costLen : coût = longueur × pénalité technique (longueur minimale sous les limites) ; retourne {seq,cost} ou null
+function routeRC(A,B,envie,lims,costLen){
+  const g=GR,nE=g.nE,nN=g.nN,K=lims.length;RCI=null;if(A.e===B.e)return null;
+  const Bs=costBase(envie,undefined,true),Z=NZ||ones(),cfc=new Float32Array(nE),cbc=new Float32Array(nE);
+  for(let e=0;e<nE;e++){if(costLen){const p=BP?BP[e]:1;cfc[e]=cbc[e]=Math.max(g.len[e],1)*p}else{cfc[e]=Bs.cf[e]*Z[e]+Bs.af[e];cbc[e]=Bs.cb[e]*Z[e]+Bs.ab[e]}}
+  const fD=durF(),RF=[],RB=[];
+  for(const l of lims){const f=rcDir(g,l.k,true),b=rcDir(g,l.k,false),m=l.k==="sec"?fD:1;if(m===1){RF.push(f);RB.push(b)}else{const F=new Float32Array(nE),Bk=new Float32Array(nE);for(let e=0;e<nE;e++){F[e]=f[e]*m;Bk[e]=b[e]*m}RF.push(F);RB.push(Bk)}}
+  const fa=A.s/Math.max(g.len[A.e],1),fb=B.s/Math.max(g.len[B.e],1),ea=g.a[A.e],eb=g.b[A.e],ta=g.a[B.e],tb=g.b[B.e];
+  // bornes inférieures : coût et chaque ressource, du noeud jusqu'à la cible (tronçon d'arrivée compris)
+  const hc=bwdDij(g,cfc,cbc,[[ta,cfc[B.e]*fb],[tb,cbc[B.e]*(1-fb)]],nN),hr=[],endA=[],endB=[],st0=[],st1=[];
+  for(let k=0;k<K;k++){endA.push(RF[k][B.e]*fb);endB.push(RB[k][B.e]*(1-fb));st0.push(RB[k][A.e]*fa);st1.push(RF[k][A.e]*(1-fa));
+    hr.push(bwdDij(g,RF[k],RB[k],[[ta,endA[k]],[tb,endB[k]]],nN))}
+  const lim=lims.map(l=>l.lim),eps=1e-6;
+  // tableaux d'étiquettes
+  const cap=RC_MAX+4,LCo=new Float64Array(cap),LR=new Float64Array(cap*K),LV=new Int32Array(cap),LP=new Int32Array(cap),LE=new Int32Array(cap),dead=new Uint8Array(cap),lab=new Map();let nl=0;
+  const feasible=(v,r,o)=>{for(let k=0;k<K;k++)if(r[o+k]+hr[k][v]>lim[k]+eps)return false;return true};
+  const tmp=new Float64Array(K);
+  const add=(v,c,res,par,code)=>{   // res : tableau de K ressources ; false si dominée, élaguée ou plafond atteint
+    if(!(c+hc[v]<Infinity))return true;
+    for(let k=0;k<K;k++)if(res[k]+hr[k][v]>lim[k]+eps)return true;
+    let L=lab.get(v);if(!L){L=[];lab.set(v,L)}
+    for(let q=0;q<L.length;q++){const j=L[q];if(dead[j])continue;if(LCo[j]<=c+1e-9){let dom=true;for(let k=0;k<K;k++)if(LR[j*K+k]>res[k]+1e-9){dom=false;break}if(dom)return true}}
+    for(let q=0;q<L.length;q++){const j=L[q];if(dead[j])continue;if(LCo[j]>=c-1e-9){let dom=true;for(let k=0;k<K;k++)if(LR[j*K+k]<res[k]-1e-9){dom=false;break}if(dom)dead[j]=1}}
+    if(nl>=RC_MAX)return false;
+    const i=nl++;LCo[i]=c;for(let k=0;k<K;k++)LR[i*K+k]=res[k];LV[i]=v;LP[i]=par;LE[i]=code;L.push(i);hpush(c+hc[v],i);return true};
+  HN=0;
+  const s0=new Float64Array(K),s1=new Float64Array(K);for(let k=0;k<K;k++){s0[k]=st0[k];s1[k]=st1[k]}
+  add(ea,cbc[A.e]*fa,s0,-1,-1);if(eb!==ea)add(eb,cfc[A.e]*(1-fa),s1,-1,-1);
+  let fin=-1;const FIN=-2;   // étiquettes finales : noeud -1 (arrivée en ta : code -2, en tb : code -3)
+  while(HN){const i=hpop(),key=HPK;
+    if(LV[i]===-1){fin=i;break}
+    if(dead[i])continue;const v=LV[i],c=LCo[i];
+    if(v===ta||v===tb){   // arrivée : on ajoute le dernier tronçon
+      const a=v===ta,cc=c+(a?cfc[B.e]*fb:cbc[B.e]*(1-fb));let ok=true;for(let k=0;k<K;k++){tmp[k]=LR[i*K+k]+(a?endA[k]:endB[k]);if(tmp[k]>lim[k]+eps)ok=false}
+      if(ok){if(nl>=RC_MAX){RCI={max:true};return null}const j=nl++;LCo[j]=cc;LV[j]=-1;LP[j]=i;LE[j]=a?-2:-3;dead[j]=0;hpush(cc,j)}}
+    const r=new Float64Array(K);
+    for(let q=g.deg[v];q<g.deg[v+1];q++){const cd=g.adj[q],e=cd>>1,fw=!(cd&1),w=fw?g.b[e]:g.a[e];
+      for(let k=0;k<K;k++)r[k]=LR[i*K+k]+(fw?RF[k][e]:RB[k][e]);
+      if(!add(w,c+(fw?cfc[e]:cbc[e]),r,i,cd)){RCI={max:true};return null}}}
+  if(fin<0){RCI={inf:true};return null}
+  // reconstruction du tracé
+  const mid=[];let j=LP[fin];const endA_=LE[fin]===-2;
+  while(LP[j]>=0){const cd=LE[j],e=cd>>1,fw=!(cd&1);mid.push([e,fw?0:g.len[e],fw?g.len[e]:0]);j=LP[j]}
+  mid.reverse();const n0=LV[j];
+  const seq=[n0===g.a[A.e]?[A.e,A.s,0]:[A.e,A.s,g.len[A.e]],...mid,endA_?[B.e,0,B.s]:[B.e,g.len[B.e],B.s]];
+  return {seq,cost:LCo[fin],rc:true}}
+// Limites d'un A→B : dénivelé, plafond (distance / durée) et plafond de détour (longueur ≤ DET_CAP × la longueur minimale sous les mêmes limites de dénivelé)
+function rcLims(DL,CAP){
+  const l=[];if(DL){l.push({k:"up",lim:DL.m+.4});if(DL.both)l.push({k:"dn",lim:DL.m+.4})}
+  if(CAP)l.push(CAP.m==="len"?{k:"len",lim:CAP.lim-.01}:{k:"sec",lim:CAP.lim/durF()-.01});
+  return l}
+function routeRCap(A,B,ev,DL,CAP){   // trace sous toutes les limites en gardant le plus de détour permis ; null si aucun tracé conforme ou trop d'étiquettes
+  const base=rcLims(DL,CAP);if(!base.length)return null;
+  let lims=base;
+  if(DETCAP){const dl=[];if(DL){dl.push({k:"up",lim:DL.m+.4});if(DL.both)dl.push({k:"dn",lim:DL.m+.4})}
+    const R0=dl.length?routeRC(A,B,0,dl,true):null;let L0=R0?seqLen(R0):null;
+    if(!R0){if(dl.length&&RCI&&RCI.inf)return null;const o=OFFP,nz=NZ;try{OFFP=0;NZ=null;const r=route(A,B,0);L0=r?seqLen(r):null}finally{OFFP=o;NZ=nz}}
+    if(L0==null)return null;
+    const lenLim=DET_CAP[Math.min(3,ev)]*L0,ex=base.find(x=>x.k==="len");
+    lims=ex?base.map(x=>x.k==="len"?{k:"len",lim:Math.min(x.lim,lenLim)}:x):[...base,{k:"len",lim:lenLim}]}
+  return routeRC(A,B,ev,lims)}
 
 /* ---------- les meilleurs points : 5 des 10 meilleurs points accessibles ---------- */
 // Pics de score le long du réseau (somme des poids WGW sur ≈ 300 m de chemin, espacés d'au moins 200 m), calculés une fois par grille de classes.
@@ -375,7 +478,7 @@ const nzf=(x,y,sz,o,seed)=>{const ix=Math.floor(x/sz),iy=Math.floor(y/sz),fx=x/s
 const nzField=(x,y,seed)=>.6*nzf(x,y,150,1,seed)+.4*nzf(x,y,450,2,seed);   // champ lisse dans [-1 ; 1] (mètres)
 function mkNoise(amp,seed){const g=GR,z=new Float32Array(g.nE);
   for(let e=0;e<g.nE;e++){const x=((g.lon[g.a[e]]+g.lon[g.b[e]])/2-g.lon0)*g.kx,y=((g.lat[g.a[e]]+g.lat[g.b[e]])/2-g.lat0)*g.ky;z[e]=Math.max(.5,1+amp*nzField(x,y,seed))}
-  return z}
+  z.amp=amp;return z}
 const NZAMP=[.12,.2,.3,.4];
 let LOOPERR="",LOOPQ=true,LOOPENR=true;const ENRSH=.84;   // LOOPQ : qualité des boucles (forêt, allers-retours) ; false = ancien comportement (comparaisons de test)
 /* qualité d'une boucle : part en forêt, part de tronçons parcourus deux fois, impasses (aller-retour qui n'atteint aucune zone « moyen » ou mieux en forêt) */
@@ -926,9 +1029,15 @@ async function computeAny(){
   NZ=nzOn;evUsed=env0;R=null;S0=null;
   for(const ev of (CAP||M<4)&&env0>0?[env0,0]:[env0]){   // plafond ou difficulté stricts : si le détour les dépasse, on réessaie sans détour (trajet le plus court)
     evUsed=ev;if(ev!==env0)detWhy=CAP&&capOver(S0,CAP)?"plafond":"difficulté";
+    const rcT=new Set();   // (niveau, force) déjà essayés par la méthode exacte
     try{outer:for(const mx of lvlLadder(M,dvLim()))for(const k of mx<4?TECH_K:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=techBP(mx,k);setDV(lam);kU=k;lU=lam;mU=mx;
-      if(tt){R=await AW(routeOff(pts.A,pts.B,ev),run);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}else R=routeCap(A,B,ev);
+      if(tt){R=await AW(routeOff(pts.A,pts.B,ev),run);if(R&&R.error){clearRoute();msg.textContent=R.error;return}}
+      else{let X=null;const DLn=dvLim();if(DLn&&lam>0&&RCON&&!rcT.has(mx+"|"+k)){rcT.add(mx+"|"+k);X=routeRCap(A,B,ev,DLn,CAP)}   // limite de dénivelé : tracé exact par étiquettes ; sinon (aucun tracé conforme) échelle λ
+        R=X||routeCap(A,B,ev)}
       if(!R)break outer;S0=summarize(R);if(tenu(S0,M))break outer}}finally{if(RUN===run){BP=null;DV=null}}
+    if(!tt&&RCON&&R&&capOver(S0,CAP)&&tenu(S0,M)){   // plafond dépassé : tracé exact sous le plafond (en gardant le plus de détour permis) avant de renoncer au détour
+      let X=null;try{BP=techBP(mU,kU);X=routeRCap(A,B,ev,dvLim(),CAP)}finally{if(RUN===run){BP=null;DV=null}}
+      if(X){const S2=summarize(X);if(tenu(S2,M,CAP)){R=X;S0=S2}}}
     if(!R||tenu(S0,M,CAP)||(!capOver(S0,CAP)&&!(M<4&&S0.lvl>M&&env0>0&&ev>0)))break}
   if(R&&tenu(S0,M,CAP))break}
   if(ALEA&&!tt&&R&&!capOver(S0,CAP)&&dvOk(S0)){   // les 5 des 10 meilleurs points accessibles : insérés tant que plafond, difficulté et dénivelé restent respectés
@@ -1208,7 +1317,7 @@ function init(){
   {const rg=$("it-reg");if(rg){rg.addEventListener("input",regUpd);rg.addEventListener("change",regUpd)}}
   $("it-cancel").onclick=()=>{cancelRun();$("it-msg").textContent="Calcul annulé."};regUpd();
   window.ITIN_SAVED={list:()=>svRead(),merge:svMerge};
-  window.ITIN={get last(){return last},routeCap,setDetCap:v=>{DETCAP=!!v},capOf,capOver,prepVar,varList,varReport,get VAR(){return VAR},gpx,gpxText,savedList:()=>svRead(),svSave,svLoad,svDel,placeWp,drawMode,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,netDist,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v},setCorridor:(p,sq)=>{PCOR=p;SQ=sq},setOffP:v=>{OFFP=v},setLFW:v=>{LFW=v},setBudget:v=>{BUDGET=v},setAlea:v=>{ALEA=!!v},setLoopEnr:v=>{LOOPENR=!!v},setSeed:v=>{SEEDFIX=v==null?null:+v;SEEDV=SEEDFIX!=null?SEEDFIX:SEED;RND=rng(SEEDV)},setTT:v=>{TTF=v==null?null:!!v},peaks,topReach,enrich,mkNoise,get lastTop(){return LASTTOP},get runs(){return RUNS},cancelRun};   // pour les tests
+  window.ITIN={get last(){return last},routeCap,setDetCap:v=>{DETCAP=!!v},capOf,capOver,prepVar,varList,varReport,get VAR(){return VAR},gpx,gpxText,savedList:()=>svRead(),svSave,svLoad,svDel,placeWp,drawMode,lv95,geoLink,techPen,edgeTech,durF,routeGD,bonusQ,goodLen,wxOn,wx,wxWarn,declare,loadGraph,snap,route,routeOff,summarize,compute,setPt,wpAdd,get WP(){return WP},loopRoutes,netDist,get graph(){return GR},draw,hazards,loopMetrics,setLoopQ:v=>{LOOPQ=v},setCorridor:(p,sq)=>{PCOR=p;SQ=sq},setOffP:v=>{OFFP=v},setLFW:v=>{LFW=v},setBudget:v=>{BUDGET=v},setAlea:v=>{ALEA=!!v},setRC:v=>{RCON=!!v},setAlt:v=>{ALTON=!!v},setNoise:z=>{NZ=z},routeRC,routeRCap,get RCI(){return RCI},setLoopEnr:v=>{LOOPENR=!!v},setSeed:v=>{SEEDFIX=v==null?null:+v;SEEDV=SEEDFIX!=null?SEEDFIX:SEED;RND=rng(SEEDV)},setTT:v=>{TTF=v==null?null:!!v},peaks,topReach,enrich,mkNoise,get lastTop(){return LASTTOP},get runs(){return RUNS},cancelRun};   // pour les tests
 }
 init();
 })();
