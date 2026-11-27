@@ -1120,7 +1120,7 @@ details.more[open]>summary{margin-bottom:4px}
     </details>
 
     <details class="panel-det" id="sec-coins"><summary>Mes coins</summary>
-      <div class="coin-bar"><button class="btn primary" id="add-coin">＋ Nouveau coin</button><label class="btn" style="cursor:pointer" title="Un coin par photo, à partir du GPS et de la date de la photo (lus dans votre navigateur, rien n'est envoyé)">📷 Importer des photos<input id="ph-files" type="file" accept="image/*,.heic,.heif" multiple hidden></label><button class="btn" type="button" id="coin-contrib" title="Envoyer anonymement vos coins pour améliorer la carte">🤝 Contribuer</button></div>
+      <div class="coin-bar"><button class="btn primary" id="add-coin">＋ Nouveau coin</button><label class="btn" style="cursor:pointer" title="Un coin par photo, à partir du GPS et de la date de la photo (lus dans votre navigateur, rien n'est envoyé)">📷 Importer des photos<input id="ph-files" type="file" accept="image/*,.heic,.heif" multiple hidden></label><button class="btn" type="button" id="coin-contrib" title="Envoyer anonymement vos coins pour améliorer les prévisions">🤝 Améliorer les prévisions</button></div>
       <div class="coin-bar2" id="coin-sortbar" hidden><label>Espèce<select id="coin-filter" class="coin-sel" aria-label="Filtrer les coins par espèce"></select></label><label>Tri<select id="coin-sort" class="coin-sel" aria-label="Trier les coins"><option value="cat">Par catégorie</option><option value="esp">Par espèce</option><option value="date">Plus récents</option><option value="nom">Par nom</option></select></label></div>
       <div id="ph-box" class="share-box" hidden role="status" aria-live="polite"><p class="small" id="ph-msg" style="margin:0"></p><div id="ph-list"></div></div>
       <div id="coin-form" class="coin-form" hidden>
@@ -1155,7 +1155,7 @@ details.more[open]>summary{margin-bottom:4px}
         <textarea id="imp-text" rows="4" aria-label="Message reçu"></textarea>
         <div class="row" style="gap:6px;margin-top:6px"><label class="btn" style="cursor:pointer">📄 Importer un fichier<input id="imp-file" type="file" accept=".txt,text/plain" hidden></label><button class="btn primary" id="imp-go">Ajouter ces coins</button><span class="small" id="imp-msg" role="status"></span></div>
       </div>
-      <details class="coin-more" id="sec-share-enc"><summary>Aider à améliorer la carte (envoi chiffré)</summary>
+      <details class="coin-more" id="sec-share-enc"><summary>Améliorer les prévisions (envoi chiffré)</summary>
         <div id="se-off" class="small" hidden>Cette fonction n'est pas encore activée sur cette carte.</div>
         <div id="se-on">
         <p class="small" style="margin:6px 0">Vous pouvez envoyer vos coins <b>chiffrés</b> à l'auteur pour affiner le modèle (calage des seuils et des espèces). Les données sont chiffrées dans votre navigateur avec la clé publique de l'auteur : le serveur de transit ne peut pas les lire, et rien n'est jamais affiché sur la carte.</p>
@@ -2652,7 +2652,7 @@ function renderCoins(){
     if(c.photo)photoGet(c.id).then(u=>{const im=row.querySelector("img.th");if(im&&u)im.src=u});
   });
   if(state.coins.length&&!list.length)box.innerHTML=`<p class="small">Aucun coin pour cette espèce.</p>`;
-  const cb=$("coin-contrib");if(cb)cb.onclick=()=>{const d=$("sec-coins");if(d)d.open=true;const e=$("sec-share-enc");if(e){e.open=true;setTimeout(()=>e.scrollIntoView({behavior:"smooth",block:"start"}),50)}};
+  const cb=$("coin-contrib");if(cb)cb.onclick=()=>{const e=$("sec-share-enc");if(e){for(let n=e;n;n=n.parentElement)if(n.tagName==="DETAILS")n.open=true;setTimeout(()=>e.scrollIntoView({behavior:"smooth",block:"start"}),50)}};
   box.querySelectorAll("a[data-k]").forEach(a=>a.onclick=e=>{e.preventDefault();goCoin(+a.dataset.k)});
   box.querySelectorAll("button[data-ed]").forEach(b=>b.onclick=()=>openCoinForm(+b.dataset.ed));
 }
