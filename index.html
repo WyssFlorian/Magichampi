@@ -1229,7 +1229,7 @@ details.more[open]>summary{margin-bottom:4px}
       <label class="chk"><input type="checkbox" id="o-excl"> Afficher aussi les forêts exclues</label>
       <p class="small">Forêts proches des localités (moins de 100 m) et des routes principales (moins de 20 m), réserves et marais protégés.</p>
       <label class="it-lab" style="display:block;margin:8px 0 2px">Nombre de meilleurs lieux affichés avec « ★ Meilleur lieu » : <select id="o-bestn" class="coin-sel"><option value="1">1 (par défaut)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
-      <p class="small">Les lieux suivent les mêmes filtres que la carte (chasse, zones difficiles, niveau affiché) et sont à au moins 300 m les uns des autres. Numérotés du meilleur au moins bon.</p>
+      <p class="small">Les lieux suivent les mêmes filtres que la carte (chasse, zones difficiles, niveau affiché) et sont espacés selon le zoom (environ 12 % du petit côté de la carte visible, 100 m au minimum) : serrés quand on regarde un secteur, éloignés quand on regarde toute une région. Numérotés du meilleur au moins bon.</p>
       <label class="chk"><input type="checkbox" id="o-resp" checked> <span><b>Cueillette responsable</b></span></label>
       <p class="small" id="resp-help" hidden></p>
       <div class="sub-h">Espèces et relevés</div>
@@ -1327,7 +1327,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Gel : somme des degrés sous 0 °C des nuits des 7 derniers jours, divisée par 3 (une nuit à −3 °C compte comme une nuit de gel, une nuit à −6 °C comme deux).</li>
       </ul>
       <p><b>Zones de forêt</b> : la forêt est découpée par les routes et chemins (swissTLM3D) et par paliers d'altitude de 150 m ; les grandes zones sont recoupées en carrés d'environ 600 m. Une zone prend la valeur de ses 20 % meilleures cellules, pour ne pas noyer un bon coin dans une grande zone moyenne.</p>
-      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte. L'étoile suit les mêmes filtres que la carte : elle ignore les forêts que la carte n'affiche pas (en concentration, sous le niveau « moyen »), celles hachurées en rouge pour la chasse et celles hachurées en gris (zones difficiles d'accès) tant que ces cases sont cochées. Le menu « Affichage et couches » permet d'afficher jusqu'à 5 lieux à la fois (numérotés, à au moins 300 m les uns des autres, par défaut 1).</p>
+      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte. L'étoile suit les mêmes filtres que la carte : elle ignore les forêts que la carte n'affiche pas (en concentration, sous le niveau « moyen »), celles hachurées en rouge pour la chasse et celles hachurées en gris (zones difficiles d'accès) tant que ces cases sont cochées. Le menu « Affichage et couches » permet d'afficher jusqu'à 5 lieux à la fois (numérotés, espacés selon le zoom, par défaut 1).</p>
       <p><b>Géographie</b> (bouton ⛰ ou option) : Lignes de niveau (case « Lignes de niveau », utilisable seule) : tracées à partir du relief swissALTI3D ramené à 25 m, tous les 20 m (plus marquées tous les 100 m) dès le zoom 14, tous les 50 m au zoom 13 ; blanches sur la photo, brunes sur la carte nationale. En brun foncé, les pentes d'au moins 45° sur 25 m (falaises, barres rocheuses) ; en brun clair, les pentes de 38 à 45° (très raides, prudence). En bleu, les cours d'eau à ciel ouvert (swissTLM3D 2026), les rivières dès le zoom 11, les ruisseaux dès le zoom 13, plus fins ; les tronçons canalisés sous terre ne sont pas tracés. En vert, les routes dès le zoom 12, comme sur la carte nationale : double trait pour les routes de 1re et 2e classe, trait simple pour la 3e classe, puis les chemins de 4e classe dès le zoom 14 et de 5e classe dès le zoom 15 ; tous les traits s'épaississent avec le zoom. Les sentiers balisés restent en jaune. Le bouton affiche aussi les arrêts de transports publics (dès le zoom 13) et les parkings (dès le zoom 14). Dans Plus d'options, section Géographie, une case par couche permet de masquer séparément les cours d'eau, les routes, les arrêts, les parkings ou les sentiers. Une petite barre de quelques mètres peut ne pas apparaître : la carte nationale reste la référence.</p>
       <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
       <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
@@ -2513,14 +2513,17 @@ function findBestN(n){
     else if(state.view==="zone"&&z>0){q=st.zone.mean[z];if(now&&zoneNow)q*=Math.min(1,zoneNow.W[z]/.35)}
     const good=e.nk*zoneHa,v=(e.k+q)*sizeW(e.pa)*(.6+.4*Math.min(1,good/3));
     cand.push({v,i:e.bi,k:e.k,z,pa:e.pa,good})});
-  // les n meilleures zones, au moins BEST_GAP m les unes des autres (deux carrés voisins d'un même massif comptent pour un seul lieu)
+  // les n meilleures zones, à au moins bestGap(R) cellules les unes des autres (deux carrés voisins d'un même massif comptent pour un seul lieu)
   cand.sort((a,b)=>b.v-a.v);
-  const out=[],g2=(BEST_GAP/meta.res)**2;
+  const out=[],gap=bestGap(R),g2=gap*gap;
   for(const c of cand){if(out.length>=n)break;const r=Math.floor(c.i/cols),cc=c.i%cols;
     if(out.some(o=>{const r2=Math.floor(o.i/cols),c2=o.i%cols;return (r-r2)**2+(cc-c2)**2<g2}))continue;out.push(c)}
   return out;
 }
-const BEST_GAP=430;   // ≈ 300 m au sol (mètres Web Mercator à 46,5° de latitude)
+// espacement minimal entre deux lieux, en cellules : 12 % du petit côté de la partie visible (≈ 180 m pour 1,5 km de côté, ≈ 3,6 km pour 30 km),
+// jamais sous 100 m (4 cellules de 25 m) ni au-delà de 5 km
+const BEST_GAP_F=.12,BEST_GAP_MIN=100,BEST_GAP_MAX=5000;
+function bestGap(R){return clamp(BEST_GAP_F*Math.min(R.c1-R.c0,R.r1-R.r0),BEST_GAP_MIN/meta.res,BEST_GAP_MAX/meta.res)}
 function findBest(){return findBestN(1)[0]||null}
 let bestT;
 function updateBest(){clearTimeout(bestT);bestT=setTimeout(updateBestNow,120)}
@@ -2536,7 +2539,7 @@ function updateBestNow(){
     const lab=state.sp==="multi"?`${b.k} espèce${b.k>1?"s":""} en élevé`:CLS_LAB[b.k];
     const m=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="best-pin'+(multiN?' nb':'')+'"><div class="ring"></div><div class="star">'+(multiN?n+1:'★')+'</div></div>',iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:1000-n,keyboard:false});
     const pa=b.pa>=1e8?"grand massif":`massif de ${b.pa<10?b.pa.toFixed(1).replace('.',','):Math.round(b.pa)} ha`;
-    m.bindTooltip(`${multiN?"Meilleur lieu n° "+(n+1):"Meilleur lieu de la vue"} · ${lab} · ${pa}`,{permanent:true,direction:"top",offset:[0,-14]});
+    m.bindTooltip(`${multiN?"Meilleur lieu n° "+(n+1):"Meilleur lieu de la vue"} · ${lab} · ${pa}`,{direction:"top",offset:[0,-14]});
     m.on("click",e=>{L.DomEvent.stopPropagation(e);openPopup(ll)});
     bestLayer.addLayer(m)});
 }
