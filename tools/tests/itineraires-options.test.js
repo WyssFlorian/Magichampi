@@ -33,7 +33,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   // tout-terrain actif à tous les niveaux : plus de refus, tracé respectant le maximum
   set('it-max',0);$('it-msg').textContent='';$('it-res').innerHTML='';await go();o.ttRefus=$('it-msg').textContent;o.tt0Pill=($('it-res').querySelector('.pill')||{}).textContent;o.tt0Rule=/≤ \d+ m d'un chemin, pente < 8°/.test($('it-res').innerHTML);set('it-max',4);await sleep(6000);
   // GPX + lien swisstopo
-  ITIN.setTT(false);await go();
+  ITIN.setTT(false);set('it-max',4);await go();   // GPX : difficulté libre, pour qu'un tracé existe quel que soit le départ tiré au hasard
   o.geo=$('it-geo')?$('it-geo').href:'';
   let gpxTxt='';const orig=URL.createObjectURL;URL.createObjectURL=f=>{f.text().then(t=>gpxTxt=t);return orig(f)};Object.defineProperty(navigator,'canShare',{value:undefined,configurable:true});
   const nav=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(this.download)o.dl=this.download;else nav.call(this)};

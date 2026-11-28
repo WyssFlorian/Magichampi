@@ -156,3 +156,38 @@ Coût exprimé en % du quota hebdomadaire, sur la base de 2,5 % par 100 000 jeto
 5. **Plus tard** : E1 après vérification sur le terrain.
 
 Total des vagues A à C ≈ **16,4 %** du quota hebdomadaire ; A à D ≈ 23 %. Chaque vague : nouveau fil depuis `main` après fusion de la précédente, mesure avant / après avec `itineraires-mesure.js` et `itineraires-monotonie.js`, tests `tools/tests/itineraires*.test.js`.
+
+## 6. Vague A réalisée (27 nov. 2026)
+- **A1** : `valide(S, M, CAP, ref)` / `tenu(...)` remplacent les six copies de `okS`, `dvOk`, `capOver`, `lvl <= M` (A→B, points de passage, boucles, `enrich`, `fill`).
+- **A2** : la difficulté est un filtre (pénalité 10⁶, puis ×40) ; repli monotone sur les niveaux plus stricts (M, M−1 … 0) pour A→B, points de passage et boucles ; le détour est retiré quand il fait dépasser la difficulté maximale ; test de monotonie ajouté à l'Action (0 violation sur `ple` et `gdv`).
+- **A3** : le hors-chemin n'entre plus dans une réserve ni une zone de tir, quelles que soient les cases cochées (`usableTT`). Décision de Florian : **la chasse n'est pas évitée par le tracé**, l'avertissement affiché suffit.
+- Limite connue : en A→B tout-terrain, « facile » donne encore parfois « moyen » (6 trajets sur 8 sur la Riviera) : la bande hors-chemin n'est pas encore soumise à l'effort maximal (vague D).
+
+## 7. Vague B réalisée (27 nov. 2026)
+- **B1 : étiquettes exactes** (`routeRC` / `routeRCap` dans `itineraire.js`). Les limites de dénivelé (D+, ou D+ et D−), le plafond de distance ou de durée et le plafond de détour (1,35 × la longueur minimale sous les mêmes limites de dénivelé) sont des ressources : le tracé le moins coûteux qui les tient toutes est trouvé s'il existe. Utilisé en A→B sur chemins : (1) à la place de l'échelle λ quand une limite de dénivelé est active (l'échelle ne sert plus que si aucun tracé conforme n'existe, pour afficher « le moins pentu ») ; (2) quand le plafond est dépassé, avant de renoncer au détour. Plafond de 150 000 étiquettes (jamais atteint dans les tests), aucun budget en secondes. Mesuré : ≈ 13 ms par appel sur ordinateur (`ple`), limite toujours tenue, coût jamais plus bas quand la limite se resserre, coût identique au plus court chemin pour une limite très large (`tools/tests/itineraires-exact.test.js`).
+- **B2 : repères ALT** dans `route()`. 8 repères sur une borne inférieure du coût qui dépend de l'envie de détour (bonus de zone), de l'amplitude de l'aléa et de la pénalité hors forêt courante (jusqu'à 8 jeux gardés, 1,7 à 3 Mo chacun, calculés au premier besoin). Coût identique à Dijkstra sur 90 cas (avec et sans bonus, avec aléa). Mesuré sur 30 trajets de 1,5 à 5 km (`ple`) : sans détour 105 000 → 18 000 nœuds visités et 19 → 5 ms (×4) ; avec détour et aléa, gain plus modeste (×1,3 à ×1,7), car la borne doit tenir compte du bonus et de l'aléa. Pas de différence visible sur un A→B seul (< 1 ms), le gain est pour les boucles, l'insertion et le remplissage.
+- Corrigé en passant : le calcul des repères ne doit pas se faire une fois le tas rempli (il partage le tas du plus court chemin).
+- Pas encore couvert : les points de passage (étapes) gardent l'échelle λ ; la répartition du dénivelé entre étapes et les tronçons de boucle viennent avec la vague C.
+
+## 8. Vague C réalisée (27 nov. 2026)
+- **C1 : boucles par orienteering** (`loopOrient` dans `itineraire.js`, pour les boucles sur chemins). Ensemble de 30 meilleurs points à portée + 10 nœuds en forêt, un gain par point ; une matrice de coûts et de ressources (longueur ou durée, D+, D−) entre tous les points (un Dijkstra borné par point, 25 à 60 ms sur ordinateur) ; recherche locale itérée à nombre d'itérations fixe (insertion, retrait, remplacement, 2-opt, perturbation ; pénalité de forme contre les allers-retours) ; 4 tournées différentes ; tracé réel avec pénalité de repassage, **réparation** (retrait du point de plus faible gain si le tracé réel dépasse le plafond ou la limite de dénivelé) puis **raffinement** sur le coût de sélection (impasses, repassage, forêt) pour les 2 meilleures. Aucun budget en secondes : même graine = même boucle à CPU ×1 et ×6 (`itineraires-orienteering.test.js`).
+- Le plafond et la limite de dénivelé sont tenus par construction (ressources de la matrice) ; l'échelle λ n'est plus parcourue pour les boucles qu'aux derniers crans. Le 2e passage agrandi, l'insertion des meilleurs points (`enrich`) et le remplissage (`fill`) ne tournent plus pour ces boucles : les points sont dans la tournée.
+- **Repli** : si l'orienteering ne trouve rien de conforme à un cran de l'échelle, on passe au cran suivant ; l'ancienne méthode (gardée derrière `setLoopOR(false)` et utilisée en dernier recours, pour le tout-terrain et quand la qualité de l'orienteering est insuffisante) ne sert qu'aux derniers crans. Le tout-terrain garde l'ancienne méthode (vague D).
+- **Mesuré** (`tools/profil/boucles-compare.js ple gdv 8` : 8 départs × 3 réglages par région, boucle 8 km, CPU ×4) :
+
+| | boucles trouvées | forêt | repassage | impasses | durée moyenne |
+|---|---|---|---|---|---|
+| Riviera, orienteering | 24/24 | 0,63 | 0,15 | 0,01 | **1,5 s** |
+| Riviera, ancien | 24/24 | 0,59 | 0,21 | 0,01 | 2,0 s |
+| Gros-de-Vaud, orienteering | 24/24 | 0,26 | 0,04 | 0,02 | **2,2 s** |
+| Gros-de-Vaud, ancien | 24/24 | 0,25 | 0,04 | 0,02 | 2,7 s |
+
+  Le cas « facile + D± ≤ 200 » de la Riviera (aucune boucle conforme n'existe) passe de **17 s à 5 s** sur téléphone simulé (≈ 1 s sur ordinateur) ; sous contrainte de dénivelé serrée, les boucles trouvées sont plus longues (jusqu'à 7,4 km au lieu de 4,0 km pour la même limite).
+- Limites : la matrice ne voit pas le repassage entre tronçons (d'où le raffinement sur le tracé réel) ; les points de passage obligatoires gardent l'échelle λ ; la boucle tout-terrain reste lente (vague D).
+
+## 9. Vague D réalisée en partie (27 nov. 2026)
+- **D1 (effort et repli tout-terrain)** : en A→B tout-terrain, si le tracé hors chemin dépasse la difficulté, le dénivelé ou le plafond choisis, on essaie d'abord un envoi à effort réduit puis un tracé à durée minimale (sans préférence pour la forêt), et en dernier recours le tracé sur chemins qui respecte les limites ; un message l'annonce (« Tout-terrain retiré… »).
+- **Mesuré** (`tools/profil/tt-facile.js ple gdv 8`, « facile », A→B tout-terrain) : trajets au-dessus de la difficulté demandée **7/24 → 4/24**. Les cas restants sont infaisables : même sur chemins, aucun tracé de ces départs ne tient dans « facile ».
+- Tests : tous les `itineraires*.test.js`, `boucle-champs`, `itineraire-variete` passent ; monotonie 0 violation (ple, gdv).
+- **Non fait** : *(traité le 27 nov., voir ci-dessous)*.
+- **Accélération du tout-terrain (27 nov.)** : (1) préparations de `routeOff` mises en cache pour toute la grille (`ttGlob` : arcs de chemin en CSR, bande des routes de classe 2, dilatations, niveaux de distance, bruit de la boucle), au lieu de les refaire à chaque appel ; (2) boucle de Dijkstra allégée (récompenses en table, tableaux lus une fois) ; (3) `solve` rend la main au navigateur toutes les 16 ms (file de messages) et s'arrête si le calcul est annulé : plus de bloc figé dû au tout-terrain. **Mesure** (`tools/profil/tt-prep.js ple`, 8 trajets × 3 réglages, CPU ×1) : 345/497/542 ms → ≈ 290/430/360 ms (−15 à −35 %), longueurs de tracés identiques à l'octet près ; monotonie : 0 violation. Un **vrai Web Worker** n'a pas été fait : `routeOff` dépend d'une vingtaine de variables globales de la page (grille, météo, zones de tir, coûts) ; le rendre indépendant demanderait une refonte bien plus large pour un gain de réactivité déjà obtenu ici.
