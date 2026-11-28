@@ -1,4 +1,4 @@
-// Test Playwright : option « Passer par les meilleurs lieux » (meilleurs lieux de la vue = points de passage). iPhone 13, sans réseau.
+// Test Playwright : bouton « ＋ ⭐ Meilleurs lieux » (meilleurs lieux de la vue ajoutés aux points de passage). iPhone 13, sans réseau.
 // usage : node tools/tests/itineraires-meilleurs-lieux.test.js [région]   (défaut : pde)
 const {chromium,devices}=require('playwright');const fs=require('fs'),path=require('path');
 const ROOT=path.resolve(__dirname,'../..'),Z=process.argv[2]||'pde';
@@ -23,27 +23,13 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   ITIN.setPt('A',mk(A));ITIN.setPt('B',mk(B));
   map.fitBounds(L.latLngBounds([mk(A),mk(B)]).pad(.4));await sleep(1500);
   await go();o.directLen=ITIN.last.len;o.direct=ITIN.WP.length;
-  state.bestN=3;$('it-bestwp').checked=true;
-  const exp=findBestN(3).length;o.exp=exp;
-  await go();o.nbest=ITIN.WP.filter(w=>w.best).length;o.wps=ITIN.WP.length;o.msg=$('it-msg').textContent;o.res=$('it-res').textContent.slice(0,80);
-  await go();o.again=ITIN.WP.filter(w=>w.best).length;   // pas de doublons au second calcul
-  o.ok=ITIN.last&&ITIN.last.len>0;
-  state.bestN=1;await go();o.n1=ITIN.WP.filter(w=>w.best).length;
-  $('it-bestwp').checked=false;$('it-bestwp').dispatchEvent(new Event('change'));await sleep(1500);o.off=ITIN.WP.length;
   // bouton ⭐ : ajoute les meilleurs lieux comme points manuels (retirables), sans doublon
   state.bestN=3;$('it-star').click();for(let i=0;i<300;i++){await sleep(100);if(ITIN.WP.length&&!$('it-prog').offsetParent)break}await sleep(1500);
-  o.star=ITIN.WP.length;o.starOrd=document.getElementById('it-wopt').checked;o.starBest=ITIN.WP.filter(w=>w.best).length;
+  o.star=ITIN.WP.length;o.starOrd=document.getElementById('it-wopt').checked;o.starBest=0;
   $('it-star').click();await sleep(2500);o.star2=ITIN.WP.length;o.minD=Math.min(...ITIN.WP.flatMap((a,i)=>ITIN.WP.slice(i+1).map(b=>a.ll.distanceTo(b.ll))));
   $('it-wlist').querySelector('button[data-a=x]').click();await sleep(1500);o.starRm=ITIN.WP.length;
   return o});
  console.log(JSON.stringify(r));
- ok(r.direct===0,'sans option : aucun point de passage');
- ok(r.exp>=1,'la vue contient des meilleurs lieux ('+r.exp+')');
- ok(r.nbest>=1&&r.nbest<=3,'jusqu\'à 3 lieux deviennent des points de passage ('+r.nbest+')');
- ok(r.again===r.nbest,'second calcul : pas de doublons ('+r.again+')');
- ok(r.ok,'tracé calculé');
- ok(r.n1===1||r.n1===0,'réglage 1 : un seul lieu ('+r.n1+')');
- ok(r.off===0,'option décochée : les points automatiques disparaissent');
  ok(r.star>=1&&r.star<=3&&r.starBest===0,'⭐ : '+r.star+' points manuels ajoutés');
  ok(r.starOrd===true,'⭐ : ordre le plus court activé par défaut');
  ok(r.star2>=r.star&&r.minD>=150,'⭐ deux fois (la vue a changé) : aucun point à moins de 150 m d\'un autre ('+Math.round(r.minD)+' m)');

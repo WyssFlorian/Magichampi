@@ -1150,9 +1150,9 @@ async function compute(){
   prog("Calcul…");
   try{await computeAny()}catch(e){if(e!==CANCEL)throw e}
   finally{if(RUN===run){BP=null;DV=null;NZ=null;progOff()}}}
-async function computeAny(noBest){
+async function computeAny(){
   const run=RUN;
-  if(WP.length||(!noBest&&bestWpOn())){clearRouteKeep();return computeWp()}
+  if(WP.length){clearRouteKeep();return computeWp()}
   if(isLoop()){clearRouteKeep();return computeLoop()}
   $("it-vars").innerHTML="";
   const msg=$("it-msg");msg.textContent="";
@@ -1209,22 +1209,12 @@ function wpReady(){return pts.A&&(isLoop()||pts.B)}
 function wpAdd(ll){
   const w={ll,mk:null};w.mk=L.marker(ll,{icon:wIcon(WP.length+1),draggable:true,zIndexOffset:850,keyboard:false}).addTo(map);
   w.mk.on("dragend",()=>{w.ll=w.mk.getLatLng();if(wpReady()&&last)compute()});WP.push(w);wpRefresh()}
-// option « Passer par les meilleurs lieux » : les n meilleurs lieux de la vue (réglage du menu Affichage) deviennent des points de passage
-// ordinaires (marqués best, retirés puis recalculés à chaque calcul ; déplacer un marqueur le transforme en point manuel)
-const bestWpOn=()=>!!$("it-bestwp")&&$("it-bestwp").checked&&typeof findBestN==="function";
-function bestWpDrop(){for(let i=WP.length-1;i>=0;i--)if(WP[i].best){map.removeLayer(WP[i].mk);WP.splice(i,1)}wpRefresh()}
 // meilleurs lieux de la vue utilisables comme points de passage : sur le réseau de chemins, à plus de 150 m de A, de B et des points manuels
 function bestLLs(){
   let L_=[];try{L_=findBestN(state.bestN||1)}catch(e){console.error(e)}
-  const far=(ll,q)=>!q||ll.distanceTo(q)>=150,man=WP.filter(w=>!w.best);
+  const far=(ll,q)=>!q||ll.distanceTo(q)>=150,man=WP;
   return L_.map(b=>{const r=Math.floor(b.i/meta.cols),c=b.i%meta.cols;return L.CRS.EPSG3857.unproject(L.point(meta.x0+(c+.5)*meta.res,meta.y1-(r+.5)*meta.res))})
     .filter(ll=>(!GR||snap(ll))&&far(ll,pts.A)&&(isLoop()||far(ll,pts.B))&&man.every(w=>far(ll,w.ll)))}
-function bestWpSync(){
-  bestWpDrop();if(!bestWpOn())return 0;
-  let n=0;
-  for(const ll of bestLLs()){if(WP.length>=WP_MAX)break;
-    wpAdd(ll);const w=WP[WP.length-1];w.best=true;w.mk.on("dragend",()=>{w.best=false});n++}
-  return n}
 // bouton « ⭐ » : ajoute les meilleurs lieux de la vue à la liste des points de passage (manuels : on peut ensuite en retirer, en ajouter, les déplacer)
 async function addStars(){
   const msg=$("it-msg");
@@ -1263,9 +1253,7 @@ async function computeWp(){
   {const ve=prepVar();if(ve){msg.textContent=ve;return}}
   const M=+$("it-max").value,tt=ttOn(pts.A),env0=+$("it-env").value,CAP=capOf();let envie=env0;
   if(!offGate(M,pts.A,tt,msg,clearRoute))return;
-  const nBest=bestWpSync();
-  if($("it-wopt").checked||nBest)wpOrder();
-  if(bestWpOn()&&!WP.length){await computeAny(true);msg.appendChild(document.createTextNode(" Aucun meilleur lieu utilisable dans la vue (hors réseau de chemins, trop près de A ou B, ou masqué par les filtres)."));return}
+  if($("it-wopt").checked)wpOrder();
   const P=[pts.A,...WP.map(w=>w.ll),loop?pts.A:pts.B],nm=P.map((_,i)=>i===0?"A":i===P.length-1?(loop?"A":"B"):String(i));
   if(P.some(p=>!p))return;   // marqueur retiré ou mode changé pendant le calcul
   const sn=P.map(p=>snap(p));
@@ -1297,7 +1285,7 @@ async function computeWp(){
     (hard.length?"Point de passage inaccessible sous « "+DIFF[M]+" » : "+hard.map(l=>"l'étape "+l.from+" → "+l.to+" reste « "+DIFF[l.lvl]+" » ("+l.reason+")").join(" ; ")+". Le tracé affiché passe quand même par vos points : choisissez une difficulté plus élevée ou déplacez-les. ":"")+
     (VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S0)+" ":"")+
     (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+dvMsg(S0)+
-    (WP.length+" point"+(WP.length>1?"s":"")+" de passage"+(nBest?" (dont "+nBest+" meilleur"+(nBest>1?"s lieux":" lieu")+")":"")+"."+(($("it-wopt").checked||nBest)&&WP.length>1?" Ordre optimisé.":"")));blockFix(S0,LS,M,nm,hard,ttFx)}
+    (WP.length+" point"+(WP.length>1?"s":"")+" de passage."+($("it-wopt").checked&&WP.length>1?" Ordre optimisé.":"")));blockFix(S0,LS,M,nm,hard,ttFx)}
 
 
 /* ---------- étape bloquée : quoi changer, et bouton pour l'appliquer ---------- */
@@ -1489,7 +1477,6 @@ function init(){
   $("it-a").onclick=()=>start("A");$("it-b").onclick=()=>start("B");
   $("it-star").onclick=addStars;
   $("it-w").onclick=()=>{if(WP.length>=WP_MAX){$("it-msg").textContent="Maximum "+WP_MAX+" points de passage.";return}start("W")};
-  if($("it-bestwp"))$("it-bestwp").onchange=()=>{if(!bestWpOn())bestWpDrop();if(pts.A&&(isLoop()||pts.B)&&last)compute();else if(!bestWpOn()&&!WP.length)clearRouteKeep()};
   $("it-wopt").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};
   $("it-loc").onclick=()=>{
     const use=ll=>{setPt("A",L.latLng(ll[0],ll[1]));if(pts.B)compute();else $("it-msg").textContent="Départ = ma position. Choisissez l'arrivée."};
