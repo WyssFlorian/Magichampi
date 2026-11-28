@@ -2539,7 +2539,7 @@ function updateBestNow(){
     const lab=state.sp==="multi"?`${b.k} espèce${b.k>1?"s":""} en élevé`:CLS_LAB[b.k];
     const m=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="best-pin'+(multiN?' nb':'')+'"><div class="ring"></div><div class="star">'+(multiN?n+1:'★')+'</div></div>',iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:1000-n,keyboard:false});
     const pa=b.pa>=1e8?"grand massif":`massif de ${b.pa<10?b.pa.toFixed(1).replace('.',','):Math.round(b.pa)} ha`;
-    m.bindTooltip(`${multiN?"Meilleur lieu n° "+(n+1):"Meilleur lieu de la vue"} · ${lab} · ${pa}`,{permanent:true,direction:"top",offset:[0,-14]});
+    m.bindTooltip(`${multiN?"Meilleur lieu n° "+(n+1):"Meilleur lieu de la vue"} · ${lab} · ${pa}`,{direction:"top",offset:[0,-14]});
     m.on("click",e=>{L.DomEvent.stopPropagation(e);openPopup(ll)});
     bestLayer.addLayer(m)});
 }
