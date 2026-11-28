@@ -1068,8 +1068,7 @@ function show(S){
    <div class="it-btns"><button type="button" class="btn" id="it-gpx">Exporter en GPX</button><a class="btn" id="it-geo" target="_blank" rel="noopener">Ouvrir map.geo.admin.ch</a></div>
    <p class="it-note">Ouvrez le fichier GPX avec l'<b>app swisstopo</b> (feuille de partage › swisstopo). Évitez SchweizMobil : il refuse souvent les tracés tout-terrain.</p>
    <div class="it-btns"><input type="text" id="it-sname" class="coin-sel" maxlength="40" placeholder="Nom du parcours" aria-label="Nom du parcours" value="${xe(svName(S))}"><button type="button" class="btn" id="it-save">💾 Enregistrer</button></div>
-   <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux. <a href="#" id="it-decl">Déclaration de responsabilité</a></p></div>`;
-  $("it-decl").onclick=e=>{e.preventDefault();declare(false)};
+   <p class="it-note">Durée estimée à ±10 min, sur la base du dénivelé et du type de chemin (pas de l'état réel du sentier : boue, neige). Proposition issue de données : vérifiez chasse, propriétés privées, réserves et conditions sur place, et renoncez à tout passage qui vous semble dangereux. <a href="#" class="it-decl-lnk">Décharge de responsabilité</a></p></div>`;
   $("it-gpx").onclick=gpx;$("it-save").onclick=()=>{const r=svSave($("it-sname").value);$("it-msg").textContent=r.msg};$("it-geo").href=geoLink(S)}
 const isLoop=()=>$("it-mode").value==="loop";
 const openReg=()=>{const d=$("it-reg");if(d)d.open=true};
@@ -1447,12 +1446,16 @@ function lpInit(){
     e.preventDefault();if(Date.now()-t0<1500)return;placeWp(map.mouseEventToLatLng(e))})}
 
 /* ---------- déclaration de responsabilité (acceptation mémorisée en local) ---------- */
-const DECL_KEY="itin-decl-v1";
-function declOk(){try{return localStorage.getItem(DECL_KEY)==="1"}catch(e){return false}}
-function declare(need){   // retourne une promesse : true si accepté
+const DECL_KEY="itin-decl-v1";let declSess=false;
+function declOk(){if(declSess)return true;try{return localStorage.getItem(DECL_KEY)==="1"}catch(e){return false}}
+function declStat(){const e=$("it-declstat");if(e){let a=false;try{a=localStorage.getItem(DECL_KEY)==="1"}catch(x){}e.textContent=a?"· toujours actif ✓":""}}
+function declare(need,sec){   // retourne une promesse : true si accepté ; « Toujours actif » mémorise dans ce navigateur
   return new Promise(res=>{const m=$("it-decl-modal");if(need&&declOk())return res(true);
-    m.hidden=false;const done=v=>{m.hidden=true;if(v){try{localStorage.setItem(DECL_KEY,"1")}catch(e){}}res(v)};
-    $("it-decl-ok").onclick=()=>done(true);$("it-decl-no").onclick=()=>done(false)})}
+    m.hidden=false;if(sec){const t=$("it-decl-"+sec);if(t)t.scrollIntoView()}
+    const done=(v,keep)=>{m.hidden=true;if(v){declSess=true;if(keep){try{localStorage.setItem(DECL_KEY,"1")}catch(e){}}}declStat();res(v)};
+    $("it-decl-ok").onclick=()=>done(true,false);$("it-decl-always").onclick=()=>done(true,true);$("it-decl-no").onclick=()=>done(false)})}
+document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest(".it-decl-lnk");if(a){e.preventDefault();declare(false,a.dataset.sec)}});
+declStat();
 
 /* ---------- interface ---------- */
 function banner(t){let b=$("it-banner");if(!t){if(b)b.hidden=true;return}

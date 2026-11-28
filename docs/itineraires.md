@@ -38,7 +38,7 @@ Menu ☰ › Itinéraire › Type « Balade en boucle » : un départ, une cible
 - Pas encore pris en compte : zones de chasse (pénalité), météo (PR suivantes).
 
 ## Tout-terrain (bêta, PR 3 sur 4)
-Case « Tout-terrain » dans Itinéraire (A→B seulement), désactivée par défaut, avec avertissement et case « Je comprends » obligatoires avant tout calcul (texte à relire par un juriste avant publication publique).
+Case « Tout-terrain » dans Itinéraire (A→B seulement), désactivée par défaut, avec avertissement et case « Je comprends » obligatoires avant tout calcul.
 - Dijkstra sur la grille de 25 m (≈ 17 m au sol) de la fenêtre chargée, reliée au réseau de chemins (les chemins sont des arcs cellule à cellule au coût du graphe). Fenêtre = départ/arrivée + 1,5 km, ≤ 450 000 cellules (≈ 10 km) ; temps de calcul 0,06 à 0,2 s.
 - Hors chemin seulement : en forêt utilisable (réserves et zones exclues déjà gérées par `usable`), à ≤ 100 m d'une cellule « élevé » ou mieux du mode affiché ; Tobler ×1,6 ; pente 25-30° ×3, ≥ 30° refusée ; cours d'eau (`cours_eau.geojson`, tampon d'une cellule) et marais (`reserves.geojson`) refusés. Franchissement d'un cours d'eau seulement par un chemin du réseau.
 - Tracé violet pointillé, difficulté d'office au moins « difficile », longueur hors chemin affichée.
@@ -47,7 +47,7 @@ Case « Tout-terrain » dans Itinéraire (A→B seulement), désactivée par dé
 ## Avertissements météo, déclaration de responsabilité et tests (PR 4 sur 4)
 - **Météo** (données déjà dans la page : pluie, températures, maille de la carte) : bandeau « sol détrempé » si ≥ 30 mm en 3 jours ou ≥ 60 mm en 7 jours ; « pluie annoncée » si ≥ 15 mm dans les 48 h ; « gel possible en altitude » (gradient −5,5 °C / 1 000 m) vers la plus haute altitude du tracé ; si la météo de la carte n'est pas à jour, l'avertissement le dit. Seuils estimés, à caler.
 - **Tout-terrain et météo** : sol détrempé → pente maximale 25 ° et tampon de 2 cellules autour des cours d'eau ; refusé si ≥ 50 mm en 3 jours, ≥ 40 mm annoncés en 48 h ou gel / neige possibles. Pas de prévision à 48 h MétéoSuisse séparée (option non réalisée : le message renvoie à la prévision officielle).
-- **Déclaration de responsabilité** : fenêtre affichée avant le premier calcul (acceptation mémorisée en local, rappelée par un lien sur chaque itinéraire) ; paragraphe dans « Sources et limites ». **Texte à relire par un juriste avant publication publique.**
+- **Décharge de responsabilité** : fenêtre affichée avant le premier calcul (« Toujours actif » mémorise l’acceptation en local, rappelée par un lien sur chaque itinéraire) ; paragraphe dans « Sources et limites ».
 - **Hors ligne** : `graphe.json` est dans le `files.json` de chaque région et `itineraire.js` dans le cache de l'application ; le tout-terrain lit `cours_eau.geojson` et `reserves.geojson`, déjà hors ligne.
 - **Tests** : `node tools/tests/itineraires.test.js [région …]` (Playwright, iPhone 13, sans réseau) : graphe, A→B, boucle, tout-terrain, météo, déclaration, sur les huit régions.
 
