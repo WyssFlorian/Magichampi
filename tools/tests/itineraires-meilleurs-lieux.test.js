@@ -32,7 +32,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   $('it-bestwp').checked=false;$('it-bestwp').dispatchEvent(new Event('change'));await sleep(1500);o.off=ITIN.WP.length;
   // bouton ⭐ : ajoute les meilleurs lieux comme points manuels (retirables), sans doublon
   state.bestN=3;$('it-star').click();for(let i=0;i<300;i++){await sleep(100);if(ITIN.WP.length&&!$('it-prog').offsetParent)break}await sleep(1500);
-  o.star=ITIN.WP.length;o.starBest=ITIN.WP.filter(w=>w.best).length;
+  o.star=ITIN.WP.length;o.starOrd=document.getElementById('it-wopt').checked;o.starBest=ITIN.WP.filter(w=>w.best).length;
   $('it-star').click();await sleep(2500);o.star2=ITIN.WP.length;o.minD=Math.min(...ITIN.WP.flatMap((a,i)=>ITIN.WP.slice(i+1).map(b=>a.ll.distanceTo(b.ll))));
   $('it-wlist').querySelector('button[data-a=x]').click();await sleep(1500);o.starRm=ITIN.WP.length;
   return o});
@@ -45,6 +45,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  ok(r.n1===1||r.n1===0,'réglage 1 : un seul lieu ('+r.n1+')');
  ok(r.off===0,'option décochée : les points automatiques disparaissent');
  ok(r.star>=1&&r.star<=3&&r.starBest===0,'⭐ : '+r.star+' points manuels ajoutés');
+ ok(r.starOrd===true,'⭐ : ordre le plus court activé par défaut');
  ok(r.star2>=r.star&&r.minD>=150,'⭐ deux fois (la vue a changé) : aucun point à moins de 150 m d\'un autre ('+Math.round(r.minD)+' m)');
  ok(r.starRm===r.star2-1,'un point ⭐ se retire comme les autres');
  ok(errs.length===0,'aucune erreur de script'+(errs.length?' : '+errs[0]:''));
