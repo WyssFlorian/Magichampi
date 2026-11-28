@@ -1232,6 +1232,7 @@ async function addStars(){
   try{await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
   const L_=bestLLs();let n=0;
   for(const ll of L_){if(WP.length>=WP_MAX)break;wpAdd(ll);n++}
+  if(n)$("it-wopt").checked=true;   // ordre le plus court par défaut (et non l'ordre du classement 1→5)
   if(!n){msg.textContent=L_.length?"Maximum "+WP_MAX+" points de passage : retirez-en un avant d'en ajouter.":"Aucun meilleur lieu utilisable dans la vue (hors réseau de chemins, déjà dans la liste, trop près de A ou B, ou masqué par les filtres).";return}
   if(wpReady()&&(isLoop()?last:pts.B))compute();else msg.textContent=n+" meilleur"+(n>1?"s lieux ajoutés":" lieu ajouté")+" aux points de passage.  Choisissez le départ"+(isLoop()?"":" et l'arrivée")+", puis touchez « Calculer »."}
 function wpClear(){WP.forEach(w=>map.removeLayer(w.mk));WP.length=0;wpRefresh()}
@@ -1270,12 +1271,16 @@ async function computeWp(){
   if(P.some(p=>!p))return;   // marqueur retiré ou mode changé pendant le calcul
   const sn=P.map(p=>snap(p));
   for(let i=0;i<P.length;i++)if(!sn[i]){clearRoute();msg.textContent=(i===0?"Le départ":i===P.length-1?"L'arrivée":"Le point de passage "+i)+" est à plus de 300 m d'un chemin de cette région (ou hors région) : déplacez le marqueur.";return}
-  let legs=[],S0=null,R=null,bad=null;
+  let legs=[],S0=null,R=null,bad=null,ttFail=[],ttFx;
   for(const ev of CAP&&env0>0?[env0,0]:[env0]){   // plafond strict : si le détour dépasse le plafond, on réessaie sans détour
   envie=ev;
-  try{outer:for(const mx of lvlLadder(M,dvLim()))for(const k of mx<4?TECH_K:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=techBP(mx,k);setDV(lam);legs=[];bad=null;
+  try{outer:for(const mx of lvlLadder(M,dvLim()))for(const k of mx<4?TECH_K:[0])for(const lam of dvLim()?DV_LAM:[0]){BP=techBP(mx,k);setDV(lam);legs=[];bad=null;ttFail=[];
     for(let i=0;i<P.length-1;i++){
-      const l=tt?await AW(routeOff(P[i],P[i+1],envie),run):routeCap(sn[i],sn[i+1],envie);
+      let l=tt?await AW(routeOff(P[i],P[i+1],envie),run):routeCap(sn[i],sn[i+1],envie);
+      if(tt&&l&&l.error&&/^Aucun passage/.test(l.error)){   // étape impossible hors chemin sous la difficulté choisie : on la trace sur les chemins, et on cherche la difficulté qui la permettrait
+        ttFail.push(nm[i]+" → "+nm[i+1]);
+        if(ttFx===undefined){ttFx=0;for(let mx=M+1;mx<=4&&!ttFx;mx++){const t=await AW(routeOff(P[i],P[i+1],envie,mx),run);if(t&&!t.error)ttFx=mx}}
+        l=routeCap(sn[i],sn[i+1],envie)}
       if(!l||l.error){bad=i;msg.textContent="Étape "+nm[i]+" → "+nm[i+1]+" : "+(l&&l.error?l.error:"aucun chemin trouvé entre ces deux points sur le réseau (parties non reliées). Déplacez "+(nm[i+1]==="B"||nm[i+1]==="A"?"le marqueur "+nm[i+1]:"le point de passage "+nm[i+1])+".");break}
       legs.push(l)}
     if(bad!==null)break outer;
@@ -1289,19 +1294,21 @@ async function computeWp(){
   draw(S0,R);show(S0);last=S0;
   const hard=M<4?LS.filter(l=>l.lvl>M):[];
   setMsg("",(loop?"Boucle A → "+WP.map((_,i)=>i+1).join(" → ")+" → A, définie par vos points de passage. ":"")+(CAP?"Plafond de "+capTxt(CAP)+" respecté"+(envie!==env0?" (détour retiré)":"")+". ":"")+
+    (ttFail.length?"Tout-terrain impossible pour l'étape "+ttFail.join(", ")+" sous « "+DIFF[M]+" » (le point est trop loin d'un chemin ou sur une pente trop forte pour cette difficulté : "+(M<4?"≤ "+OFF_DIST[M]+" m d'un chemin, pente < "+OFF_SLP[M]+"°":"zone interdite ou cours d'eau")+") : cette étape suit les chemins. "+(ttFx?"En difficulté « "+DIFF[ttFx]+" » elle serait possible hors chemin. ":""):"")+
     (hard.length?"Point de passage inaccessible sous « "+DIFF[M]+" » : "+hard.map(l=>"l'étape "+l.from+" → "+l.to+" reste « "+DIFF[l.lvl]+" » ("+l.reason+")").join(" ; ")+". Le tracé affiché passe quand même par vos points : choisissez une difficulté plus élevée ou déplacez-les. ":"")+
     (VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S0)+" ":"")+
     (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+dvMsg(S0)+
-    (WP.length+" point"+(WP.length>1?"s":"")+" de passage"+(nBest?" (dont "+nBest+" meilleur"+(nBest>1?"s lieux":" lieu")+")":"")+"."+(($("it-wopt").checked||nBest)&&WP.length>1?" Ordre optimisé.":"")));blockFix(S0,LS,M,nm,hard)}
+    (WP.length+" point"+(WP.length>1?"s":"")+" de passage"+(nBest?" (dont "+nBest+" meilleur"+(nBest>1?"s lieux":" lieu")+")":"")+"."+(($("it-wopt").checked||nBest)&&WP.length>1?" Ordre optimisé.":"")));blockFix(S0,LS,M,nm,hard,ttFx)}
 
 
 /* ---------- étape bloquée : quoi changer, et bouton pour l'appliquer ---------- */
 // Le tracé affiché est le meilleur trouvé par l'échelle de repli (étiquettes exactes) : ses valeurs donnent le réglage minimal qui le rend conforme.
 // Monotone : relâcher un réglage ne peut pas faire échouer ce que le réglage strict réussit, puisque l'échelle de repli repart du niveau choisi.
-function blockFix(S0,LS,M,nm,hard){
+function blockFix(S0,LS,M,nm,hard,ttFx){
   const fx=[],tx=[],dl=dvLim(),m=$("it-dvm"),mx=+m.max;
   if(hard.length){const need=Math.max(...hard.map(l=>l.lvl));fx.push({k:"max",v:need});tx.push("difficulté maximale à « "+DIFF[need]+" »")}
   if(dl&&!dvOk(S0)){const need=Math.ceil(Math.max(S0.up,dl.both?S0.dn:0)/50)*50;fx.push({k:"dv",v:Math.min(need,mx)});tx.push("limite de dénivelé à "+(need>=mx?"« aucune »":need+" m"))}
+  if(ttFx){const f=fx.find(x=>x.k==="max");if(f){if(ttFx>f.v){f.v=ttFx;tx[0]="difficulté maximale à « "+DIFF[ttFx]+" »"}}else{fx.unshift({k:"max",v:ttFx});tx.unshift("difficulté maximale à « "+DIFF[ttFx]+" » (tout-terrain possible)")}}
   const rm=hard.length?hard.reduce((a,l)=>l.lvl>a.lvl?l:a,hard[0]):null,rmN=rm?[rm.to,rm.from].find(n=>/^\d+$/.test(n)):null;
   if(!fx.length&&!rmN)return;
   const box=$("it-vars");let h="";
