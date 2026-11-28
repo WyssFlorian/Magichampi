@@ -1292,8 +1292,24 @@ async function computeWp(){
     (hard.length?"Point de passage inaccessible sous « "+DIFF[M]+" » : "+hard.map(l=>"l'étape "+l.from+" → "+l.to+" reste « "+DIFF[l.lvl]+" » ("+l.reason+")").join(" ; ")+". Le tracé affiché passe quand même par vos points : choisissez une difficulté plus élevée ou déplacez-les. ":"")+
     (VAR?"Optimisé pour : "+VAR.sps.map(x=>x.fr).join(", ")+"."+varReport(S0)+" ":"")+
     (S0.lvl>M&&!hard.length?"Aucun trajet « "+DIFF[M]+" » ou plus facile trouvé : voici le plus facile ("+DIFF[S0.lvl]+", "+S0.reason+"). ":"")+dvMsg(S0)+
-    (WP.length+" point"+(WP.length>1?"s":"")+" de passage"+(nBest?" (dont "+nBest+" meilleur"+(nBest>1?"s lieux":" lieu")+")":"")+"."+(($("it-wopt").checked||nBest)&&WP.length>1?" Ordre optimisé.":"")))}
+    (WP.length+" point"+(WP.length>1?"s":"")+" de passage"+(nBest?" (dont "+nBest+" meilleur"+(nBest>1?"s lieux":" lieu")+")":"")+"."+(($("it-wopt").checked||nBest)&&WP.length>1?" Ordre optimisé.":"")));blockFix(S0,LS,M,nm,hard)}
 
+
+/* ---------- étape bloquée : quoi changer, et bouton pour l'appliquer ---------- */
+// Le tracé affiché est le meilleur trouvé par l'échelle de repli (étiquettes exactes) : ses valeurs donnent le réglage minimal qui le rend conforme.
+// Monotone : relâcher un réglage ne peut pas faire échouer ce que le réglage strict réussit, puisque l'échelle de repli repart du niveau choisi.
+function blockFix(S0,LS,M,nm,hard){
+  const fx=[],tx=[],dl=dvLim(),m=$("it-dvm"),mx=+m.max;
+  if(hard.length){const need=Math.max(...hard.map(l=>l.lvl));fx.push({k:"max",v:need});tx.push("difficulté maximale à « "+DIFF[need]+" »")}
+  if(dl&&!dvOk(S0)){const need=Math.ceil(Math.max(S0.up,dl.both?S0.dn:0)/50)*50;fx.push({k:"dv",v:Math.min(need,mx)});tx.push("limite de dénivelé à "+(need>=mx?"« aucune »":need+" m"))}
+  const rm=hard.length?hard.reduce((a,l)=>l.lvl>a.lvl?l:a,hard[0]):null,rmN=rm?[rm.to,rm.from].find(n=>/^\d+$/.test(n)):null;
+  if(!fx.length&&!rmN)return;
+  const box=$("it-vars");let h="";
+  if(fx.length)h+="<div class=\"it-note\">Pour réaliser ce calcul : mettre la "+tx.join(" et la ")+(rmN?", ou retirer le point de passage "+rmN:"")+".</div><button type=\"button\" class=\"btn primary\" id=\"it-fix\">Appliquer : "+tx.join(" + ")+"</button>";
+  if(rmN)h+=" <button type=\"button\" class=\"btn\" id=\"it-fixrm\">Retirer le point "+rmN+"</button>";
+  box.innerHTML=h;
+  const f=$("it-fix");if(f)f.onclick=()=>{for(const x of fx){if(x.k==="max"){$("it-max").value=x.v;$("it-max").oninput&&$("it-max").oninput()}else{m.value=x.v;$("it-dvm").oninput();if(x.v>=mx)$("it-dv").value="0"}}if(DVUP)DVUP();regUpd();compute()};
+  const r=$("it-fixrm");if(r)r.onclick=()=>{const i=+rmN-1;if(WP[i]){map.removeLayer(WP[i].mk);WP.splice(i,1);wpRefresh()}compute()}}
 
 /* ---------- édition du tracé par clic-glisse (souris et doigt) ---------- */
 // Saisir le tracé et le glisser ajoute un point de passage à l'endroit lâché, inséré dans l'étape touchée ; le tout est recalculé comme d'habitude.
@@ -1437,7 +1453,7 @@ function banner(t){let b=$("it-banner");if(!t){if(b)b.hidden=true;return}
   $("it-bt").textContent=t;b.hidden=false}
 function start(t){if(DRAWM){DRAWM=false;const c=$("it-draw");if(c)c.checked=false}arm=t;if(typeof openMenu==="function")openMenu(false);banner("Touchez la carte pour placer "+(t==="A"?"le départ (A)":t==="W"?"le point de passage "+(WP.length+1):"l'arrivée (B)"))}
 // préréglages et résumé des réglages (le panneau ne montre que le type, les points, le plafond et Calculer ; le reste est dans « Réglages »)
-const PRE={balade:{env:1,dur:2,max:1,dv:"up",dvm:200},cueillette:{env:2,dur:3,max:2,dv:"0",dvm:300},sportif:{env:1,dur:1,max:4,dv:"0",dvm:300}};
+const PRE={balade:{env:1,dur:2,max:1,dv:"both",dvm:200},cueillette:{env:2,dur:3,max:2,dv:"0",dvm:300},sportif:{env:1,dur:1,max:4,dv:"0",dvm:300}};
 const ENV_L=["plus court","léger détour","détour","grand détour"],DUR_S=["×½","×¾","×1","×1,5","×2","×3"];let DVUP=null;
 function regUpd(){
   const r=$("it-resume");if(!r)return;
@@ -1447,7 +1463,7 @@ function regUpd(){
   document.querySelectorAll("#sec-itin [data-pre]").forEach(b=>{const q=PRE[b.dataset.pre];b.setAttribute("aria-pressed",String(q.env===x.env&&q.dur===x.dur&&q.max===x.max&&q.dv===x.dv&&(x.dv==="0"||q.dvm===x.dvm)&&!x.off))})}
 function applyPre(k){
   const P=PRE[k];if(!P)return;
-  $("it-env").value=P.env;$("it-dur").value=P.dur;$("it-max").value=P.max;$("it-dv").value=P.dv;$("it-dvm").value=P.dvm;offBoxUpd();
+  $("it-env").value=P.env;$("it-dur").value=P.dur;$("it-max").value=P.max;$("it-dv").value=P.dv;$("it-dvm").value=P.dv==="0"?$("it-dvm").max:P.dvm;offBoxUpd();
   ["it-env","it-dur","it-max","it-dvm"].forEach(i=>$(i).oninput&&$(i).oninput());if(DVUP)DVUP();regUpd();
   if(pts.A&&(isLoop()||pts.B)&&last)compute()}
 function init(){
@@ -1487,9 +1503,9 @@ function init(){
   $("it-varnone").onclick=()=>{$("it-varlist").querySelectorAll("[data-sp]").forEach(c=>c.checked=false);varSave();varCount()};
   $("it-varbox").hidden=true;
   $("it-dur").oninput=()=>{$("it-durl").textContent=DUR_L[+$("it-dur").value]};$("it-dur").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-dur").oninput();
-  const dvUp=c=>{const on=$("it-dv").value!=="0";$("it-dvrow").hidden=!on;$("it-dvl").textContent=$("it-dvm").value+" m";if(c===true&&on&&pts.A&&(isLoop()||pts.B)&&last)compute()};
-  $("it-dv").onchange=()=>dvUp(true);$("it-dvm").oninput=()=>dvUp();$("it-dvm").onchange=()=>dvUp(true);dvUp();DVUP=dvUp;
-  $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":DIFF[+$("it-max").value]+" ou plus facile"};$("it-max").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
+  const dvUp=c=>{const m=$("it-dvm"),top=+m.value>=+m.max;if(top)$("it-dv").value="0";else if($("it-dv").value==="0")$("it-dv").value="both";const on=$("it-dv").value!=="0";$("it-dvl").textContent=on?m.value+" m":"aucune";if(c===true&&pts.A&&(isLoop()||pts.B)&&last)compute()};
+  $("it-dv").onchange=()=>{const m=$("it-dvm");if($("it-dv").value==="0")m.value=m.max;else if(+m.value>=+m.max)m.value=300;dvUp(true)};$("it-dvm").oninput=()=>dvUp();$("it-dvm").onchange=()=>dvUp(true);dvUp();DVUP=dvUp;
+  $("it-max").oninput=()=>{$("it-maxl").textContent=+$("it-max").value>=4?"aucune limite (jusqu'à très difficile)":"jusqu'à "+DIFF[+$("it-max").value]};$("it-max").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};$("it-max").oninput();
   document.querySelectorAll("#sec-itin [data-pre]").forEach(b=>b.onclick=()=>applyPre(b.dataset.pre));
   {const rg=$("it-reg");if(rg){rg.addEventListener("input",regUpd);rg.addEventListener("change",regUpd)}}
   $("it-cancel").onclick=()=>{cancelRun();$("it-msg").textContent="Calcul annulé."};regUpd();

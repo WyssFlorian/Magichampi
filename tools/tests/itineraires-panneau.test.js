@@ -20,7 +20,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   q('balade').click();const x={max:$('it-max').value,dv:$('it-dv').value,dvm:$('it-dvm').value,env:$('it-env').value,row:$('it-dvrow').hidden,res:$('it-resume').textContent,on:q('balade').getAttribute('aria-pressed')};
   $('it-max').value=3;$('it-max').dispatchEvent(new Event('input',{bubbles:true}));x.off=q('balade').getAttribute('aria-pressed');
   q('sportif').click();x.sp=[$('it-dur').value,$('it-max').value,$('it-dv').value];return x});
- ok(c.max==='1'&&c.dv==='up'&&c.dvm==='200'&&c.env==='1'&&!c.row&&c.on==='true','préréglage « Balade facile » appliqué ('+c.res+')');
+ ok(c.max==='1'&&c.dv==='both'&&c.dvm==='200'&&c.env==='1'&&c.on==='true','préréglage « Balade facile » appliqué ('+c.res+')');
  ok(c.off==='false','réglage modifié à la main : préréglage désélectionné');ok(c.sp.join()==='1,4,0','préréglage « Sportif » : rythme ×¾, difficulté libre, pas de limite de dénivelé');
  // 3) progression et annulation
  await p.evaluate(async()=>{const $=i=>document.getElementById(i);await ITIN.loadGraph();$('it-dv').value='0';$('it-max').value=4;$('it-env').value=0;

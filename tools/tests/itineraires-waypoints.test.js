@@ -37,7 +37,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
   const nav=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(this.download)o.dl=this.download;else nav.call(this)};
   $('it-gpx').click();await sleep(400);o.gpxWpt=(gp.match(/<wpt /g)||[]).length;o.kmlWpt=0;
   // difficulté maximale très facile : message clair éventuel
-  $('it-max').value=0;$('it-max').dispatchEvent(new Event('input'));await sleep(500);await go();o.maxMsg=$('it-msg').textContent;
+  $('it-max').value=0;$('it-max').dispatchEvent(new Event('input'));await sleep(500);await go();o.maxMsg=$('it-msg').textContent;o.fixTxt=($('it-fix')||{}).textContent;if($('it-fix')){$('it-fix').click();await sleep(300);await go();o.fixMax=$('it-max').value;o.fixGone=!$('it-fix');}
   $('it-max').value=4;$('it-max').dispatchEvent(new Event('input'));await sleep(2500);
   // boucle
   $('it-mode').value='loop';$('it-mode').dispatchEvent(new Event('change'));ITIN.setPt('A',mk(A));$('it-lt').value=20;await go();o.loop=big();o.loopMsg=$('it-msg').textContent;o.loopLegs=$('it-res').querySelectorAll('.it-legs li').length;
@@ -54,6 +54,7 @@ let fail=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  KO  ')+m);if(!c)fail++};
  ok(r.afterRm===1,'retrait d\'un point');
  ok(r.gpxWpt===r.afterRm+0||r.gpxWpt>=1,'GPX : '+r.gpxWpt+' wpt, KML '+r.kmlWpt);
  ok(/de marche/.test(r.loop)&&r.loopLegs>=2,'boucle avec points : '+r.loop+', '+r.loopLegs+' étapes');
+ ok(/Appliquer : difficulté maximale/.test(r.fixTxt)&&r.fixMax>0,'bouton d\'application du réglage : '+r.fixTxt+' → max '+r.fixMax);
  ok(/Point|point/.test(r.maxMsg)||/de passage/.test(r.maxMsg),'message difficulté : '+r.maxMsg);
  ok(/Touchez la carte pour placer le point de passage/.test(r.banner),'bannière : '+r.banner);
  ok(errs.length===0,'aucune erreur de script'+(errs.length?' : '+errs[0]:''));
