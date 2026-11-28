@@ -1254,7 +1254,6 @@ details.more[open]>summary{margin-bottom:4px}
         <label class="chk lite-hide"><input type="checkbox" id="o-sq"> Mailles SwissFungi 5 km</label>
         <p class="small" style="margin:-4px 0 0">Tirets vert clair ; maille légèrement teintée et plus visible si l'espèce y est signalée.</p>
         <label class="chk"><input type="checkbox" id="o-res" checked> Réserves et marais protégés</label>
-        <label class="chk lite-hide" hidden><input type="checkbox" id="o-obs"> <span class="obs-icon" aria-hidden="true" style="display:inline-block"></span> Observations iNaturalist</label>
         <p class="small" style="margin:-4px 0 0">Observations précises ; par espèce, seulement l'espèce choisie.</p>
       </div>
       <div class="sub-h" style="margin-top:12px">Géographie</div>
@@ -1316,7 +1315,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Humidité : moitié humidité topographique (creux et bas de versant, calculée sur swissALTI3D), moitié bilan hydrique des stations forestières OFEV/WSL (avril-août, moyenne 2009-2018).</li>
         <li>Sol : roche et dépôts de surface de la carte géologique GeoCover (swisstopo, 1:25 000), classés de très acide à calcaire et comparés aux préférences de l'espèce. Les marais et glissements de terrain comptent aussi comme lieux plus humides. Là où GeoCover manque, l'atlas géochimique des sols (OFEV, 1 km) est utilisé (toutes les régions depuis le 20 novembre 2026).</li>
         <li>Présence connue : l'espèce est-elle signalée à SwissFungi dans la maille de 5 km (×1), une maille voisine (×0,93) ou pas du tout (×0,85) ? Le curseur « Relevés SwissFungi » limite ces relevés aux 2 ou 5 dernières années.</li>
-        <li>Observations (iNaturalist, SwissFungi, vos coins) : <b>aucun effet local</b>. Un point d'observation ne relève pas la note du lieu où il a été fait. Ces observations servent seulement à régler, sur l'ensemble de la carte, l'importance de chaque facteur ci-dessus (calibration globale, validée sur des blocs de 5 km tenus à l'écart).</li>
+        <li>Observations (SwissFungi, vos coins) : <b>aucun effet local</b>. Un point d'observation ne relève pas la note du lieu où il a été fait. Ces observations servent seulement à régler, sur l'ensemble de la carte, l'importance de chaque facteur ci-dessus (calibration globale, validée sur des blocs de 5 km tenus à l'écart).</li>
               </ul>
       <p><b>Classes</b> : les seuils sont fixes pour chaque espèce et identiques dans toutes les régions. Ils ont été calculés une seule fois sur toutes les forêts du canton de Vaud (les huit régions réunies) : 15 % y sont en classe élevée et 25 % en moyenne. Le meilleur quart de la classe élevée (4 % des forêts) est affiché à part, en « très élevé » (bleu-violet). La classe d'un lieu ne change donc pas quand on déplace ou zoome la carte. Attention : une classe est un rang parmi les forêts du canton, pas une probabilité de trouver l'espèce. « Très élevé » veut dire « parmi les 4 % de forêts les plus favorables du canton ». Une région moins riche a donc moins de forêts en couleur forte, et une région riche davantage : la couleur a le même sens partout. Les pourcentages (« % du meilleur lieu ») sont rapportés au meilleur lieu du canton.</p>
       <p><b>Forte concentration</b> (plusieurs variétés à la fois) : <span id="menu-multi">choisissez « Toutes » ou une catégorie pour voir les niveaux de points.</span></p>
@@ -1339,7 +1338,7 @@ details.more[open]>summary{margin-bottom:4px}
       <p style="margin:6px 0"><b>Itinéraires (bêta) :</b> propositions issues de swissTLM3D (routes, sentiers), du relief et, en mode « Conditions du moment » seulement, de la météo de la carte. Elles ne garantissent ni la sécurité ni la praticabilité ; l'utilisateur reste seul responsable de son passage (voir la décharge de responsabilité).</p>
       <ul>
         <li>Météo : MétéoSuisse, analyses en grille 1 km (pluie provisoire, température, minimum, ensoleillement), open data.</li>
-        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km. Observations précises iNaturalist : non publiées ici (licences CC BY-NC possibles) ; elles servent seulement à la calibration globale du modèle (aucun effet local sur la note d'un lieu).</li>
+        <li>Champignons : SwissFungi (WSL) via GBIF, CC BY 4.0, coordonnées généralisées en mailles de 5 km.</li>
         <li>Sol et eau : carte géologique GeoCover © swisstopo (données ouvertes) ; atlas géochimique des sols de Suisse (calcium) et bilan hydrique des stations forestières, OFEV/WSL, geo.admin.ch.</li>
         <li>Forêt : OFEV/WSL, Inventaire forestier national (degré de mélange, hauteur de végétation) ; Carte des milieux naturels de Suisse v1.2 (OFEV/WSL, TypoCH, geo.admin.ch).</li>
         <li>Relief, cartes et photos : © swisstopo. Réserves : Pro Natura, inventaires fédéraux des marais, Parcs suisses (zones, OFEV). Milieux à ménager : réserves forestières, inventaires fédéraux des zones alluviales et des sites de reproduction de batraciens (OFEV, geo.admin.ch).</li>
@@ -1731,7 +1730,7 @@ const wslF=(i,sp)=>{const W=wslExp(sp);if(LITE||!W)return 1;const H=WSL_HOSTS[sp
 const hostW=(c,pref,soft)=>Math.pow(hostF(c,pref,soft),W_HOST),altW=(v,t)=>Math.pow(trap2(v,t),W_ALT);
 function aptAt(i,sp,r){
   const c=LITE||G.conif[i]===255?NaN:G.conif[i]/100;
-  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 21.11.2026 : plus AUCUN bonus local autour des coins ou des observations iNaturalist : ces points ne touchent que la calibration globale des poids (tools/calibration/)
+  return habF(i,sp)*hostW(c,sp.host,!LITE&&G.hab&&G.hab[i]>0)*wslF(i,sp)*altW(G.dem[i],sp.alt)*standF(G.vhm[i]/5,G.edge[i]*2,sp.stand,sp.id)*slopeF(G.slope[i])*moistF(G.mi[i],sp.moist)*soilF(G.ca[i],sp)*r;  // 21.11.2026 : plus AUCUN bonus local autour des coins ou des observations : ces points ne touchent que la calibration globale des poids (tools/calibration/)
 }
 // Cache borné (les plus récents gardés) : chaque entrée = rang par cellule sur 16 bits + statistiques des zones
 const MOBILE=typeof matchMedia==="function"&&matchMedia("(pointer:coarse)").matches;
@@ -2227,7 +2226,7 @@ function setupSorties(){
      box.querySelectorAll("[data-soc]").forEach(c=>c.onchange=()=>{if(c.checked)SOC_OFF.delete(c.dataset.soc);else SOC_OFF.add(c.dataset.soc);try{localStorage.setItem("champi-soc-off",JSON.stringify([...SOC_OFF]))}catch(e){}sortBuild();sortListR();syncComm()})}}
 }
 /* ---------- bouton « Communauté » : affiche ou masque d'un coup les sources communautaires cochées dans les options
-   (sorties des sociétés mycologiques, observations iNaturalist) ---------- */
+   (sorties des sociétés mycologiques) ---------- */
 const COMM={on:true};
 try{COMM.on=localStorage.getItem("champi-comm")!=="0"}catch(e){}
 function syncComm(){
@@ -2240,10 +2239,10 @@ function setComm(v){COMM.on=v;try{localStorage.setItem("champi-comm",v?"1":"0")}
 function setupComm(){
   const box=document.querySelector(".view-btns");if(!box)return;
   const b=document.createElement("button");b.className="btn";b.id="comm-btn";
-  b.title="Afficher ou masquer les sources communautaires cochées dans les options : sorties des sociétés mycologiques, observations iNaturalist et contrôles officiels des champignons";
+  b.title="Afficher ou masquer les sources communautaires cochées dans les options : sorties des sociétés mycologiques et contrôles officiels des champignons";
   b.textContent="👥 Communauté";b.onclick=()=>setComm(!COMM.on);box.appendChild(b);
   $("o-coins").onchange=()=>{saveLay();if($("o-coins").checked&&!COMM.on)setComm(true);else renderCoins()};
-  const ob=$("o-obs");if(ob){const f=ob.onchange;ob.onchange=e=>{if(f)f(e);if(e.target.checked&&!COMM.on)setComm(true)}}
+  
   syncComm()}
 const DET_BTN=`<div class="row" style="margin-top:10px"><button class="btn" data-details>Détails ›</button></div></div>`;
 
@@ -2544,11 +2543,11 @@ function updateBestNow(){
     m.on("click",e=>{L.DomEvent.stopPropagation(e);openPopup(ll)});
     bestLayer.addLayer(m)});
 }
-/* ---------- observations iNaturalist ---------- */
+/* ---------- observations (désactivées) ---------- */
 function openObs(o,sp){const ll=L.latLng(o.lat,o.lon),h=obsPopup(o,sp);if(NARROW.matches){map.closePopup();showSheet(h,ll);return}closeSheet();L.popup({maxWidth:300,autoPanPadding:[20,20],offset:[0,-6]}).setLatLng(ll).setContent(h).openOn(map)}
 function obsPopup(o,sp){
   const ll=L.latLng(o.lat,o.lon),i=idxAt(ll),yr=o.date.slice(0,4);
-  let h=`<div class="pp"><h3>${esc(sp.fr)}</h3><div class="meta"><i>${esc(sp.la)}</i> · observation iNaturalist</div>`;
+  let h=`<div class="pp"><h3>${esc(sp.fr)}</h3><div class="meta"><i>${esc(sp.la)}</i></div>`;
   if(o.ph)h+=`<a href="${esc(o.url)}" target="_blank" rel="noopener"><img src="${ZD}${esc(o.ph)}" alt="Photo de l'observation" style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;display:block;margin:4px 0 2px"></a><div class="small" style="margin:0 0 6px">Photo © ${esc(o.phby||o.who||"")}${o.phlic?", "+esc(o.phlic):""}${o.nph>1?` · ${o.nph} photos sur iNaturalist`:""}</div>`;
   const row=(k,v)=>v?`<span class="lab">${k}</span><span style="grid-column:2 / -1">${v}</span>`:"";
   h+=`<div class="fx" style="grid-template-columns:auto 1fr">`;
@@ -2561,12 +2560,12 @@ function obsPopup(o,sp){
   h+=row("Statut","qualité « recherche » (identification confirmée par la communauté)");
   if(state.sp!=="multi"&&sp.id===state.sp&&i>=0&&currentClass&&currentClass[i]!==255)h+=row("Sur la carte",`<span class="pill c${currentClass[i]}">${CLS_LAB[currentClass[i]]}</span>`);
   h+=`</div><p class="small" style="margin:6px 0">Données © ${esc(o.who||"observateur")}, ${esc(o.lic||"")}, via GBIF. Cette observation augmente le score de l'espèce jusqu'à 1 km autour.</p>`;
-  h+=`<a class="btn primary" style="display:block;text-align:center;text-decoration:none" href="${esc(o.url)}" target="_blank" rel="noopener">Voir la publication sur iNaturalist</a>${trajetLink(o.lat,o.lon)}</div>`;
+  h+=`<a class="btn primary" style="display:block;text-align:center;text-decoration:none" href="${esc(o.url)}" target="_blank" rel="noopener">Voir la publication</a>${trajetLink(o.lat,o.lon)}</div>`;
   return h;
 }
 let obsLayer;
 function renderObs(){
-  if(!obsLayer)return;obsLayer.clearLayers();if(!$("o-obs").checked)return;
+  if(!obsLayer)return;obsLayer.clearLayers();return;
   const multi=state.sp==="multi",cur=multi?null:SPECIES.find(s=>s.id===state.sp),act=new Set(activeSpecies().map(s=>s.key));
   (D.obs||[]).forEach(o=>{const sp=SPECIES.find(s=>s.key===o.sp);if(!sp)return;const main=multi?act.has(o.sp):o.sp===cur.key;if(!multi&&!main)return;  // recherche par espèce : seulement ses observations
     // zone de clic de 30 px autour du point (le point lui-même reste petit)
@@ -2770,7 +2769,7 @@ async function importPhotos(files){
     const today=localToday(),date=ex&&ex.date&&ex.date<=today?ex.date:"";
     if(!ex||!ex.gps){phTmp.q.push({f,date});r.nogps++;continue}
     const [lat,lng]=ex.gps;
-    if(phDup(lat,lng,date)){r.dup++;continue}   // même lieu (~11 m) et même date qu'un coin existant (y compris iNaturalist) : pas de doublon
+    if(phDup(lat,lng,date)){r.dup++;continue}   // même lieu (~11 m) et même date qu'un coin existant : pas de doublon
     phTmp.fq.push({f,date,gps:[+lat.toFixed(6),+lng.toFixed(6)]})}
   const ex=phTmp.extra;
   if(r.dup)ex.push(`${r.dup} ignoré${r.dup>1?"s":""} (même lieu et même date qu'un coin déjà présent)`);
@@ -3754,9 +3753,9 @@ async function boot(){
   const later={rs:fetch(ZD+"reserves.geojson",NC).then(r=>r.json()),aj:fetch(ZD+"acces.geojson",NC).then(r=>r.json()),tj:fetch(ZD+"sentiers.geojson",NC).then(r=>r.json())};
   const [dj,ti]=await Promise.all([fetch(ZD+"data.json",NC).then(r=>r.json()),fetch(ZD+"tiles_index.json",NC).then(r=>r.json())]);
   D=dj;meta=D.meta;meteo=D.meteo;fungi=Object.assign({},EXTRA_FUNGI,D.fungi);TI=ti;GR=meta.grid;THR=Object.assign({},typeof MAP_THR_EXTRA!=="undefined"?MAP_THR_EXTRA:{},meta.thr,typeof MAP_THR_V3!=="undefined"?MAP_THR_V3:{},typeof MAP_THR_V4!=="undefined"?MAP_THR_V4:{},typeof MAP_THR_V5!=="undefined"?MAP_THR_V5:{},typeof MAP_THR_V6!=="undefined"?MAP_THR_V6:{});
-  // version test « données ouvertes » : altitudes et saisons d'expert, sans SwissFungi, carte des milieux, part de résineux ni iNaturalist
+  // version test « données ouvertes » : altitudes et saisons d'expert, sans SwissFungi, carte des milieux, part de résineux
   if(meta.lite){LITE=true;SPECIES.forEach(s=>{if(meta.lite.alt[s.id])s.alt=meta.lite.alt[s.id]});document.body.classList.add("lite");
-    const b=document.createElement("p");b.className="lite-banner";b.textContent="Version test « données ouvertes » : sans SwissFungi, sans carte des milieux ni part de résineux (essences), sans iNaturalist. Altitudes et saisons fixées à dire d'expert.";$("sec-head").appendChild(b)}
+    const b=document.createElement("p");b.className="lite-banner";b.textContent="Version test « données ouvertes » : sans SwissFungi, sans carte des milieux ni part de résineux (essences). Altitudes et saisons fixées à dire d'expert.";$("sec-head").appendChild(b)}
   meta.squares.forEach(s=>{const [a,b]=s.id.split("-").map(Number);sqNeighbours[s.id]=[];for(let i=-5;i<=5;i+=5)for(let j=-5;j<=5;j+=5)if(i||j)sqNeighbours[s.id].push(`${a+i}-${b+j}`)});
   setupMeteo();const dr=$("date");
   canvas=document.createElement("canvas");ctx=canvas.getContext("2d");
@@ -3828,7 +3827,7 @@ async function boot(){
   $("best-btn").onclick=()=>setBest(!state.best);$("best-btn").setAttribute("aria-pressed",!!state.best);map.on("moveend",updateBest);
   VEC=L.canvas({padding:.3});
   sqLayer=L.layerGroup().addTo(map);obsLayer=L.layerGroup().addTo(map);coinLayer=L.layerGroup().addTo(map);
-  $("o-obs").onchange=renderObs;
+  
   {const MenuCtl=L.Control.extend({options:{position:"topleft"},onAdd(){const b=L.DomUtil.create("button","menu-btn");b.type="button";b.textContent="☰ Menu";b.setAttribute("aria-label","Ouvrir le menu");L.DomEvent.disableClickPropagation(b);b.onclick=()=>openMenu();return b}});new MenuCtl().addTo(map)}
   menuSetup();$("menu-x").onclick=()=>openMenu(false);$("hunt-x").onclick=()=>{$("hunt-modal").hidden=true};
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("menu-pop").hidden)openMenu(false)});
