@@ -821,6 +821,7 @@ html.ov .ov-hide{display:none!important}
 .view-btns .btn[aria-pressed="true"]{background:#ffd000;color:#3a2a00;border-color:#b38f00}
 .best-pin{position:relative;width:30px;height:30px}
 .best-pin .ring{position:absolute;inset:0;border-radius:50%;border:3px solid #ffd000;box-shadow:0 0 0 2px rgba(0,0,0,.55);animation:bestpulse 1.6s ease-out infinite}
+.best-pin.nb .star{font:700 15px/1 system-ui;color:#ffd000}
 .best-pin .star{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#ffd000;text-shadow:0 0 2px #000,0 0 4px #000}
 @keyframes bestpulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.6);opacity:.15}}
 .lim-sw{display:inline-block;width:22px;height:0;border-top:3px solid #3b82f6;vertical-align:middle;flex:none}.lim-d{border-top:3px solid #ff9500}.lim-m{border-top:2px dashed #06b6d4}
@@ -1225,6 +1226,8 @@ details.more[open]>summary{margin-bottom:4px}
       <p class="small" id="view-help"></p>
       <label class="chk"><input type="checkbox" id="o-excl"> Afficher aussi les forêts exclues</label>
       <p class="small">Forêts proches des localités (moins de 100 m) et des routes principales (moins de 20 m), réserves et marais protégés.</p>
+      <label class="it-lab" style="display:block;margin:8px 0 2px">Nombre de meilleurs lieux affichés avec « ★ Meilleur lieu » : <select id="o-bestn" class="coin-sel"><option value="1">1 (par défaut)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+      <p class="small">Les lieux suivent les mêmes filtres que la carte (chasse, zones difficiles, niveau affiché) et sont à au moins 300 m les uns des autres. Numérotés du meilleur au moins bon.</p>
       <label class="chk"><input type="checkbox" id="o-resp" checked> <span><b>Cueillette responsable</b></span></label>
       <p class="small" id="resp-help" hidden></p>
       <div class="sub-h">Espèces et relevés</div>
@@ -1322,7 +1325,7 @@ details.more[open]>summary{margin-bottom:4px}
         <li>Gel : somme des degrés sous 0 °C des nuits des 7 derniers jours, divisée par 3 (une nuit à −3 °C compte comme une nuit de gel, une nuit à −6 °C comme deux).</li>
       </ul>
       <p><b>Zones de forêt</b> : la forêt est découpée par les routes et chemins (swissTLM3D) et par paliers d'altitude de 150 m ; les grandes zones sont recoupées en carrés d'environ 600 m. Une zone prend la valeur de ses 20 % meilleures cellules, pour ne pas noyer un bon coin dans une grande zone moyenne.</p>
-      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte. L'étoile suit les mêmes filtres que la carte : elle ignore les forêts que la carte n'affiche pas (en concentration, sous le niveau « moyen »), celles hachurées en rouge pour la chasse et celles hachurées en gris (zones difficiles d'accès) tant que ces cases sont cochées.</p>
+      <p><b>Meilleur lieu</b> : parmi les zones de forêt visibles, l'étoile désigne celle qui combine la meilleure classe, la meilleure note et la plus grande surface. Le score lui-même n'en tient pas compte, mais le choix de l'étoile pondère par la taille du massif forestier continu : poids 0,2 pour un bosquet de 0,5 ha ou moins, poids plein dès 20 ha. Un massif de 5 ha pèse 0,7. Une zone qui n'a que quelques cellules dans la meilleure classe est aussi moins favorisée (poids plein dès 3 ha dans cette classe). Une petite forêt, même très bien classée, permet rarement une vraie récolte. L'étoile suit les mêmes filtres que la carte : elle ignore les forêts que la carte n'affiche pas (en concentration, sous le niveau « moyen »), celles hachurées en rouge pour la chasse et celles hachurées en gris (zones difficiles d'accès) tant que ces cases sont cochées. Le menu « Affichage et couches » permet d'afficher jusqu'à 5 lieux à la fois (numérotés, à au moins 300 m les uns des autres, par défaut 1).</p>
       <p><b>Géographie</b> (bouton ⛰ ou option) : Lignes de niveau (case « Lignes de niveau », utilisable seule) : tracées à partir du relief swissALTI3D ramené à 25 m, tous les 20 m (plus marquées tous les 100 m) dès le zoom 14, tous les 50 m au zoom 13 ; blanches sur la photo, brunes sur la carte nationale. En brun foncé, les pentes d'au moins 45° sur 25 m (falaises, barres rocheuses) ; en brun clair, les pentes de 38 à 45° (très raides, prudence). En bleu, les cours d'eau à ciel ouvert (swissTLM3D 2026), les rivières dès le zoom 11, les ruisseaux dès le zoom 13, plus fins ; les tronçons canalisés sous terre ne sont pas tracés. En vert, les routes dès le zoom 12, comme sur la carte nationale : double trait pour les routes de 1re et 2e classe, trait simple pour la 3e classe, puis les chemins de 4e classe dès le zoom 14 et de 5e classe dès le zoom 15 ; tous les traits s'épaississent avec le zoom. Les sentiers balisés restent en jaune. Le bouton affiche aussi les arrêts de transports publics (dès le zoom 13) et les parkings (dès le zoom 14). Dans Plus d'options, section Géographie, une case par couche permet de masquer séparément les cours d'eau, les routes, les arrêts, les parkings ou les sentiers. Une petite barre de quelques mètres peut ne pas apparaître : la carte nationale reste la référence.</p>
       <p><b>Exclusions</b> : 100 m autour des localités (zones bâties ARE 2025 d'au moins 2 ha environ, fermes et chalets isolés non comptés), 20 m autour de l'axe des routes de classe 1 et 2 (autoroute, routes de 4 m et plus), réserves Pro Natura et marais d'importance nationale. Les routes de 3 m et les chemins ne sont pas exclus.</p>
       <p><b>Prévisions</b> : prévisions locales MétéoSuisse (points de stations et de codes postaux), interpolées et corrigées de l'altitude. Elles sont figées au moment de la publication de la carte.</p>
@@ -1563,14 +1566,14 @@ function trap(v,[a,b,c,d]){if(v<=a||v>=d)return 0;if(v<b)return (v-a)/(b-a);if(v
 const CLS_LAB=["Très faible","Faible","Moyen","Élevé","Très élevé"];
 
 let D,G,meta,meteo,fungi,sqNeighbours={};
-const state={q:null,lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tiers:[1],hide:[]};
-try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if(Array.isArray(s.tiers)){const a=[1,2,3].filter(t=>s.tiers.includes(t));if(a.length)state.tiers=a}else if([0,1,2,3].includes(s.tier))state.tiers=s.tier?[s.tier]:[1,2,3];{const c=SPECIES.find(x=>x.id===state.sp);if(c&&!state.tiers.includes(c.tier))state.tiers=[...state.tiers,c.tier].sort()}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
+const state={q:null,lastSp:"tubaeformis",sp:"tubaeformis",mode:"site",d:0,base:"ortho",coins:[],adding:false,view:"zone",excl:true,yr:1,seasonOnly:true,resp:true,acc:true,tiers:[1],hide:[],bestN:1};
+try{const s=JSON.parse(localStorage.getItem("pleiades-state")||"{}");if(Array.isArray(s.hide))state.hide=s.hide.filter(id=>SPECIES.some(x=>x.id===id));if(s.sp&&(s.sp==="multi"||SPECIES.find(x=>x.id===s.sp)))state.sp=s.sp;if(s.lastSp&&SPECIES.find(x=>x.id===s.lastSp))state.lastSp=s.lastSp;if(Array.isArray(s.tiers)){const a=[1,2,3].filter(t=>s.tiers.includes(t));if(a.length)state.tiers=a}else if([0,1,2,3].includes(s.tier))state.tiers=s.tier?[s.tier]:[1,2,3];{const c=SPECIES.find(x=>x.id===state.sp);if(c&&!state.tiers.includes(c.tier))state.tiers=[...state.tiers,c.tier].sort()}if([0,1,2].includes(s.yr5))state.yr=s.yr5;if(typeof s.best==="boolean")state.best=s.best;if([1,2,3,4,5].includes(s.bestN))state.bestN=s.bestN;if(typeof s.relief==="boolean")state.relief=s.relief;if(typeof s.seasonOnly==="boolean")state.seasonOnly=s.seasonOnly;if(s.mode)state.mode=s.mode;if(s.base2==="carte"||s.base2==="ortho")state.base=s.base2;if(typeof s.resp==="boolean")state.resp=s.resp}catch(e){}
 try{const q=localStorage.getItem("champi-quarter");if(/^[qm]\d+$/.test(q||"")&&(q[0]==="q"?+q.slice(1)<4:+q.slice(1)<12))state.q=q}catch(e){}
 try{state.coins=JSON.parse(localStorage.getItem("pleiades-coins")||"[]")}catch(e){state.coins=[]}
 const LAY_IDS=["o-lim-c","o-lim-d","o-lim-m","o-acc","o-water","o-road","o-tp","o-park","o-trail","o-hunt","o-hunti","o-vapko","o-coins","o-sq","o-hard","o-contour","o-blocks"];
 function saveLay(){try{const o={};LAY_IDS.forEach(id=>o[id]=$(id).checked);localStorage.setItem("pleiades-lay",JSON.stringify(o))}catch(e){}}
 function loadLay(){try{const o=JSON.parse(localStorage.getItem("pleiades-lay")||"{}");LAY_IDS.forEach(id=>{if(typeof o[id]==="boolean")$(id).checked=o[id]})}catch(e){}}
-function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tiers:state.tiers,hide:state.hide,best:!!state.best,relief:!!state.relief}))}catch(e){}}
+function saveState(){try{localStorage.setItem("pleiades-state",JSON.stringify({lastSp:state.lastSp,sp:state.sp,mode:state.mode,base2:state.base,yr5:state.yr,seasonOnly:state.seasonOnly,resp:state.resp,tiers:state.tiers,hide:state.hide,best:!!state.best,bestN:state.bestN,relief:!!state.relief}))}catch(e){}}
 function saveCoins(){try{localStorage.setItem("pleiades-coins",JSON.stringify(state.coins));localStorage.setItem("champi-coins-mod",String(Date.now()))}catch(e){}try{const sg=state.coins.filter(c=>c.sp).map(c=>c.sp+c.lat.toFixed(4)+c.lng.toFixed(4)).sort().join(";");if(window.__coinSig!==undefined&&window.__coinSig!==sg){multiCache=null;SCR=null;render()}window.__coinSig=sg}catch(e){}if(typeof bkInfo==="function")bkInfo();if(typeof cloudSoon==="function")cloudSoon();const b=document.getElementById("share-box");if(b&&!b.hidden)fillShare()}
 
 /* ---------- factors ---------- */
@@ -2485,8 +2488,8 @@ function bestFilters(){
   const hard=$("o-hard")&&$("o-hard").checked&&state.relief&&hardMask&&hardMask.any&&hardArr?hardArr:null;
   return {minK,skip:hunt||hard?i=>!!((hunt&&hunt[i])||(hard&&hard[i])):()=>false};
 }
-function findBest(){
-  if(!currentClass)return null;const R=viewRect();if(!R)return null;
+function findBestN(n){
+  if(!currentClass)return [];const R=viewRect();if(!R)return [];
   const {minK,skip}=bestFilters();
   const cols=meta.cols,C=currentClass,multi=state.sp==="multi",ok=i=>C[i]!==255&&C[i]>=minK&&!(state.resp&&G.rg&&G.rg[i])&&!(state.resp&&G.fx[i]===4)&&!skip(i);
   const PA=patchArea(),now=state.mode==="now";
@@ -2502,29 +2505,38 @@ function findBest(){
     if(k!==e.k)continue;e.nk++;
     let p;if(!multi)p=pOf(st,i);else{p=0;for(const [s,t] of sts){if(multiCls[s.id][i]>=3){const v=pOf(t,i);if(v>0)p+=v}}}
     if(p>e.bp){e.bp=p;e.bi=i}e.q+=p;e.nq++}
-  let best=null,bv=-1;
+  const cand=[];
   Z.forEach((e,z)=>{if(e.k<minK||e.bi<0)return;
     let q=e.nq?e.q/e.nq:0;if(multi)q=Math.min(1,q/Math.max(1,e.k));
     else if(state.view==="zone"&&z>0){q=st.zone.mean[z];if(now&&zoneNow)q*=Math.min(1,zoneNow.W[z]/.35)}
     const good=e.nk*zoneHa,v=(e.k+q)*sizeW(e.pa)*(.6+.4*Math.min(1,good/3));
-    if(v>bv){bv=v;best={i:e.bi,k:e.k,z,pa:e.pa,good}}});
-  return best;
+    cand.push({v,i:e.bi,k:e.k,z,pa:e.pa,good})});
+  // les n meilleures zones, au moins BEST_GAP m les unes des autres (deux carrés voisins d'un même massif comptent pour un seul lieu)
+  cand.sort((a,b)=>b.v-a.v);
+  const out=[],g2=(BEST_GAP/meta.res)**2;
+  for(const c of cand){if(out.length>=n)break;const r=Math.floor(c.i/cols),cc=c.i%cols;
+    if(out.some(o=>{const r2=Math.floor(o.i/cols),c2=o.i%cols;return (r-r2)**2+(cc-c2)**2<g2}))continue;out.push(c)}
+  return out;
 }
+const BEST_GAP=430;   // ≈ 300 m au sol (mètres Web Mercator à 46,5° de latitude)
+function findBest(){return findBestN(1)[0]||null}
 let bestT;
 function updateBest(){clearTimeout(bestT);bestT=setTimeout(updateBestNow,120)}
 function updateBestNow(){
   if(!bestLayer)return;bestLayer.clearLayers();const bt=$("best-btn");
   if(!state.best){if(bt)bt.textContent="★ Meilleur lieu";return}
-  let b=null;try{b=findBest()}catch(e){console.error(e)}
-  if(!b){if(bt)bt.textContent="★ Aucun lieu propice ici";return}
-  if(bt)bt.textContent="★ Meilleur lieu";
-  const r=Math.floor(b.i/meta.cols),c=b.i%meta.cols,ll=L.CRS.EPSG3857.unproject(L.point(meta.x0+(c+.5)*meta.res,meta.y1-(r+.5)*meta.res));
-  const lab=state.sp==="multi"?`${b.k} espèce${b.k>1?"s":""} en élevé`:CLS_LAB[b.k];
-  const m=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="best-pin"><div class="ring"></div><div class="star">★</div></div>',iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:1000,keyboard:false});
-  const pa=b.pa>=1e8?"grand massif":`massif de ${b.pa<10?b.pa.toFixed(1).replace('.',','):Math.round(b.pa)} ha`;
-  m.bindTooltip(`Meilleur lieu de la vue · ${lab} · ${pa}`,{permanent:true,direction:"top",offset:[0,-14]});
-  m.on("click",e=>{L.DomEvent.stopPropagation(e);openPopup(ll)});
-  bestLayer.addLayer(m);
+  let L_=[];try{L_=findBestN(state.bestN||1)}catch(e){console.error(e)}
+  const multiN=(state.bestN||1)>1;
+  if(!L_.length){if(bt)bt.textContent="★ Aucun lieu propice ici";return}
+  if(bt)bt.textContent=multiN?"★ Meilleurs lieux":"★ Meilleur lieu";
+  L_.forEach((b,n)=>{
+    const r=Math.floor(b.i/meta.cols),c=b.i%meta.cols,ll=L.CRS.EPSG3857.unproject(L.point(meta.x0+(c+.5)*meta.res,meta.y1-(r+.5)*meta.res));
+    const lab=state.sp==="multi"?`${b.k} espèce${b.k>1?"s":""} en élevé`:CLS_LAB[b.k];
+    const m=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="best-pin'+(multiN?' nb':'')+'"><div class="ring"></div><div class="star">'+(multiN?n+1:'★')+'</div></div>',iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:1000-n,keyboard:false});
+    const pa=b.pa>=1e8?"grand massif":`massif de ${b.pa<10?b.pa.toFixed(1).replace('.',','):Math.round(b.pa)} ha`;
+    m.bindTooltip(`${multiN?"Meilleur lieu n° "+(n+1):"Meilleur lieu de la vue"} · ${lab} · ${pa}`,{permanent:true,direction:"top",offset:[0,-14]});
+    m.on("click",e=>{L.DomEvent.stopPropagation(e);openPopup(ll)});
+    bestLayer.addLayer(m)});
 }
 /* ---------- observations iNaturalist ---------- */
 function openObs(o,sp){const ll=L.latLng(o.lat,o.lon),h=obsPopup(o,sp);if(NARROW.matches){map.closePopup();showSheet(h,ll);return}closeSheet();L.popup({maxWidth:300,autoPanPadding:[20,20],offset:[0,-6]}).setLatLng(ll).setContent(h).openOn(map)}
@@ -3805,6 +3817,7 @@ async function boot(){
   ["c","d","m"].forEach(k=>$("o-lim-"+k).onchange=()=>{saveLay();syncLimits()});syncLimits();
   map.on("moveend",()=>{if(map.hasLayer(LIM.d.lab||L.layerGroup())||map.hasLayer(LIM.m.lab||L.layerGroup())){if($("o-lim-d").checked)limLabels("d");if($("o-lim-m").checked)limLabels("m")}});
   $("geo-btn").setAttribute("aria-pressed",!!state.relief);$("geo-btn").onclick=()=>setRelief(!state.relief);
+  $("o-bestn").value=String(state.bestN);$("o-bestn").onchange=()=>{state.bestN=+$("o-bestn").value;saveState();updateBest()};
   const setBest=v=>{state.best=v;saveState();$("best-btn").setAttribute("aria-pressed",v);updateBest()};
   $("best-btn").onclick=()=>setBest(!state.best);$("best-btn").setAttribute("aria-pressed",!!state.best);map.on("moveend",updateBest);
   VEC=L.canvas({padding:.3});
