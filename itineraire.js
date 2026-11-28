@@ -1214,15 +1214,26 @@ function wpAdd(ll){
 // ordinaires (marqués best, retirés puis recalculés à chaque calcul ; déplacer un marqueur le transforme en point manuel)
 const bestWpOn=()=>!!$("it-bestwp")&&$("it-bestwp").checked&&typeof findBestN==="function";
 function bestWpDrop(){for(let i=WP.length-1;i>=0;i--)if(WP[i].best){map.removeLayer(WP[i].mk);WP.splice(i,1)}wpRefresh()}
+// meilleurs lieux de la vue utilisables comme points de passage : sur le réseau de chemins, à plus de 150 m de A, de B et des points manuels
+function bestLLs(){
+  let L_=[];try{L_=findBestN(state.bestN||1)}catch(e){console.error(e)}
+  const far=(ll,q)=>!q||ll.distanceTo(q)>=150,man=WP.filter(w=>!w.best);
+  return L_.map(b=>{const r=Math.floor(b.i/meta.cols),c=b.i%meta.cols;return L.CRS.EPSG3857.unproject(L.point(meta.x0+(c+.5)*meta.res,meta.y1-(r+.5)*meta.res))})
+    .filter(ll=>(!GR||snap(ll))&&far(ll,pts.A)&&(isLoop()||far(ll,pts.B))&&man.every(w=>far(ll,w.ll)))}
 function bestWpSync(){
   bestWpDrop();if(!bestWpOn())return 0;
-  let L_=[];try{L_=findBestN(state.bestN||1)}catch(e){console.error(e)}
   let n=0;
-  for(const b of L_){if(WP.length>=WP_MAX)break;
-    const r=Math.floor(b.i/meta.cols),c=b.i%meta.cols,ll=L.CRS.EPSG3857.unproject(L.point(meta.x0+(c+.5)*meta.res,meta.y1-(r+.5)*meta.res));
-    if(!snap(ll)||ll.distanceTo(pts.A)<150||(!isLoop()&&ll.distanceTo(pts.B)<150))continue;   // hors réseau, ou déjà au départ / à l'arrivée
+  for(const ll of bestLLs()){if(WP.length>=WP_MAX)break;
     wpAdd(ll);const w=WP[WP.length-1];w.best=true;w.mk.on("dragend",()=>{w.best=false});n++}
   return n}
+// bouton « ⭐ » : ajoute les meilleurs lieux de la vue à la liste des points de passage (manuels : on peut ensuite en retirer, en ajouter, les déplacer)
+async function addStars(){
+  const msg=$("it-msg");
+  try{await loadGraph()}catch(e){msg.textContent="Réseau de chemins indisponible : "+e.message;return}
+  const L_=bestLLs();let n=0;
+  for(const ll of L_){if(WP.length>=WP_MAX)break;wpAdd(ll);n++}
+  if(!n){msg.textContent=L_.length?"Maximum "+WP_MAX+" points de passage : retirez-en un avant d'en ajouter.":"Aucun meilleur lieu utilisable dans la vue (hors réseau de chemins, déjà dans la liste, trop près de A ou B, ou masqué par les filtres).";return}
+  if(wpReady()&&(isLoop()?last:pts.B))compute();else msg.textContent=n+" meilleur"+(n>1?"s lieux ajoutés":" lieu ajouté")+" aux points de passage.  Choisissez le départ"+(isLoop()?"":" et l'arrivée")+", puis touchez « Calculer »."}
 function wpClear(){WP.forEach(w=>map.removeLayer(w.mk));WP.length=0;wpRefresh()}
 function wpRefresh(){
   WP.forEach((w,i)=>w.mk.setIcon(wIcon(i+1)));
@@ -1450,6 +1461,7 @@ function init(){
     else if(pts.A&&pts.B)compute();else $("it-msg").textContent=t==="A"?"Départ placé. Choisissez maintenant l'arrivée.":"Arrivée placée. Choisissez maintenant le départ."},true);
   edInit();lpInit();$("it-draw").onchange=e=>setDraw(e.target.checked);svRender();
   $("it-a").onclick=()=>start("A");$("it-b").onclick=()=>start("B");
+  $("it-star").onclick=addStars;
   $("it-w").onclick=()=>{if(WP.length>=WP_MAX){$("it-msg").textContent="Maximum "+WP_MAX+" points de passage.";return}start("W")};
   if($("it-bestwp"))$("it-bestwp").onchange=()=>{if(!bestWpOn())bestWpDrop();if(pts.A&&(isLoop()||pts.B)&&last)compute();else if(!bestWpOn()&&!WP.length)clearRouteKeep()};
   $("it-wopt").onchange=()=>{if(pts.A&&(isLoop()||pts.B)&&last)compute()};
